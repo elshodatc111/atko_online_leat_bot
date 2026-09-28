@@ -49,9 +49,8 @@ def main_menu(lead: Lead, tutor_enabled: bool = True) -> ReplyKeyboardMarkup:
         rows = [[B("btn_quiz"), B("btn_mysub")], [B("btn_consultant"), B("btn_operator")]]
     else:
         rows = [
-            [B("btn_courses"), B("btn_buy")],
-            [B("btn_mysub")] + ([B("btn_tutor")] if tutor_enabled else []),
-            [B("btn_operator")],
+            [B("btn_courses"), B("btn_mysub")],
+            ([B("btn_tutor")] if tutor_enabled else []) + [B("btn_operator")],
             [B("btn_info"), B("btn_lang")],
         ]
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, input_field_placeholder="✍️ ...")

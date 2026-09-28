@@ -41,7 +41,7 @@ async def course_knowledge(lang: str = "uz") -> str:
             pl = [p for p in plans if p.tariff_id == x.id]
             price = "; ".join(f"{p.title_uz} ({p.days} kun) — {p.price:,} so'm".replace(",", " ") if p.price else f"{p.title_uz} — narx belgilanmagan"
                               for p in pl) or "narx belgilanmagan"
-            how = "Botda «💳 Obuna sotib olish» orqali Payme bilan onlayn to'lanadi."
+            how = "Botda «📚 Tariflar va narxlar» → shu tarif → «💳 Sotib olish» orqali Payme bilan onlayn to'lanadi."
         else:
             price = (f"{x.price:,} so'm".replace(",", " ") + (f" / {x.price_period}" if x.price_period else "")) if x.price else "narx belgilanmagan — admin bilan aniqlashtiriladi"
             how = "Oldindan to'lov, admin bilan bog'lanib amalga oshiriladi."

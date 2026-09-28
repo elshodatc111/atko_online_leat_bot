@@ -10,7 +10,7 @@ from ..db import session_scope
 from ..models import Lead, Payment, SubscriptionPlan, Tariff
 from ..services import chats as chat_svc
 from ..services import payme, worktime
-from .common import send_menu, update_lead
+from .common import send_menu, strip_placeholders, update_lead
 from .instance import get_bot
 from .keyboards import contact_kb, ib
 from .texts import money, t
@@ -90,8 +90,14 @@ async def show_buy(lead: Lead) -> None:
     if not name:
         await get_bot().send_message(lead.tg_id, t("buy_unavailable", lead.lang))
         return
-    await get_bot().send_message(lead.tg_id, t("buy_title", lead.lang, tariff=html.escape(name)) + "\n\n" + t("price_note", lead.lang),
-                                 reply_markup=kb)
+    async with session_scope() as s:
+        tr = (await s.execute(select(Tariff).where(Tariff.is_subscription.is_(True), Tariff.is_active.is_(True))
+                              .order_by(Tariff.sort))).scalars().first()
+    desc = (tr.desc_ru if lead.lang == "ru" else tr.desc_uz) if tr else ""
+    desc = html.escape(strip_placeholders(desc or "")) or ""
+    text = t("buy_title", lead.lang, tariff=html.escape(name), desc=desc).replace("\n\n\n\n", "\n\n")
+    text += "\n\n" + t("price_note", lead.lang)
+    await get_bot().send_message(lead.tg_id, text[:4090], reply_markup=kb)
 
 
 async def start_payment(lead: Lead, plan_id: int) -> None:

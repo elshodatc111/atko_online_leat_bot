@@ -84,8 +84,8 @@ TEXTS: dict[str, dict[str, str]] = {
         "ru": "🎓 <b>AI-ментор</b> — ваш личный помощник по корейскому языку!\n\n• вопросы по грамматике и лексике\n• проверка домашнего задания (текст, фото или голосовое)\n• произношение и построение предложений\n• 📝 мини-тесты\n\n{limit_info}\n\nЗадайте вопрос! 한국어 공부 화이팅! 💪",
     },
     "tutor_limit": {
-        "uz": "📚 Bugungi bepul savollaringiz limiti ({limit} ta) tugadi.\n\n💎 <b>Premium obunachilar</b> AI mentordan cheksiz foydalanadi! Obunani «💳 Obuna sotib olish» bo'limida rasmiylashtiring.",
-        "ru": "📚 Лимит бесплатных вопросов на сегодня ({limit}) исчерпан.\n\n💎 <b>Premium-подписчики</b> пользуются AI-ментором без ограничений! Оформите подписку в разделе «💳 Купить подписку».",
+        "uz": "📚 Bugungi bepul savollaringiz limiti ({limit} ta) tugadi.\n\n💎 <b>Premium obunachilar</b> AI mentordan cheksiz foydalanadi! Obunani pastdagi «💳 Obuna sotib olish» tugmasi orqali rasmiylashtiring.",
+        "ru": "📚 Лимит бесплатных вопросов на сегодня ({limit}) исчерпан.\n\n💎 <b>Premium-подписчики</b> пользуются AI-ментором без ограничений! Оформите подписку кнопкой «💳 Купить подписку» ниже.",
     },
     # ================================================================ tizim matnlari
     "choose_lang": {"uz": "Tilni tanlang / Выберите язык:", "ru": "Tilni tanlang / Выберите язык:"},
@@ -123,8 +123,8 @@ TEXTS: dict[str, dict[str, str]] = {
     "som": {"uz": "so'm", "ru": "сум"},
     # ---------------- obuna va to'lov
     "buy_title": {
-        "uz": "💳 <b>{tariff}</b>\n\nObuna muddatini tanlang. To'lov <b>Payme</b> orqali xavfsiz amalga oshiriladi, to'lovdan so'ng guruhga kirish havolasi avtomatik yuboriladi.",
-        "ru": "💳 <b>{tariff}</b>\n\nВыберите срок подписки. Оплата безопасно проходит через <b>Payme</b>, после оплаты ссылка на группу придёт автоматически.",
+        "uz": "💎 <b>{tariff}</b>\n\n<b>Bu obuna nima?</b>\nATKO'ning yopiq Telegram guruhiga kirish huquqi. Guruhda koreys tilini noldan EPS-TOPIK va TOPIK darajasigacha mustaqil o'rganish uchun barcha video darslar va materiallar bo'limlarga ajratilgan holda joylangan:\n\n📚 <b>Guruh ichida:</b>\n• 한글 Hangul alifbosi — noldan boshlash\n• 🎬 EPS-TOPIK 960, 600, 60 va 50 — to'liq video kurslar\n• 📖 Kitoblar va qo'llanmalar\n• 🎵 Audio materiallar (tinglab tushunish)\n• ⁉️ Testlar\n• 🎞 Koreys kinolari\n• 🏆 Shogirdlarimiz natijalari\n\n<b>🎁 Obunaga qo'shimcha:</b>\n• 🎓 AI mentor — koreys tili bo'yicha savollarga 24/7 <b>cheksiz</b> javob, uyga vazifani tekshirish va mini-testlar\n• 🆕 Guruhga qo'shiladigan yangi darslar ham obuna davomida siz uchun ochiq\n\n<b>⚙️ Qanday ishlaydi?</b>\n1️⃣ Pastdan obuna muddatini tanlang\n2️⃣ <b>Payme</b> orqali xavfsiz to'lang (Uzcard / Humo)\n3️⃣ To'lovdan so'ng bot guruh havolasini darhol yuboradi\n4️⃣ «Qo'shilish so'rovi»ni yuboring — bot uni avtomatik tasdiqlaydi\n\n⏰ Obuna tugashidan 3 va 1 kun oldin eslatma keladi. Muddat tugaganda guruhga kirish yopiladi, uzaytirsangiz — darhol qayta ochiladi.\n📅 Holatini istalgan vaqtda «👤 Mening obunam» bo'limida ko'rasiz.",
+        "ru": "💎 <b>{tariff}</b>\n\n<b>Что это за подписка?</b>\nДоступ в закрытую Telegram-группу ATKO. В группе по разделам собраны все видеоуроки и материалы для самостоятельного изучения корейского — с нуля до уровня EPS-TOPIK и TOPIK:\n\n📚 <b>Внутри группы:</b>\n• 한글 Алфавит хангыль — старт с нуля\n• 🎬 EPS-TOPIK 960, 600, 60 и 50 — полные видеокурсы\n• 📖 Книги и пособия\n• 🎵 Аудиоматериалы (аудирование)\n• ⁉️ Тесты\n• 🎞 Корейские фильмы\n• 🏆 Результаты наших учеников\n\n<b>🎁 Дополнительно к подписке:</b>\n• 🎓 AI-ментор — ответы на вопросы по корейскому 24/7 <b>без ограничений</b>, проверка домашних заданий и мини-тесты\n• 🆕 Новые уроки, добавляемые в группу, тоже доступны вам в течение подписки\n\n<b>⚙️ Как это работает?</b>\n1️⃣ Выберите срок подписки ниже\n2️⃣ Безопасно оплатите через <b>Payme</b> (Uzcard / Humo)\n3️⃣ После оплаты бот сразу пришлёт ссылку на группу\n4️⃣ Отправьте «заявку на вступление» — бот одобрит её автоматически\n\n⏰ За 3 и 1 день до окончания придёт напоминание. По окончании срока доступ закрывается, после продления — сразу открывается снова.\n📅 Статус подписки всегда можно посмотреть в разделе «👤 Моя подписка».",
     },
     "buy_unavailable": {
         "uz": "⏳ Onlayn to'lov hozircha sozlanmagan. Obunani rasmiylashtirish uchun admin bilan bog'laning.",
@@ -146,8 +146,8 @@ TEXTS: dict[str, dict[str, str]] = {
     "join_btn": {"uz": "🔗 Guruhga qo'shilish", "ru": "🔗 Вступить в группу"},
     "join_approved": {"uz": "✅ Guruhga qo'shildingiz! Darslarda omad! 한국어 화이팅! 💪", "ru": "✅ Вы в группе! Успехов в учёбе! 한국어 화이팅! 💪"},
     "join_denied": {
-        "uz": "⛔️ Guruhga kirish uchun faol Premium obuna kerak. «💳 Obuna sotib olish» bo'limida obunani rasmiylashtiring.",
-        "ru": "⛔️ Для вступления в группу нужна активная Premium-подписка. Оформите её в разделе «💳 Купить подписку».",
+        "uz": "⛔️ Guruhga kirish uchun faol Premium obuna kerak. Obunani pastdagi tugma orqali rasmiylashtiring.",
+        "ru": "⛔️ Для вступления в группу нужна активная Premium-подписка. Оформите её кнопкой ниже.",
     },
     "sub_remind": {
         "uz": "⏰ <b>Obunangiz {days} kundan keyin tugaydi</b> ({until}).\n\nDarslardan uzilib qolmaslik uchun obunani oldindan uzaytiring 👇",
@@ -210,6 +210,7 @@ EDITABLE: dict[str, str] = {
     "rating_thanks": "Baho uchun rahmat",
     "sla_apology": "Operatorlar band (kechikish)",
     "price_note": "Narxlar ostidagi eslatma",
+    "buy_title": "Obuna haqida batafsil — sotib olish oynasi ({tariff})",
     "enroll_request_ok": "2–4-tarifga yozilish so'rovi qabul qilindi",
     "ai_unavailable": "AI mavjud emas",
     "tutor_intro": "AI mentor kirish matni ({limit_info})",

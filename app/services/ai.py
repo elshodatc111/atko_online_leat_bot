@@ -324,7 +324,7 @@ def _consultant_prompt(kb: str, lead: Lead, extra: str) -> str:
 MAQSAD: mijoz ehtiyojini tushunish (maqsad, daraja, vaqt, format), 1-2 ta mos tarifni sababi bilan tavsiya qilish va kursga yozilishga yo'naltirish.
 
 TARIFLAR VA TO'LOV:
-- 1-tarif (Premium video darslar, yopiq Telegram guruh) — botning «💳 Obuna sotib olish» bo'limida Payme orqali onlayn sotib olinadi (1/3/12 oy). To'lovdan so'ng guruh havolasi avtomatik keladi. Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.
+- 1-tarif (Premium video darslar, yopiq Telegram guruh) — botda «📚 Tariflar va narxlar» → 1-tarif → «💳 Sotib olish» (yoki «👤 Mening obunam» → «Uzaytirish») orqali Payme bilan onlayn sotib olinadi (1/3/12 oy). To'lovdan so'ng guruh havolasi avtomatik keladi. Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.
 - 2, 3, 4-tariflar (Zoom guruh, Zoom intensiv, Individual) — oldindan to'lov, to'lov admin bilan bog'lanib amalga oshiriladi: foydalanuvchiga tarif sahifasidagi «👨‍💼 Admin bilan bog'lanish» tugmasini bosishni tavsiya qiling.
 - Narxlarni BILIMLAR BAZASIdagidek aniq ayting. Narx belgilanmagan bo'lsa — admin bilan aniqlashtirishni ayting. Har doim narxlar o'zgarishi mumkinligini va aniq narx/chegirmalarni admin bilan aniqlashtirib olish tavsiya etilishini qisqa eslating. Chegirma yoki narxni o'ylab topmang.
 - BEPUL DARS YO'Q. Bepul dars, bepul material yoki sinov darsi va'da qilmang.
