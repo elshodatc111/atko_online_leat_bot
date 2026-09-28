@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Bot matnlari{% endblock %}
+{% block heading %}✏️ Bot matnlari{% endblock %}
+{% block content %}
+<div class="flash flash-info">Bot foydalanuvchiga yuboradigan asosiy xabarlarni shu yerda o'zgartirishingiz mumkin. <code>{name}</code>, <code>{operator}</code> kabi belgilarni o'chirmang — ular avtomatik to'ldiriladi. HTML: <code>&lt;b&gt;qalin&lt;/b&gt;</code>, <code>&lt;i&gt;kursiv&lt;/i&gt;</code>.</div>
+<form method="post" action="/texts">
+  {% for it in items %}
+  <div class="card">
+    <div class="card-head"><h2>{{ it.label }} {% if it.changed %}<span class="pill pill-active">o'zgartirilgan</span>{% endif %}</h2>
+      {% if it.changed %}<label class="check"><input type="checkbox" name="{{ it.key }}_reset"> Standart matnga qaytarish</label>{% endif %}</div>
+    <div class="grid grid-2">
+      <div><label>🇺🇿 O'zbekcha</label><textarea name="{{ it.key }}_uz" rows="4">{{ it.uz }}</textarea></div>
+      <div><label>🇷🇺 Ruscha</label><textarea name="{{ it.key }}_ru" rows="4">{{ it.ru }}</textarea></div>
+    </div>
+  </div>
+  {% endfor %}
+  <div style="position:sticky;bottom:12px"><button class="btn">💾 Saqlash</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Tariflar{% endblock %}
+{% block heading %}📚 Tariflar{% endblock %}
+{% block content %}
+<div class="flash flash-info">Tariflar botning «📚 Kurslar va tariflar» bo'limida ko'rinadi va AI-konsultant ularga tayangan holda maslahat beradi. Narxlar botda aytilmaydi — menejer individual hisoblaydi.</div>
+{% macro tariff_form(x=None) %}
+<form method="post" action="/content/tariffs/save">
+  <input type="hidden" name="id" value="{{ x.id if x else '' }}">
+  <div class="form-row">
+    <div><label>Toifa</label><select name="category">{% for k, v in cats.items() %}<option value="{{ k }}" {{ 'selected' if x and x.category == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Tartib raqami</label><input type="number" name="sort" value="{{ x.sort if x else 0 }}"></div>
+    <div style="align-self:end"><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not x or x.is_active }}> Faol (botda ko'rinadi)</label></div>
+  </div>
+  <div class="grid grid-2">
+    <div><label>🇺🇿 Nomi</label><input type="text" name="name_uz" value="{{ x.name_uz if x else '' }}" required>
+      <label style="margin-top:8px">🇺🇿 Tavsif</label><textarea name="desc_uz" rows="8" required>{{ x.desc_uz if x else '' }}</textarea></div>
+    <div><label>🇷🇺 Nomi</label><input type="text" name="name_ru" value="{{ x.name_ru if x else '' }}" required>
+      <label style="margin-top:8px">🇷🇺 Tavsif</label><textarea name="desc_ru" rows="8" required>{{ x.desc_ru if x else '' }}</textarea></div>
+  </div>
+  <div class="btns" style="margin-top:10px"><button class="btn">💾 Saqlash</button></div>
+</form>
+{% endmacro %}
+<div class="card"><details class="edit"><summary class="btn">➕ Yangi tarif qo'shish</summary>{{ tariff_form() }}</details></div>
+{% for cat, label in cats.items() %}
+<div class="card">
+  <h2>{{ label }}</h2>
+  {% for x in rows if x.category == cat %}
+  <div style="border-bottom:1px solid var(--line);padding:10px 0">
+    <div class="card-head" style="margin:0">
+      <div><b>{{ x.name_uz }}</b> {% if not x.is_active %}<span class="pill pill-danger">nofaol</span>{% endif %}<br><small>{{ x.name_ru }}</small></div>
+      <div class="btns">
+        <form method="post" action="/content/tariffs/{{ x.id }}/delete" onsubmit="return confirm('Tarifni o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
+      </div>
+    </div>
+    <details class="edit"><summary class="btn btn-sm btn-ghost" style="margin-top:6px">✏️ Tahrirlash</summary>{{ tariff_form(x) }}</details>
+  </div>
+  {% else %}<p class="muted">Bu toifada tarif yo'q</p>{% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

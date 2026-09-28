@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Materiallar{% endblock %}
+{% block heading %}📄 Materiallar (PDF darsliklar){% endblock %}
+{% block content %}
+<div class="flash flash-info">
+  <b>Leadlarga bepul material</b> — botdagi «📄 Bepul materiallar» bo'limida chiqadi (yuklab olish uchun telefon raqam so'raladi — lead magnet).<br>
+  <b>Tutor bilim manbai</b> — PDF matni AI-tutorga «o'rgatiladi»: tutor javob berayotganda shu darsliklardan mos parchalarni topib foydalanadi.
+</div>
+<div class="card">
+  <h2>⬆️ Material yuklash</h2>
+  <form method="post" action="/content/materials/upload" enctype="multipart/form-data">
+    <div class="form-row">
+      <div><label>Nomi</label><input type="text" name="title" required placeholder="Hangul alifbosi — 1-qism"></div>
+      <div><label>Fayl (PDF tavsiya etiladi, 50 MB gacha)</label><input type="file" name="file" required accept=".pdf,.txt,.md,.doc,.docx,.ppt,.pptx,.zip,.mp3"></div>
+    </div>
+    <div class="field"><label>Tavsif</label><input type="text" name="description" placeholder="Ixtiyoriy"></div>
+    <div class="btns">
+      <label class="check"><input type="checkbox" name="is_free" checked> Leadlarga bepul material</label>
+      <label class="check"><input type="checkbox" name="for_tutor" checked> Tutor bilim manbai (faqat PDF/TXT)</label>
+      <button class="btn">Yuklash</button>
+    </div>
+  </form>
+</div>
+<div class="card">
+  <h2>Materiallar</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Nomi</th><th>Fayl</th><th>Leadlarga</th><th>Tutor indeksi</th><th class="num">Yuklab olingan</th><th>Sana</th><th></th></tr>
+    {% for m in rows %}
+    <tr>
+      <td><b>{{ m.title }}</b>{% if m.description %}<br><small>{{ m.description }}</small>{% endif %}</td>
+      <td><small>{{ m.file_name }}<br>{{ '%.1f'|format(m.file_size / 1024 / 1024) }} MB</small></td>
+      <td>{{ '✅' if m.is_free else '—' }}</td>
+      <td>{% if not m.for_tutor %}—{% elif m.index_status == 'done' %}<span class="pill pill-success">✅ {{ m.chunks_count }} bo'lak</span>
+          {% elif m.index_status == 'pending' %}<span class="pill pill-waiting">⏳ indekslanmoqda</span>
+          {% elif m.index_status == 'error' %}<span class="pill pill-danger">xato</span>{% else %}—{% endif %}
+          {% if m.index_error %}<br><small class="muted">{{ m.index_error }}</small>{% endif %}</td>
+      <td class="num">{{ m.downloads }}</td>
+      <td><small>{{ m.created_at|dt }}</small></td>
+      <td><details class="edit"><summary class="btn btn-sm btn-ghost">✏️</summary>
+        <form method="post" action="/content/materials/{{ m.id }}/edit">
+          <div class="field"><label>Nomi</label><input type="text" name="title" value="{{ m.title }}"></div>
+          <div class="field"><label>Tavsif</label><input type="text" name="description" value="{{ m.description or '' }}"></div>
+          <label class="check"><input type="checkbox" name="is_free" {{ 'checked' if m.is_free }}> Leadlarga bepul</label>
+          <label class="check"><input type="checkbox" name="for_tutor" {{ 'checked' if m.for_tutor }}> Tutor manbai</label>
+          <button class="btn btn-sm">Saqlash</button>
+        </form>
+        <div class="btns" style="margin-top:8px">
+          {% if m.for_tutor %}<form method="post" action="/content/materials/{{ m.id }}/reindex"><button class="btn btn-sm btn-ghost">↻ Qayta indekslash</button></form>{% endif %}
+          <form method="post" action="/content/materials/{{ m.id }}/delete" onsubmit="return confirm('O\'chirasizmi?')"><button class="btn btn-sm btn-danger">🗑</button></form>
+        </div></details></td>
+    </tr>
+    {% else %}<tr><td colspan="7" class="empty">Materiallar yuklanmagan</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

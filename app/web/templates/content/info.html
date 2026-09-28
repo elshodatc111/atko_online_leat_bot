@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Markaz ma'lumotlari{% endblock %}
+{% block heading %}ℹ️ Markaz ma'lumotlari{% endblock %}
+{% block content %}
+<div class="flash flash-info">
+  Bu bo'limlar AI-konsultant uchun <b>bilimlar bazasi</b> hisoblanadi. <code>[TO'LDIRILSIN]</code> deb yozilgan joylarni to'ldiring — AI bunday ma'lumotni o'ylab topmaydi, balki menejerga yo'naltiradi. Bu qatorlar botda foydalanuvchiga ko'rsatilmaydi.
+  «Menyuda ko'rsatish» belgilanganlari botdagi «ℹ️ Markaz haqida» bo'limida chiqadi.
+</div>
+{% macro info_form(x=None) %}
+<form method="post" action="/content/info/save">
+  <input type="hidden" name="id" value="{{ x.id if x else '' }}">
+  <div class="form-row">
+    {% if not x %}<div><label>Kalit (lotin)</label><input type="text" name="key" placeholder="contacts"></div>{% endif %}
+    <div><label>Tartib</label><input type="number" name="sort" value="{{ x.sort if x else 0 }}"></div>
+    <div style="align-self:end"><label class="check"><input type="checkbox" name="show_in_menu" {{ 'checked' if not x or x.show_in_menu }}> Menyuda ko'rsatish</label></div>
+  </div>
+  <div class="grid grid-2">
+    <div><label>🇺🇿 Sarlavha</label><input type="text" name="title_uz" value="{{ x.title_uz if x else '' }}" required>
+      <label style="margin-top:8px">🇺🇿 Matn</label><textarea name="body_uz" rows="10" required>{{ x.body_uz if x else '' }}</textarea></div>
+    <div><label>🇷🇺 Sarlavha</label><input type="text" name="title_ru" value="{{ x.title_ru if x else '' }}" required>
+      <label style="margin-top:8px">🇷🇺 Matn</label><textarea name="body_ru" rows="10" required>{{ x.body_ru if x else '' }}</textarea></div>
+  </div>
+  <button class="btn" style="margin-top:10px">💾 Saqlash</button>
+</form>
+{% endmacro %}
+<div class="card"><details class="edit"><summary class="btn">➕ Yangi bo'lim</summary>{{ info_form() }}</details></div>
+{% for x in rows %}
+<div class="card">
+  <div class="card-head"><h2>{{ x.title_uz }} {% if x.show_in_menu %}<span class="pill pill-active">menyuda</span>{% endif %}
+    {% if "TO'LDIRILSIN" in x.body_uz %}<span class="pill pill-waiting">to'ldirilmagan joylar bor</span>{% endif %}</h2>
+    <form method="post" action="/content/info/{{ x.id }}/delete" onsubmit="return confirm('O\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form></div>
+  {{ info_form(x) }}
+</div>
+{% endfor %}
+{% endblock %}

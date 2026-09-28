@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Excel eksport{% endblock %}
+{% block heading %}📑 Excel eksport{% endblock %}
+{% block content %}
+<div class="flash flash-info">«Yuklash» tugmasini bosganingizda Excel fayl tayyorlanadi va <b>bot orqali Telegramingizga</b> yuboriladi.</div>
+<div class="grid grid-2">
+  {% set items = [
+    ('leads', '👥 Leadlar', "Barcha lead ma'lumotlari: ism, telefon, manba, status, operator, AI xulosa"),
+    ('chats', '💬 Chatlar', "Operator murojaatlari: kutish, birinchi javob, davomiylik, baho"),
+    ('operators', '👨‍💼 Operatorlar statistikasi', "Har bir operator natijalari + kunlik kesim"),
+    ('audit', '🧾 Harakatlar jurnali', "Xodimlarning paneldagi barcha harakatlari"),
+    ('questions', '❓ Foydalanuvchi savollari', "Botga yozilgan savollar va AI javob topdimi"),
+  ] %}
+  {% for key, title, desc in items %}
+  <div class="card">
+    <h2>{{ title }}</h2>
+    <p class="muted">{{ desc }}</p>
+    <form method="post" action="/exports/{{ key }}" class="filters">
+      <div><label>Dan</label><input type="date" name="start" value="{{ start }}"></div>
+      <div><label>Gacha</label><input type="date" name="end" value="{{ end }}"></div>
+      {% if key == 'leads' %}
+      <div><label>Status</label><select name="status"><option value="">Barchasi</option>{% for k, v in LEAD_STATUSES.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <label class="check"><input type="checkbox" name="all_time"> Barcha vaqt</label>
+      {% endif %}
+      <button class="btn">📥 Yuklash → Telegram</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

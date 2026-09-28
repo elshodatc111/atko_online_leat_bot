@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pagination, status_pill %}
+{% block title %}Leadlar{% endblock %}
+{% block heading %}👥 Leadlar{% endblock %}
+{% block content %}
+<div class="card">
+  <form class="filters" method="get">
+    <div style="flex:2"><label>Qidiruv</label><input type="search" name="q" value="{{ f.q }}" placeholder="Ism, telefon, username"></div>
+    <div><label>Status</label><select name="status"><option value="">Barchasi</option>
+      {% for k, v in LEAD_STATUSES.items() %}<option value="{{ k }}" {{ 'selected' if f.status == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Manba</label><select name="source"><option value="">Barchasi</option><option value="none" {{ 'selected' if f.source == 'none' }}>Manbasiz</option>
+      {% for s in sources %}<option value="{{ s.id }}" {{ 'selected' if f.source == s.id|string }}>{{ s.name }}</option>{% endfor %}</select></div>
+    <div><label>Qiziqish</label><select name="temp"><option value="">Barchasi</option>
+      {% for k, v in TEMPERATURES.items() %}<option value="{{ k }}" {{ 'selected' if f.temp == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Dan</label><input type="date" name="start" value="{{ f.start }}"></div>
+    <div><label>Gacha</label><input type="date" name="end" value="{{ f.end }}"></div>
+    <div class="btns"><button class="btn">Filtrlash</button><a class="btn btn-ghost" href="/leads">Tozalash</a></div>
+  </form>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Jami: {{ total }}</h2>
+    {% if me.is_admin %}
+    <form method="post" action="/exports/leads" class="btns">
+      <input type="hidden" name="start" value="{{ f.start }}"><input type="hidden" name="end" value="{{ f.end }}">
+      <input type="hidden" name="status" value="{{ f.status }}"><input type="hidden" name="all_time" value="{{ '' if (f.start or f.end) else 'on' }}">
+      <button class="btn btn-sm btn-ghost">📑 Excel → Telegramga</button>
+    </form>{% endif %}
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Ism</th><th>Telefon</th><th>Maqsad</th><th>Manba</th><th>Status</th><th>Qiziqish</th><th>Operator</th><th>Oxirgi faollik</th></tr>
+    {% for l in leads %}
+    <tr>
+      <td>{{ l.id }}</td>
+      <td><a href="/leads/{{ l.id }}"><b>{{ l.display }}</b></a>{% if l.tg_username %}<br><small>@{{ l.tg_username }}</small>{% endif %}{% if l.is_blocked %} <span class="pill pill-danger">⛔</span>{% endif %}</td>
+      <td>{% if l.phone %}<a href="tel:{{ l.phone }}">{{ l.phone }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td>{{ GOALS.get(l.goal or '', {}).get('uz', '—') }}</td>
+      <td>{{ l.source.name if l.source else '—' }}</td>
+      <td>{{ status_pill(l.status) }}</td>
+      <td>{{ TEMPERATURES.get(l.temperature or '', '—') }}</td>
+      <td>{{ l.last_operator.display_name if l.last_operator else '—' }}</td>
+      <td><small>{{ l.last_activity|dt }}</small></td>
+    </tr>
+    {% else %}<tr><td colspan="9" class="empty">Leadlar topilmadi</td></tr>{% endfor %}
+  </table></div>
+  {{ pagination(page, pages, 'q=' ~ f.q ~ '&status=' ~ f.status ~ '&source=' ~ f.source ~ '&temp=' ~ f.temp ~ '&start=' ~ f.start ~ '&end=' ~ f.end) }}
+</div>
+{% endblock %}

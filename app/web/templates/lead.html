@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_pill, message_bubble %}
+{% block title %}{{ lead.display }}{% endblock %}
+{% block heading %}👤 {{ lead.display }}{% endblock %}
+{% block content %}
+<div class="btns" style="margin-bottom:14px">
+  <a class="btn btn-ghost" href="/leads">← Leadlar</a>
+  {% if lead.phone %}<a class="btn btn-success" href="tel:{{ lead.phone }}">📞 Qo'ng'iroq: {{ lead.phone }}</a>{% endif %}
+  <button class="btn" id="start-chat" {{ 'disabled' if lead.is_blocked }}>💬 Bot orqali yozish</button>
+  {{ status_pill(lead.status) }}
+  {% if lead.is_blocked %}<span class="pill pill-danger">⛔ Botni bloklagan — faqat qo'ng'iroq</span>{% endif %}
+</div>
+<div class="grid grid-2">
+  <div>
+    <div class="card">
+      <h2>📌 Status</h2>
+      <form method="post" action="/leads/{{ lead.id }}/status" class="form-row">
+        <div><select name="status" id="st" onchange="document.getElementById('rr').hidden=this.value!=='rejected'">
+          {% for k, v in LEAD_STATUSES.items() %}<option value="{{ k }}" {{ 'selected' if lead.status == k }}>{{ v }}</option>{% endfor %}</select></div>
+        <div id="rr" {{ '' if lead.status == 'rejected' else 'hidden' }}><select name="reason"><option value="">— Sabab —</option>
+          {% for r in REJECT_REASONS %}<option {{ 'selected' if lead.reject_reason == r }}>{{ r }}</option>{% endfor %}</select></div>
+        <div><button class="btn">Saqlash</button></div>
+      </form>
+      {% if lead.accepted_by %}<p class="muted">✅ Qabul qilgan: <b>{{ lead.accepted_by.display_name }}</b>, {{ lead.accepted_at|dt }}</p>{% endif %}
+      {% if lead.reject_reason and lead.status == 'rejected' %}<p class="muted">Rad etish sababi: {{ lead.reject_reason }}</p>{% endif %}
+      <form method="post" action="/leads/{{ lead.id }}/reminders" class="btns">
+        <span class="muted">Avto-eslatmalar: <b>{{ "to'xtatilgan" if lead.reminders_stopped or lead.status in ('accepted','rejected') else 'faol' }}</b></span>
+        <button class="btn btn-sm btn-ghost">{{ 'Yoqish' if lead.reminders_stopped else "To'xtatish" }}</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>✏️ Ma'lumotlar</h2>
+      <form method="post" action="/leads/{{ lead.id }}/edit">
+        <div class="form-row">
+          <div><label>Ism</label><input type="text" name="name" value="{{ lead.name or '' }}"></div>
+          <div><label>Telefon</label><input type="text" name="phone" value="{{ lead.phone or '' }}"></div>
+          <div><label>Til</label><select name="lang"><option value="uz">O'zbek</option><option value="ru" {{ 'selected' if lead.lang == 'ru' }}>Rus</option></select></div>
+        </div>
+        <div class="form-row">
+          <div><label>Maqsad</label><select name="goal"><option value="">—</option>{% for k, v in GOALS.items() %}<option value="{{ k }}" {{ 'selected' if lead.goal == k }}>{{ v.uz }}</option>{% endfor %}</select></div>
+          <div><label>Format</label><select name="study_format"><option value="">—</option>{% for k, v in FORMATS.items() %}<option value="{{ k }}" {{ 'selected' if lead.study_format == k }}>{{ v.uz }}</option>{% endfor %}</select></div>
+          <div><label>Qiziqish</label><select name="temperature"><option value="">—</option>{% for k, v in TEMPERATURES.items() %}<option value="{{ k }}" {{ 'selected' if lead.temperature == k }}>{{ v }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="form-row">
+          <div><label>Daraja</label><input type="text" name="level" value="{{ lead.level or '' }}"></div>
+          <div><label>Shahar</label><input type="text" name="city" value="{{ lead.city or '' }}"></div>
+          <div><label>Qiziqqan tarif</label><input type="text" name="interested_tariff" value="{{ lead.interested_tariff or '' }}"></div>
+        </div>
+        {% if me.is_admin %}
+        <div class="field"><label>Manba</label><select name="source_id"><option value="">To'g'ridan-to'g'ri</option>
+          {% for s in sources %}<option value="{{ s.id }}" {{ 'selected' if lead.source_id == s.id }}>{{ s.name }} ({{ s.code }})</option>{% endfor %}</select></div>
+        {% endif %}
+        <button class="btn">Saqlash</button>
+      </form>
+      <hr>
+      <dl class="kv">
+        <dt>Telegram</dt><dd>{% if lead.tg_username %}<a href="https://t.me/{{ lead.tg_username }}" target="_blank">@{{ lead.tg_username }}</a>{% endif %} <code>{{ lead.tg_id }}</code></dd>
+        <dt>Telegram ismi</dt><dd>{{ lead.tg_name or '—' }}</dd>
+        <dt>Manba</dt><dd>{{ lead.source.name if lead.source else "To'g'ridan-to'g'ri" }}</dd>
+        <dt>Bot rejimi</dt><dd>{{ '🎓 Tutor' if lead.mode == 'tutor' else '📚 Konsultant' }}</dd>
+        <dt>Bepul dars</dt><dd>{{ "🎁 So'ragan" if lead.trial_requested else '—' }}</dd>
+        <dt>Ro'yxatdan</dt><dd>{{ lead.created_at|dt }}</dd>
+        <dt>Oxirgi faollik</dt><dd>{{ lead.last_activity|dt }}</dd>
+      </dl>
+      {% if me.is_admin %}
+      <form method="post" action="/leads/{{ lead.id }}/delete" onsubmit="return confirm('Leadni butunlay o\'chirasizmi? Barcha xabarlar ham o\'chadi!')" style="margin-top:12px">
+        <button class="btn btn-sm btn-danger">🗑 Leadni o'chirish</button>
+      </form>{% endif %}
+    </div>
+
+    <div class="card" id="comments">
+      <h2>💬 Izohlar va xulosalar</h2>
+      {% if lead.ai_summary %}<div class="summary-box" style="margin-bottom:12px"><b>🤖 AI xulosa:</b>
+{{ lead.ai_summary }}</div>{% endif %}
+      <form method="post" action="/leads/{{ lead.id }}/comment">
+        <div class="field"><textarea name="text" placeholder="Lead bo'yicha xulosangiz..." required></textarea></div>
+        <button class="btn">Qo'shish</button>
+      </form>
+      <div style="margin-top:14px">
+        {% for c in comments %}<div class="comment">{{ c.text }}<small>{{ c.staff.full_name if c.staff else '—' }} · {{ c.created_at|dt }}</small></div>
+        {% else %}<p class="muted">Izohlar yo'q</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>🕘 Operator murojaatlari</h2>
+      <div class="table-wrap"><table>
+        <tr><th>#</th><th>Holat</th><th>Operator</th><th>So'rov</th><th>Baho</th></tr>
+        {% for c in chats %}<tr><td><a href="/chats/{{ c.id }}">{{ c.id }}</a></td><td><span class="pill pill-{{ c.status }}">{{ c.status_label }}</span></td>
+          <td>{{ c.operator.display_name if c.operator else '—' }}</td><td><small>{{ c.requested_at|dt }}</small></td>
+          <td>{{ '⭐' * (c.rating or 0) }}{% if c.rating_comment %}<br><small>«{{ c.rating_comment }}»</small>{% endif %}</td></tr>
+        {% else %}<tr><td colspan="5" class="empty">Murojaatlar yo'q</td></tr>{% endfor %}
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>📜 To'liq suhbat tarixi</h2>
+      <div class="msgs" style="background:#eef1f6;border-radius:10px;max-height:900px">
+        {% for m in messages %}{{ message_bubble(m, lead.display) }}{% else %}<div class="empty">Xabarlar yo'q</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("start-chat").onclick = async () => {
+  try { const j = await ATKO.api("/api/leads/{{ lead.id }}/start-chat", {}); location.href = "/chats/" + j.chat_id; }
+  catch (e) { ATKO.toast(e.message, "danger"); }
+};
+</script>
+{% endblock %}

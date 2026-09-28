@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Statistika{% endblock %}
+{% block heading %}📈 Statistika{% endblock %}
+{% block head %}<script src="/static/vendor/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+<div class="card">
+  <form class="filters" method="get">
+    <div><label>Dan</label><input type="date" name="start" value="{{ start }}"></div>
+    <div><label>Gacha</label><input type="date" name="end" value="{{ end }}"></div>
+    <div class="btns"><button class="btn">Ko'rsatish</button>
+      <a class="btn btn-ghost" href="?start={{ end[:8] }}01&end={{ end }}">Shu oy</a>
+    </div>
+    {% if me.is_admin %}
+    <div class="btns" style="margin-left:auto">
+      <button class="btn btn-ghost" formmethod="post" formaction="/exports/operators">📑 Operatorlar → Excel</button>
+      <button class="btn btn-ghost" formmethod="post" formaction="/exports/chats">📑 Chatlar → Excel</button>
+    </div>{% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <h2>👨‍💼 Operatorlar statistikasi ({{ start }} — {{ end }})</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Operator</th><th class="num">Olingan chatlar</th><th class="num">Yopilgan</th><th class="num">O'rtacha kutish</th>
+      <th class="num">Birinchi javob</th><th class="num">Davomiylik</th><th class="num">Baho</th><th class="num">Past baho</th>
+      <th class="num">✅ Qabul qilindi</th><th class="num">Konversiya</th><th class="num">Xabarlar</th><th class="num">O'tkazish</th></tr>
+    {% for o in ops %}
+    <tr {% if not o.active %}style="opacity:.55"{% endif %}>
+      <td><b>{{ o.name }}</b><br><small>{{ o.display }}{% if not o.active %} · o'chirilgan{% endif %}</small></td>
+      <td class="num">{{ o.chats }}</td><td class="num">{{ o.closed }}</td><td class="num">{{ o.avg_wait|secs }}</td>
+      <td class="num">{{ o.avg_first_response|secs }}</td><td class="num">{{ o.avg_duration|secs }}</td>
+      <td class="num">{{ ('⭐ ' ~ o.avg_rating ~ ' (' ~ o.ratings ~ ')') if o.avg_rating else '—' }}</td>
+      <td class="num">{{ o.low_ratings }}</td><td class="num"><b>{{ o.accepted }}</b></td><td class="num">{{ o.conv }}%</td>
+      <td class="num">{{ o.messages }}</td><td class="num">{{ o.transfers }}</td>
+    </tr>
+    {% else %}<tr><td colspan="12" class="empty">Ma'lumot yo'q</td></tr>{% endfor %}
+  </table></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card"><h2>📅 Kunlik: operatorlar olgan chatlar</h2><div class="chart-box"><canvas id="opDaily"></canvas></div></div>
+  <div class="card"><h2>🗓 Oylik: operatorlar olgan chatlar</h2><div class="chart-box"><canvas id="opMonthly"></canvas></div></div>
+  <div class="card"><h2>📅 Kunlik leadlar</h2><div class="chart-box"><canvas id="leadDaily"></canvas></div></div>
+  <div class="card"><h2>🗓 Oylik leadlar</h2><div class="chart-box"><canvas id="leadMonthly"></canvas></div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>📅 Kunlik jadval</h2>
+    <div class="table-wrap" style="max-height:420px"><table>
+      <tr><th>Sana</th><th class="num">Yangi</th><th class="num">Telefon</th><th class="num">Qabul</th>{% for ds in daily.datasets %}<th class="num">{{ ds.label }}</th>{% endfor %}</tr>
+      {% for i in range(leads.labels|length)|reverse %}
+      <tr><td>{{ leads.dates[i] }}</td><td class="num">{{ leads.new[i] }}</td><td class="num">{{ leads.with_phone[i] }}</td><td class="num">{{ leads.accepted[i] }}</td>
+        {% for ds in daily.datasets %}<td class="num">{{ ds.data[i] }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>🗓 Oylik jadval</h2>
+    <div class="table-wrap"><table>
+      <tr><th>Oy</th><th class="num">Yangi leadlar</th><th class="num">Qabul qilindi</th><th class="num">Konversiya</th></tr>
+      {% for i in range(leads_monthly.labels|length)|reverse %}
+      <tr><td>{{ leads_monthly.labels[i] }}</td><td class="num">{{ leads_monthly.new[i] }}</td><td class="num">{{ leads_monthly.accepted[i] }}</td>
+        <td class="num">{{ ((leads_monthly.accepted[i] / leads_monthly.new[i] * 100)|round(1) ~ '%') if leads_monthly.new[i] else '—' }}</td></tr>
+      {% endfor %}
+    </table></div>
+    <h2 style="margin-top:18px">🔗 Manbalar</h2>
+    <div class="table-wrap"><table>
+      <tr><th>Manba</th><th class="num">Leadlar</th><th class="num">Telefon</th><th class="num">Qabul</th><th class="num">Konv.</th></tr>
+      {% for s in sources %}<tr><td>{{ s.name }}</td><td class="num">{{ s.leads }}</td><td class="num">{{ s.phone }}</td><td class="num">{{ s.accepted }}</td><td class="num">{{ s.conv }}%</td></tr>
+      {% else %}<tr><td colspan="5" class="empty">Ma'lumot yo'q</td></tr>{% endfor %}
+    </table></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const PALETTE = ["#2952cc", "#17915a", "#e08a00", "#7043c9", "#c93a3a", "#0e9aa7", "#8a5a00", "#d6336c", "#5c7cfa", "#495057"];
+const daily = {{ daily|tojson }}, monthly = {{ monthly|tojson }}, leads = {{ leads|tojson }}, lm = {{ leads_monthly|tojson }};
+const color = (ds) => ds.map((d, i) => ({ ...d, backgroundColor: PALETTE[i % PALETTE.length], borderColor: PALETTE[i % PALETTE.length] }));
+const opts = { maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } };
+new Chart(document.getElementById("opDaily"), { type: "bar", data: { labels: daily.labels, datasets: color(daily.datasets) }, options: opts });
+new Chart(document.getElementById("opMonthly"), { type: "bar", data: { labels: monthly.labels, datasets: color(monthly.datasets) }, options: opts });
+new Chart(document.getElementById("leadDaily"), { type: "line", data: { labels: leads.labels, datasets: [
+  { label: "Yangi", data: leads.new, borderColor: PALETTE[0], backgroundColor: PALETTE[0] + "22", fill: true, tension: .3 },
+  { label: "Telefon", data: leads.with_phone, borderColor: PALETTE[2], tension: .3 },
+  { label: "Qabul qilindi", data: leads.accepted, borderColor: PALETTE[1], tension: .3 }] },
+  options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+new Chart(document.getElementById("leadMonthly"), { type: "bar", data: { labels: lm.labels, datasets: [
+  { label: "Yangi", data: lm.new, backgroundColor: PALETTE[0] }, { label: "Qabul qilindi", data: lm.accepted, backgroundColor: PALETTE[1] }] },
+  options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+</script>
+{% endblock %}

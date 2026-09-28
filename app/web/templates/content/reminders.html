@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Avto-eslatmalar{% endblock %}
+{% block heading %}⏰ Avto-eslatmalar{% endblock %}
+{% block content %}
+<div class="flash {{ 'flash-info' if enabled else 'flash-warning' }}">
+  Lead ro'yxatdan o'tgandan keyin belgilangan kunda botga avtomatik xabar yuboriladi (yuborish vaqti: {{ hours }}).
+  Eslatmalar <b>avtomatik to'xtaydi</b>, agar lead «Kursga qabul qilindi» yoki «Rad etdi» statusiga o'tsa, botni bloklasa yoki operator bilan faol chatda bo'lsa.
+  {% if not enabled %}<br>⚠️ Hozir eslatmalar <b>o'chirilgan</b> — <a href="/settings">Sozlamalar</a>da yoqing.{% endif %}
+</div>
+{% macro rem_form(x=None) %}
+<form method="post" action="/content/reminders/save">
+  <input type="hidden" name="id" value="{{ x.id if x else '' }}">
+  <div class="form-row">
+    <div><label>Nechanchi kuni</label><input type="number" min="0" name="day_offset" value="{{ x.day_offset if x else 1 }}" required></div>
+    <div><label>Biriktirilgan material (ixtiyoriy)</label><select name="material_id"><option value="">—</option>
+      {% for m in mats %}<option value="{{ m.id }}" {{ 'selected' if x and x.material_id == m.id }}>{{ m.title }}</option>{% endfor %}</select></div>
+    <div style="align-self:end"><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not x or x.is_active }}> Faol</label></div>
+  </div>
+  <div class="grid grid-2">
+    <div><label>🇺🇿 Matn</label><textarea name="text_uz" rows="5" required>{{ x.text_uz if x else '' }}</textarea></div>
+    <div><label>🇷🇺 Matn</label><textarea name="text_ru" rows="5" required>{{ x.text_ru if x else '' }}</textarea></div>
+  </div>
+  <button class="btn" style="margin-top:10px">💾 Saqlash</button>
+</form>
+{% endmacro %}
+<div class="card"><details class="edit"><summary class="btn">➕ Yangi eslatma</summary>{{ rem_form() }}</details></div>
+{% for x in rows %}
+<div class="card">
+  <div class="card-head"><h2>📅 {{ x.day_offset }}-kun {% if not x.is_active %}<span class="pill pill-danger">nofaol</span>{% endif %}
+    <span class="pill">yuborilgan: {{ sent.get(x.id, 0) }}</span></h2>
+    <form method="post" action="/content/reminders/{{ x.id }}/delete" onsubmit="return confirm('O\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form></div>
+  {{ rem_form(x) }}
+</div>
+{% else %}<div class="card empty">Eslatmalar yo'q</div>{% endfor %}
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Ommaviy xabar{% endblock %}
+{% block heading %}📣 Ommaviy xabar{% endblock %}
+{% block content %}
+{% set draft = request.session.get('bc_draft') or {} %}
+<div class="card">
+  <h2>✉️ Yangi xabar</h2>
+  <form method="post" action="/broadcasts/send" enctype="multipart/form-data" id="bc-form">
+    <div class="form-row">
+      <div><label>Kimga</label><select name="segment">
+        {% for k, v in segments.items() %}<option value="{{ k }}" {{ 'selected' if draft.get('segment') == k }}>{{ v }} ({{ counts[k] }})</option>{% endfor %}</select>
+        <div class="hint">Botni bloklaganlar hisobga olinmaydi</div></div>
+      <div><label>Turi</label><select name="kind" id="kind">
+        {% for k, v in kinds.items() %}<option value="{{ k }}" {{ 'selected' if draft.get('kind') == k }}>{{ v }}</option>{% endfor %}</select></div>
+      <div id="file-wrap" hidden><label>Fayl</label><input type="file" name="file" id="file" accept="image/*,video/*"><div class="hint">Rasm — 10 MB gacha, video — 50 MB gacha</div></div>
+    </div>
+    <div class="field"><label>Matn <span class="muted" id="cnt"></span></label>
+      <textarea name="text" id="text" rows="7" required placeholder="Xabar matni. HTML: <b>qalin</b>, <i>kursiv</i>, <a href='...'>havola</a>">{{ draft.get('text', '') }}</textarea>
+      <div class="hint">Telegram HTML formatlash qo'llab-quvvatlanadi. Rasm/video bilan matn 1024 belgigacha.</div></div>
+    <div class="btns">
+      <button class="btn btn-ghost" name="action" value="test">🧪 Avval o'zimga sinab ko'rish</button>
+      <button class="btn" name="action" value="send" onclick="return confirm('Xabar tanlangan barcha foydalanuvchilarga yuboriladi. Davom etasizmi?')">🚀 Yuborish</button>
+    </div>
+    <p class="hint">Eslatma: sinovdan keyin rasm/videoni qayta tanlashingiz kerak bo'ladi.</p>
+  </form>
+</div>
+<div class="card">
+  <h2>📜 Tarix</h2>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Sana</th><th>Kimga</th><th>Turi</th><th>Matn</th><th class="num">Jami</th><th class="num">Yetkazildi</th><th class="num">Bloklagan</th><th class="num">Xato</th><th>Holat</th><th></th></tr>
+    {% for b in rows %}
+    <tr data-bc="{{ b.id }}">
+      <td>{{ b.id }}</td><td><small>{{ b.created_at|dt }}</small><br><small>{{ b.created_by.full_name if b.created_by else '' }}</small></td>
+      <td>{{ segments.get(b.segment) }}</td><td>{{ kinds.get(b.kind) }}</td><td style="max-width:320px"><small>{{ b.text[:160] }}</small></td>
+      <td class="num">{{ b.total }}</td><td class="num" data-f="sent">{{ b.sent }}</td><td class="num" data-f="blocked">{{ b.blocked }}</td><td class="num" data-f="failed">{{ b.failed }}</td>
+      <td>{% if b.status == 'running' %}<span class="pill pill-active">⏳ Yuborilmoqda</span>{% elif b.status == 'done' %}<span class="pill pill-success">✅ Tugadi</span>{% elif b.status == 'cancelled' %}<span class="pill pill-danger">To'xtatildi</span>{% else %}{{ b.status }}{% endif %}</td>
+      <td>{% if b.status == 'running' %}<form method="post" action="/broadcasts/{{ b.id }}/cancel"><button class="btn btn-sm btn-danger">⏹</button></form>{% endif %}</td>
+    </tr>
+    {% else %}<tr><td colspan="11" class="empty">Hali xabar yuborilmagan</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const kind = document.getElementById("kind"), fw = document.getElementById("file-wrap"), txt = document.getElementById("text"), cnt = document.getElementById("cnt");
+function upd() { fw.hidden = kind.value === "text"; cnt.textContent = `(${txt.value.length}${kind.value === "text" ? "/4096" : "/1024"})`; }
+kind.onchange = upd; txt.oninput = upd; upd();
+ATKO.on("broadcast", (b) => {
+  const tr = document.querySelector(`[data-bc="${b.id}"]`); if (!tr) return;
+  ["sent", "blocked", "failed"].forEach((k) => { const el = tr.querySelector(`[data-f="${k}"]`); if (el) el.textContent = b[k]; });
+  if (b.done) setTimeout(() => location.reload(), 800);
+});
+</script>
+{% endblock %}

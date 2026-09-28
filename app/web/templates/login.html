@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Kirish{% endblock %}
+{% block public %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="brand-logo">한</div>
+    <h1>ATKO Lead platforma</h1>
+    <p>Operator va admin paneli. Kirish Telegram orqali amalga oshiriladi.</p>
+    <button class="btn tg-btn" id="tg-login">✈️ Telegram orqali kirish</button>
+    <div class="login-status" id="status"></div>
+    <p style="font-size:12px;margin-top:18px">Bot sizga «Kirishni tasdiqlash» tugmasini yuboradi. Tasdiqlaganingizdan so'ng panel avtomatik ochiladi.</p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const btn = document.getElementById("tg-login"), st = document.getElementById("status");
+  let timer = null;
+  btn.onclick = async () => {
+    btn.disabled = true;
+    st.textContent = "⏳ Havola tayyorlanmoqda...";
+    try {
+      const r = await fetch("/login/start", { method: "POST" });
+      const j = await r.json();
+      window.open(j.link, "_blank");
+      st.innerHTML = `Telegramda <b>@${j.bot}</b> botida «✅ Kirishni tasdiqlash» tugmasini bosing.<br><a href="${j.link}" target="_blank">Bot ochilmadimi? Shu yerni bosing</a>`;
+      clearInterval(timer);
+      const started = Date.now();
+      timer = setInterval(async () => {
+        if (Date.now() - started > 5 * 60 * 1000) { clearInterval(timer); st.textContent = "⌛ Vaqt tugadi. Qaytadan urinib ko'ring."; btn.disabled = false; return; }
+        const c = await (await fetch("/login/check/" + j.token)).json();
+        if (c.status === "ok") { clearInterval(timer); st.textContent = "✅ Muvaffaqiyatli! Yo'naltirilmoqda..."; location.href = "/"; }
+        else if (c.status === "rejected") { clearInterval(timer); st.textContent = "❌ Kirish rad etildi yoki siz xodim emassiz."; btn.disabled = false; }
+        else if (c.status === "expired") { clearInterval(timer); st.textContent = "⌛ Havola eskirdi. Qaytadan urinib ko'ring."; btn.disabled = false; }
+      }, 2000);
+    } catch (e) { st.textContent = "Xatolik: " + e.message; btn.disabled = false; }
+  };
+})();
+</script>
+{% endblock %}

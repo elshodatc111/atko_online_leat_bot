@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Chatlar{% endblock %}
+{% block heading %}💬 Chatlar{% endblock %}
+{% block content_class %}full{% endblock %}
+{% block content %}
+<div class="chat-layout" id="chat-layout" data-open="{{ open_chat or '' }}">
+  <section class="chat-list">
+    <div class="chat-tabs" id="chat-tabs">
+      <button data-tab="queue" class="active">Navbat <span class="cnt" id="cnt-queue">0</span></button>
+      <button data-tab="mine">Mening <span class="cnt" id="cnt-mine">0</span></button>
+      <button data-tab="active">Faol <span class="cnt" id="cnt-active">0</span></button>
+      <button data-tab="closed">Yopilgan</button>
+    </div>
+    <div class="chat-search"><input type="search" id="chat-q" placeholder="🔍 Ism, telefon yoki username..."></div>
+    <div class="chat-items" id="chat-items"><div class="empty">Yuklanmoqda...</div></div>
+  </section>
+
+  <section class="conv" id="conv">
+    <div class="placeholder" id="conv-empty"><div><div class="big">💬</div><p>Chap tomondan chatni tanlang.<br>Navbatdagi murojaatni olish uchun <b>«Menga ochdim»</b> tugmasini bosing.</p></div></div>
+    <div id="conv-body" hidden style="display:flex;flex-direction:column;height:100%;min-height:0">
+      <div class="conv-head">
+        <button class="btn btn-sm btn-ghost only-mobile" id="back-btn">←</button>
+        <div class="title"><b id="h-name"></b><div class="muted" id="h-sub"></div></div>
+        <div class="btns" id="h-actions"></div>
+      </div>
+      <div class="lock-banner" id="banner" hidden></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="composer" id="composer" hidden>
+        <div class="attach-preview" id="attach-preview" hidden></div>
+        <div class="tools">
+          <label class="btn btn-sm btn-ghost" style="margin:0" title="Rasm, audio, video yoki fayl">📎 Fayl
+            <input type="file" id="file-input" hidden accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip">
+          </label>
+          <button class="btn btn-sm btn-ghost" id="rec-btn" title="Ovozli xabar yozish">🎙 Ovoz</button>
+          <select id="tpl-select" style="width:auto;padding:5px 8px;font-size:12.5px"><option value="">🧩 Shablonlar</option></select>
+          <button class="btn btn-sm btn-light" id="ai-btn" title="AI javob loyihasini tayyorlaydi">🤖 AI taklif</button>
+          <span id="rec-status"></span>
+        </div>
+        <div class="send-row">
+          <textarea id="msg-input" placeholder="Xabar yozing... (Enter — yuborish, Shift+Enter — yangi qator)"></textarea>
+          <button class="btn" id="send-btn">➤</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="lead-panel" id="lead-panel">
+    <div class="placeholder"><div><div class="big">👤</div><p>Lead ma'lumotlari shu yerda ko'rinadi</p></div></div>
+  </aside>
+</div>
+
+<div class="modal-back" id="transfer-modal" hidden>
+  <div class="modal">
+    <h3>🔁 Chatni boshqa operatorga o'tkazish</h3>
+    <div class="field"><select id="transfer-select"></select></div>
+    <div class="btns"><button class="btn" id="transfer-ok">O'tkazish</button><button class="btn btn-ghost" onclick="document.getElementById('transfer-modal').hidden=true">Bekor qilish</button></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/chat.js?v=1"></script>{% endblock %}

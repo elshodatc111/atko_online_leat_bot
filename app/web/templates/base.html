@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ATKO Panel{% endblock %} · ATKO</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
+  <link rel="stylesheet" href="/static/css/app.css?v=1">
+  <script src="/static/vendor/htmx.min.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body data-me="{{ me.id if me else '' }}" data-role="{{ me.role if me else '' }}">
+{% if me %}
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-logo">한</span>
+      <div><b>ATKO</b><small>Lead platforma</small></div>
+    </div>
+    <nav>
+      <div class="nav-title">Asosiy</div>
+      <a href="/" class="{{ 'active' if path == '/' }}">📊 <span>Bosh sahifa</span></a>
+      <a href="/chats" class="{{ 'active' if path.startswith('/chats') }}">💬 <span>Chatlar</span> <em class="badge" id="nav-waiting" hidden>0</em></a>
+      <a href="/leads" class="{{ 'active' if path.startswith('/leads') }}">👥 <span>Leadlar</span></a>
+      <a href="/stats" class="{{ 'active' if path.startswith('/stats') }}">📈 <span>Statistika</span></a>
+      {% if me.is_admin %}
+      <div class="nav-title">Boshqaruv</div>
+      <a href="/operators" class="{{ 'active' if path.startswith('/operators') }}">👨‍💼 <span>Operatorlar</span></a>
+      <a href="/sources" class="{{ 'active' if path.startswith('/sources') }}">🔗 <span>Manba havolalari</span></a>
+      <a href="/broadcasts" class="{{ 'active' if path.startswith('/broadcasts') }}">📣 <span>Ommaviy xabar</span></a>
+      <a href="/faq" class="{{ 'active' if path.startswith('/faq') }}">💡 <span>FAQ va savollar</span></a>
+      <div class="nav-title">Kontent</div>
+      <a href="/content/tariffs" class="{{ 'active' if path.startswith('/content/tariffs') }}">📚 <span>Tariflar</span></a>
+      <a href="/content/info" class="{{ 'active' if path.startswith('/content/info') }}">ℹ️ <span>Markaz ma'lumotlari</span></a>
+      <a href="/content/materials" class="{{ 'active' if path.startswith('/content/materials') }}">📄 <span>Materiallar (PDF)</span></a>
+      <a href="/content/reminders" class="{{ 'active' if path.startswith('/content/reminders') }}">⏰ <span>Avto-eslatmalar</span></a>
+      <a href="/content/templates" class="{{ 'active' if path.startswith('/content/templates') }}">🧩 <span>Javob shablonlari</span></a>
+      <a href="/texts" class="{{ 'active' if path.startswith('/texts') }}">✏️ <span>Bot matnlari</span></a>
+      <div class="nav-title">Tizim</div>
+      <a href="/exports" class="{{ 'active' if path.startswith('/exports') }}">📑 <span>Excel eksport</span></a>
+      <a href="/audit" class="{{ 'active' if path.startswith('/audit') }}">🧾 <span>Harakatlar jurnali</span></a>
+      <a href="/settings" class="{{ 'active' if path.startswith('/settings') }}">⚙️ <span>Sozlamalar</span></a>
+      {% endif %}
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <h1>{% block heading %}{% endblock %}</h1>
+      <div class="topbar-right">
+        <button id="notif-btn" class="btn btn-sm btn-ghost" hidden title="Brauzer bildirishnomalarini yoqish">🔔 Bildirishnomalarni yoqish</button>
+        <label class="switch" title="Onlayn bo'lsangiz yangi murojaatlar haqida Telegramga ham xabar keladi">
+          <input type="checkbox" id="online-toggle" {{ 'checked' if me.is_online }}>
+          <span class="slider"></span><span class="switch-label" id="online-label">{{ 'Onlayn' if me.is_online else 'Oflayn' }}</span>
+        </label>
+        <div class="me">
+          <b>{{ me.full_name }}</b>
+          <small>{{ 'Admin' if me.is_admin else 'Operator' }} · {{ me.display_name }}</small>
+        </div>
+        <a href="/logout" class="btn btn-sm btn-ghost" title="Chiqish">⎋</a>
+      </div>
+    </header>
+    <div class="content {% block content_class %}{% endblock %}">
+      {% for f in flashes %}<div class="flash flash-{{ f.level }}">{{ f.text }}</div>{% endfor %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+<div id="toasts"></div>
+<script src="/static/js/app.js?v=1"></script>
+{% else %}
+{% block public %}{% endblock %}
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Manba havolalari{% endblock %}
+{% block heading %}🔗 Manba havolalari{% endblock %}
+{% block content %}
+<div class="flash flash-info">
+  Har bir platforma (Instagram, Telegram kanal, reklama, bloger...) uchun alohida havola yarating. Foydalanuvchi shu havola orqali botga kirsa, lead qaysi manbadan kelgani avtomatik yoziladi.
+  Asosiy havola (manbasiz): <code>{{ bot_link }}</code>
+</div>
+<div class="card">
+  <h2>➕ Yangi manba</h2>
+  <form method="post" action="/sources/add" class="form-row">
+    <div><label>Kod (havolada ko'rinadi)</label><input type="text" name="code" required placeholder="instagram_reels"><div class="hint">Faqat lotin harflari, raqam, _ va -</div></div>
+    <div><label>Nomi</label><input type="text" name="name" required placeholder="Instagram Reels reklama"></div>
+    <div><label>Izoh</label><input type="text" name="note" placeholder="Masalan: sentabr kampaniyasi"></div>
+    <div style="align-self:end"><button class="btn">Yaratish</button></div>
+  </form>
+</div>
+<div class="card">
+  <h2>Manbalar</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Nomi</th><th>Havola</th><th class="num">Jami leadlar</th><th class="num">Telefon</th><th class="num">Qabul qilindi</th><th class="num">Konversiya</th><th>QR</th><th></th></tr>
+    {% for x in rows %}
+    {% set n = counts.get(x.id, 0) %}
+    <tr>
+      <td><b>{{ x.name }}</b>{% if x.note %}<br><small>{{ x.note }}</small>{% endif %}</td>
+      <td><code>{{ links[x.id] }}</code> <button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText('{{ links[x.id] }}');ATKO.toast('Havola nusxalandi','success')">📋</button></td>
+      <td class="num">{{ n }}</td><td class="num">{{ phones.get(x.id, 0) }}</td><td class="num">{{ acc.get(x.id, 0) }}</td>
+      <td class="num">{{ ((acc.get(x.id, 0) / n * 100)|round(1) ~ '%') if n else '—' }}</td>
+      <td><a href="/sources/{{ x.id }}/qr.svg" target="_blank" class="btn btn-sm btn-ghost">▦ QR</a></td>
+      <td><details class="edit"><summary class="btn btn-sm btn-ghost">✏️</summary>
+        <form method="post" action="/sources/{{ x.id }}/edit">
+          <div class="field"><label>Nomi</label><input type="text" name="name" value="{{ x.name }}"></div>
+          <div class="field"><label>Izoh</label><input type="text" name="note" value="{{ x.note or '' }}"></div>
+          <button class="btn btn-sm">Saqlash</button></form></details></td>
+    </tr>
+    {% endfor %}
+    <tr><td><i>To'g'ridan-to'g'ri (manbasiz)</i></td><td><code>{{ bot_link }}</code></td><td class="num">{{ direct }}</td><td></td><td></td><td></td><td></td><td></td></tr>
+  </table></div>
+</div>
+<div class="card">
+  <h2>📊 Oxirgi 30 kun</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Manba</th><th class="num">Leadlar</th><th class="num">Telefon</th><th class="num">Qabul</th><th class="num">Konversiya</th></tr>
+    {% for s in month %}<tr><td>{{ s.name }}</td><td class="num">{{ s.leads }}</td><td class="num">{{ s.phone }}</td><td class="num">{{ s.accepted }}</td><td class="num">{{ s.conv }}%</td></tr>
+    {% else %}<tr><td colspan="5" class="empty">Ma'lumot yo'q</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

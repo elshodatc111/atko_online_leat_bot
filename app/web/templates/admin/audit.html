@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pagination %}
+{% block title %}Harakatlar jurnali{% endblock %}
+{% block heading %}🧾 Harakatlar jurnali{% endblock %}
+{% block content %}
+<div class="card">
+  <form class="filters" method="get">
+    <div><label>Xodim</label><select name="staff_id"><option value="">Barchasi</option>
+      {% for s in staff_list %}<option value="{{ s.id }}" {{ 'selected' if f.staff_id == s.id|string }}>{{ s.full_name }}</option>{% endfor %}</select></div>
+    <div><label>Harakat</label><select name="action"><option value="">Barchasi</option>
+      {% for k, v in actions.items() %}<option value="{{ k }}" {{ 'selected' if f.action == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Dan</label><input type="date" name="start" value="{{ f.start }}"></div>
+    <div><label>Gacha</label><input type="date" name="end" value="{{ f.end }}"></div>
+    <div class="btns"><button class="btn">Filtrlash</button>
+      <button class="btn btn-ghost" formmethod="post" formaction="/exports/audit">📑 Excel → Telegramga</button></div>
+  </form>
+</div>
+<div class="card">
+  <h2>Jami: {{ total }}</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Vaqt</th><th>Xodim</th><th>Harakat</th><th>Obyekt</th><th>Tafsilot</th></tr>
+    {% for r in rows %}
+    <tr><td><small>{{ r.created_at|dt }}</small></td><td>{{ r.staff.full_name if r.staff else 'Tizim' }}</td>
+      <td>{{ actions.get(r.action, r.action) }}</td>
+      <td>{% if r.entity == 'lead' and r.entity_id %}<a href="/leads/{{ r.entity_id }}">Lead #{{ r.entity_id }}</a>
+          {% elif r.entity == 'chat' and r.entity_id %}<a href="/chats/{{ r.entity_id }}">Chat #{{ r.entity_id }}</a>
+          {% else %}{{ r.entity or '' }}{{ (' #' ~ r.entity_id) if r.entity_id else '' }}{% endif %}</td>
+      <td><small>{{ r.details or '' }}</small></td></tr>
+    {% else %}<tr><td colspan="5" class="empty">Yozuvlar yo'q</td></tr>{% endfor %}
+  </table></div>
+  {{ pagination(page, pages, 'staff_id=' ~ f.staff_id ~ '&action=' ~ f.action ~ '&start=' ~ f.start ~ '&end=' ~ f.end) }}
+</div>
+{% endblock %}

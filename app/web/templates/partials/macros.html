@@ -1,0 +1,34 @@
+{% macro pagination(page, pages, base_query) -%}
+{% if pages > 1 %}
+<div class="pagination">
+  {% for p in range(1, pages + 1) %}
+    {% if p == page %}<span class="cur">{{ p }}</span>
+    {% elif p <= 2 or p > pages - 2 or (p >= page - 2 and p <= page + 2) %}<a href="?{{ base_query }}&page={{ p }}">{{ p }}</a>
+    {% elif p == 3 or p == pages - 2 %}<span>…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro status_pill(status) -%}
+<span class="pill pill-{{ status }}">{{ LEAD_STATUSES.get(status, status) }}</span>
+{%- endmacro %}
+
+{% macro message_bubble(m, lead_name) -%}
+{% if m.sender == 'system' %}
+<div class="msg system">ℹ️ {{ m.text }}<span class="time">{{ m.date }} {{ m.time }}</span></div>
+{% else %}
+<div class="msg {{ m.sender }}{{ ' action' if m.sender == 'lead' and m.text and (m.text.startswith('🔘') or m.text.startswith('📱 Kontakt') or m.text.startswith('/')) }}">
+  <div class="who">{% if m.sender == 'operator' %}👨‍💼 {{ m.staff or 'Operator' }}{% elif m.sender == 'lead' %}{{ lead_name }}{% elif m.sender == 'ai' %}🤖 AI{% else %}🤖 Bot{% endif %}</div>
+  {% if m.file_url %}
+    {% if m.kind == 'photo' %}<img src="{{ m.file_url }}" loading="lazy" onclick="window.open(this.src)">
+    {% elif m.kind in ('voice', 'audio') or (m.mime or '').startswith('audio/') %}<audio controls preload="none" src="{{ m.file_url }}"></audio>
+    {% elif m.kind in ('video', 'video_note') %}<video controls preload="metadata" src="{{ m.file_url }}"></video>
+    {% else %}<a class="file" href="{{ m.file_url }}" target="_blank">📎 {{ m.file_name or 'fayl' }}</a>{% endif %}
+  {% endif %}
+  {% if m.text %}<div class="text">{{ m.text }}</div>{% endif %}
+  {% if m.transcript %}<div class="transcript">📝 {{ m.transcript }}</div>{% endif %}
+  <div class="time">{{ m.date }} {{ m.time }}</div>
+</div>
+{% endif %}
+{%- endmacro %}

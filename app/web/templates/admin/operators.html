@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Operatorlar{% endblock %}
+{% block heading %}👨‍💼 Operatorlar{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>➕ Yangi xodim qo'shish</h2>
+  <form method="post" action="/operators/add">
+    <div class="form-row">
+      <div><label>F.I.Sh (panel uchun)</label><input type="text" name="full_name" required placeholder="Dilnoza Karimova"></div>
+      <div><label>Leadga ko'rinadigan ism</label><input type="text" name="display_name" required placeholder="Menejer Dilnoza"><div class="hint">Chatda va «Chat yopildi» xabarida shu ism ko'rinadi</div></div>
+      <div><label>Rol</label><select name="role"><option value="operator">Operator</option><option value="admin">Admin</option></select></div>
+      <div><label>Telegram ID (ixtiyoriy)</label><input type="text" name="tg_id" placeholder="Bo'sh qoldiring — taklif havolasi yaratiladi"><div class="hint">Xodim botga /myid yozib ID sini bilishi mumkin</div></div>
+    </div>
+    <button class="btn">Qo'shish</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Xodimlar ro'yxati</h2>
+  <div class="table-wrap"><table>
+    <tr><th></th><th>Xodim</th><th>Rol</th><th>Telegram</th><th class="num">Bugun chat</th><th class="num">Oy: chat</th><th class="num">Oy: qabul</th><th class="num">Oy: baho</th><th class="num">Oy: 1-javob</th><th>Oxirgi faollik</th><th></th></tr>
+    {% for st in rows %}
+    {% set m = month.get(st.id, {}) %}{% set t = today.get(st.id, {}) %}
+    <tr {% if not st.is_active %}style="opacity:.55"{% endif %}>
+      <td><span class="dot {{ 'on' if st.id in online else '' }}" title="{{ 'Panelda' if st.id in online else 'Panelda emas' }}"></span></td>
+      <td><b>{{ st.full_name }}</b><br><small>👁 {{ st.display_name }}</small>{% if not st.is_active %}<br><span class="pill pill-danger">O'chirilgan</span>{% endif %}</td>
+      <td>{{ 'Admin' if st.role == 'admin' else 'Operator' }}<br><small>{{ '🟢 Onlayn' if st.is_online else '⚪ Oflayn' }}</small></td>
+      <td>{% if st.tg_id %}<code>{{ st.tg_id }}</code>{% if st.tg_username %}<br><small>@{{ st.tg_username }}</small>{% endif %}
+          {% elif st.id in invites %}<small>Taklif havolasi:</small><br><code>{{ invites[st.id] }}</code><br><button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText('{{ invites[st.id] }}');ATKO.toast('Nusxalandi','success')">📋 Nusxalash</button>
+          {% else %}—{% endif %}</td>
+      <td class="num">{{ t.get('chats', 0) }}</td>
+      <td class="num">{{ m.get('chats', 0) }}</td>
+      <td class="num">{{ m.get('accepted', 0) }}</td>
+      <td class="num">{{ m.get('avg_rating') or '—' }}</td>
+      <td class="num">{{ m.get('avg_first_response')|secs }}</td>
+      <td><small>{{ st.last_seen|dt if st.last_seen else '—' }}</small></td>
+      <td>
+        <details class="edit"><summary class="btn btn-sm btn-ghost">✏️</summary>
+          <form method="post" action="/operators/{{ st.id }}/edit">
+            <div class="field"><label>F.I.Sh</label><input type="text" name="full_name" value="{{ st.full_name }}"></div>
+            <div class="field"><label>Leadga ko'rinadigan ism</label><input type="text" name="display_name" value="{{ st.display_name }}"></div>
+            {% if st.id != me.id %}<div class="field"><label>Rol</label><select name="role"><option value="operator">Operator</option><option value="admin" {{ 'selected' if st.role == 'admin' }}>Admin</option></select></div>{% endif %}
+            <button class="btn btn-sm">Saqlash</button>
+          </form>
+          {% if st.id != me.id %}
+          <form method="post" action="/operators/{{ st.id }}/toggle" style="margin-top:8px" onsubmit="return confirm('Ishonchingiz komilmi?')">
+            <button class="btn btn-sm {{ 'btn-success' if not st.is_active else 'btn-danger' }}">{{ '♻️ Qayta faollashtirish' if not st.is_active else "🗑 O'chirish" }}</button>
+          </form>
+          <form method="post" action="/operators/{{ st.id }}/invite" style="margin-top:8px" onsubmit="return confirm('Yangi taklif havolasi yaratilsinmi? Hozirgi Telegram akkaunt uziladi.')">
+            <button class="btn btn-sm btn-ghost">🔗 Yangi taklif havolasi</button>
+          </form>{% endif %}
+        </details>
+      </td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  <p class="hint">O'chirilgan xodim panelga kira olmaydi va bildirishnoma olmaydi, lekin uning statistikasi saqlanadi. Batafsil statistika — <a href="/stats">Statistika</a> bo'limida.</p>
+</div>
+{% endblock %}

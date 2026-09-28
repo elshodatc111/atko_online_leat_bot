@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Javob shablonlari{% endblock %}
+{% block heading %}🧩 Javob shablonlari{% endblock %}
+{% block content %}
+<div class="flash flash-info">Operatorlar chat oynasidagi «🧩 Shablonlar» ro'yxatidan bir bosishda tayyor javobni qo'yishadi. Lead tiliga qarab o'zbekcha yoki ruscha variant tanlanadi.</div>
+{% macro tpl_form(x=None) %}
+<form method="post" action="/content/templates/save">
+  <input type="hidden" name="id" value="{{ x.id if x else '' }}">
+  <div class="form-row">
+    <div><label>Sarlavha</label><input type="text" name="title" value="{{ x.title if x else '' }}" required></div>
+    <div><label>Tartib</label><input type="number" name="sort" value="{{ x.sort if x else 0 }}"></div>
+  </div>
+  <div class="grid grid-2">
+    <div><label>🇺🇿 Matn</label><textarea name="text_uz" rows="3" required>{{ x.text_uz if x else '' }}</textarea></div>
+    <div><label>🇷🇺 Matn</label><textarea name="text_ru" rows="3" required>{{ x.text_ru if x else '' }}</textarea></div>
+  </div>
+  <button class="btn btn-sm" style="margin-top:8px">💾 Saqlash</button>
+</form>
+{% endmacro %}
+<div class="card"><details class="edit"><summary class="btn">➕ Yangi shablon</summary>{{ tpl_form() }}</details></div>
+<div class="card">
+  {% for x in rows %}
+  <div style="border-bottom:1px solid var(--line);padding:10px 0">
+    <div class="card-head" style="margin:0"><div><b>{{ x.title }}</b><br><small>{{ x.text_uz }}</small></div>
+      <form method="post" action="/content/templates/{{ x.id }}/delete"><button class="btn btn-sm btn-ghost">🗑</button></form></div>
+    <details class="edit"><summary class="btn btn-sm btn-ghost" style="margin-top:6px">✏️ Tahrirlash</summary>{{ tpl_form(x) }}</details>
+  </div>
+  {% else %}<p class="empty">Shablonlar yo'q</p>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Sozlamalar{% endblock %}
+{% block heading %}⚙️ Sozlamalar{% endblock %}
+{% block content %}
+<form method="post" action="/settings">
+<div class="grid grid-2">
+  <div class="card">
+    <h2>🕗 Ish vaqti</h2>
+    <div class="form-row">
+      <div><label>Boshlanishi</label><input type="time" name="work_start" value="{{ s.work_start }}"></div>
+      <div><label>Tugashi</label><input type="time" name="work_end" value="{{ s.work_end }}"></div>
+    </div>
+    <label>Dam olish kunlari</label>
+    <div class="btns" style="margin-bottom:10px">
+      {% for d in weekdays %}<label class="check"><input type="checkbox" name="days_off" value="{{ loop.index0 }}" {{ 'checked' if loop.index0 in s.days_off }}> {{ d }}</label>{% endfor %}
+    </div>
+    <p class="hint">Bayram kunlari — pastdagi «Bayram kunlari» bo'limida.</p>
+  </div>
+
+  <div class="card">
+    <h2>💬 Operator chatlari</h2>
+    <div class="form-row">
+      <div><label>Bir operatorda maks. faol chat</label><input type="number" min="1" name="max_chats_per_operator" value="{{ s.max_chats_per_operator }}"></div>
+      <div><label>Hech kim olmasa — adminga xabar (daq.)</label><input type="number" min="1" name="sla_wait_minutes" value="{{ s.sla_wait_minutes }}"></div>
+      <div><label>Faol chatda javob kechiksa — ogohlantirish (daq.)</label><input type="number" min="1" name="idle_reply_minutes" value="{{ s.idle_reply_minutes }}"></div>
+    </div>
+    <label class="check"><input type="checkbox" name="sla_notify_lead" {{ 'checked' if s.sla_notify_lead }}> Kechikishda leadga uzr xabari yuborilsin</label>
+  </div>
+
+  <div class="card">
+    <h2>📎 Fayl hajmi cheklovlari (MB)</h2>
+    <div class="form-row">
+      <div><label>Rasm</label><input type="number" min="1" max="20" name="max_photo_mb" value="{{ s.max_photo_mb }}"></div>
+      <div><label>Audio / ovozli</label><input type="number" min="1" max="20" name="max_audio_mb" value="{{ s.max_audio_mb }}"></div>
+      <div><label>Video</label><input type="number" min="1" max="20" name="max_video_mb" value="{{ s.max_video_mb }}"></div>
+      <div><label>Hujjat</label><input type="number" min="1" max="20" name="max_document_mb" value="{{ s.max_document_mb }}"></div>
+    </div>
+    <p class="hint">Telegram bot 20 MB dan katta faylni qabul qila olmaydi. ffmpeg: {{ '✅ o\'rnatilgan (operator ovozli xabari «voice» bo\'lib boradi)' if ffmpeg else '❌ yo\'q (operator ovozli xabari audio fayl bo\'lib boradi — bu normal)' }}</p>
+  </div>
+
+  <div class="card">
+    <h2>🎓 Tutor va ⏰ eslatmalar</h2>
+    <label class="check"><input type="checkbox" name="tutor_enabled" {{ 'checked' if s.tutor_enabled }}> Tutor rejimi yoqilgan</label>
+    <div class="field" style="margin-top:8px"><label>Kursga qabul qilinmaganlar uchun kunlik bepul tutor savollari</label><input type="number" min="0" name="tutor_trial_daily" value="{{ s.tutor_trial_daily }}"><div class="hint">0 — faqat ATKO o'quvchilari (status «Kursga qabul qilindi») foydalana oladi</div></div>
+    <hr>
+    <label class="check"><input type="checkbox" name="reminders_enabled" {{ 'checked' if s.reminders_enabled }}> Avto-eslatmalar yoqilgan</label>
+    <div class="form-row" style="margin-top:8px">
+      <div><label>Yuborish vaqti: dan</label><input type="time" name="reminder_hours_from" value="{{ s.reminder_hours_from }}"></div>
+      <div><label>gacha</label><input type="time" name="reminder_hours_to" value="{{ s.reminder_hours_to }}"></div>
+    </div>
+    <hr>
+    <label class="check"><input type="checkbox" name="faq_auto_enabled" {{ 'checked' if s.faq_auto_enabled }}> FAQ savollarini har kuni avtomatik tahlil qilish</label>
+    <div class="form-row" style="margin-top:8px">
+      <div><label>Tahlil soati (0–23)</label><input type="number" min="0" max="23" name="faq_auto_hour" value="{{ s.faq_auto_hour }}"></div>
+      <div><label>Taklif uchun min. savollar soni</label><input type="number" min="1" name="faq_min_count" value="{{ s.faq_min_count }}"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="ai">
+  <div class="card-head"><h2>🤖 OpenAI sozlamalari</h2></div>
+  <div class="grid grid-2">
+    <div>
+      <label class="check"><input type="checkbox" name="ai_enabled" {{ 'checked' if s.ai_enabled }}> AI yoqilgan</label>
+      <label class="check"><input type="checkbox" name="ai_transcribe_voice" {{ 'checked' if s.ai_transcribe_voice }}> Ovozli xabarlarni matnga o'girish</label>
+      <label class="check"><input type="checkbox" name="ai_auto_escalate" {{ 'checked' if s.ai_auto_escalate }}> AI kerak bo'lganda avtomatik operatorga ulasin (shikoyat, murakkab savol, kursga tayyor)</label>
+      <div class="field" style="margin-top:10px"><label>OpenAI API kalit</label>
+        <input type="password" name="openai_api_key" placeholder="{{ masked_key or 'sk-...' }}" autocomplete="off">
+        <div class="hint">{% if key_from_env %}Hozir .env faylidagi kalit ishlatilmoqda ({{ masked_key }}).{% elif masked_key %}Panelda saqlangan kalit: {{ masked_key }} <label class="check" style="display:inline-flex"><input type="checkbox" name="clear_api_key"> o'chirish</label>{% else %}Kalit kiritilmagan.{% endif %} Bo'sh qoldirsangiz o'zgarmaydi.</div></div>
+      <div class="form-row">
+        <div><label>Asosiy model</label><input type="text" name="ai_model" value="{{ s.ai_model }}"><div class="hint">Masalan: gpt-5.4-mini, gpt-5.4, gpt-4.1-mini</div></div>
+        <div><label>Reasoning effort</label><select name="ai_reasoning_effort">
+          {% for v in ['', 'minimal', 'low', 'medium', 'high'] %}<option value="{{ v }}" {{ 'selected' if s.ai_reasoning_effort == v }}>{{ v or "yo'q (yuborilmaydi)" }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="form-row">
+        <div><label>Ovozni matnga o'girish modeli</label><input type="text" name="ai_transcribe_model" value="{{ s.ai_transcribe_model }}"></div>
+        <div><label>Embedding modeli (tutor darsliklari)</label><input type="text" name="ai_embedding_model" value="{{ s.ai_embedding_model }}"></div>
+      </div>
+    </div>
+    <div>
+      <div class="form-row">
+        <div><label>Kunlik token limiti</label><input type="number" min="0" name="ai_daily_token_limit" value="{{ s.ai_daily_token_limit }}"><div class="hint">0 — cheklovsiz. Limitga yetganda AI ertasi kungacha o'chadi, bot oddiy rejimda ishlaydi.</div></div>
+        <div><label>Suhbat xotirasi (xabarlar)</label><input type="number" min="2" max="40" name="ai_history_messages" value="{{ s.ai_history_messages }}"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Narx: 1M kirish tokeni ($)</label><input type="text" name="ai_price_input_per_1m" value="{{ s.ai_price_input_per_1m }}"></div>
+        <div><label>Narx: 1M chiqish tokeni ($)</label><input type="text" name="ai_price_output_per_1m" value="{{ s.ai_price_output_per_1m }}"></div>
+      </div>
+      <div class="hint" style="margin-top:-6px;margin-bottom:10px">Taxminiy xarajatni ko'rsatish uchun. Joriy narxlarni platform.openai.com/pricing sahifasidan oling.</div>
+      <div class="field"><label>AI uchun qo'shimcha ko'rsatmalar</label><textarea name="ai_extra_instructions" rows="4" placeholder="Masalan: Hozir sentabr aksiyasi — birinchi oyga 20% chegirma haqida ayting.">{{ s.ai_extra_instructions }}</textarea></div>
+    </div>
+  </div>
+  <div class="kpis" style="margin-top:6px">
+    <div class="kpi"><div class="label">Bugun so'rovlar</div><div class="value">{{ today_usage.requests }}</div></div>
+    <div class="kpi"><div class="label">Bugun tokenlar</div><div class="value">{{ '{:,}'.format(today_usage.input_tokens + today_usage.output_tokens).replace(',', ' ') }}</div><div class="sub">limit: {{ '{:,}'.format(s.ai_daily_token_limit).replace(',', ' ') if s.ai_daily_token_limit else 'cheksiz' }}</div></div>
+    <div class="kpi"><div class="label">Bugun taxminiy xarajat</div><div class="value">${{ '%.3f'|format(today_cost) }}</div></div>
+    <div class="kpi"><div class="label">Bugun xatolar</div><div class="value">{{ today_usage.errors }}</div></div>
+  </div>
+</div>
+<div style="position:sticky;bottom:12px;z-index:5;margin-bottom:18px"><button class="btn" style="box-shadow:0 6px 20px rgba(41,82,204,.35)">💾 Sozlamalarni saqlash</button></div>
+</form>
+
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h2>🧪 AI ni tekshirish</h2>
+      <form method="post" action="/settings/ai-test"><button class="btn btn-ghost">AI ga sinov so'rovi yuborish</button></form></div>
+    <h3>📊 AI sarfi (oxirgi 31 kun)</h3>
+    <div class="table-wrap" style="max-height:300px"><table>
+      <tr><th>Sana</th><th class="num">So'rovlar</th><th class="num">Kirish</th><th class="num">Chiqish</th><th class="num">Xato</th><th class="num">≈ $</th></tr>
+      {% for u in usage %}<tr><td>{{ u.day.strftime('%d.%m.%Y') }}</td><td class="num">{{ u.requests }}</td><td class="num">{{ u.inp }}</td><td class="num">{{ u.out }}</td><td class="num">{{ u.errors }}</td><td class="num">{{ '%.3f'|format(u.cost) }}</td></tr>
+      {% else %}<tr><td colspan="6" class="empty">Hali so'rov yo'q</td></tr>{% endfor %}
+    </table></div>
+  </div>
+  <div class="card" id="holidays">
+    <h2>🎉 Bayram kunlari</h2>
+    <form method="post" action="/settings/holidays/add" class="form-row">
+      <div><label>Sana</label><input type="date" name="day" required></div>
+      <div><label>Nomi</label><input type="text" name="name" required placeholder="Mustaqillik kuni"></div>
+      <div style="align-self:end"><button class="btn">Qo'shish</button></div>
+    </form>
+    <table>
+      {% for h in holidays %}<tr><td>{{ h.day.strftime('%d.%m.%Y') }}</td><td>{{ h.name }}</td>
+        <td><form method="post" action="/settings/holidays/{{ h.id }}/delete"><button class="btn btn-sm btn-ghost">🗑</button></form></td></tr>
+      {% else %}<tr><td class="empty">Bayram kunlari kiritilmagan</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

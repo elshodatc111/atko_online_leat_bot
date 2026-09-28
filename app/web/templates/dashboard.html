@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Bosh sahifa{% endblock %}
+{% block heading %}📊 Bosh sahifa{% endblock %}
+{% block head %}<script src="/static/vendor/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+<div class="flash {{ 'flash-success' if working else 'flash-warning' }}">
+  {{ '🟢 Hozir ish vaqti' if working else '🌙 Hozir ish vaqtidan tashqari' }} (operatorlar: {{ hours }}). AI-yordamchi 24/7 javob beradi.
+</div>
+<div class="kpis">
+  <div class="kpi accent"><div class="label">Bugun yangi leadlar</div><div class="value">{{ d.today }}</div><div class="sub">Shu oy: {{ d.month }}</div></div>
+  <div class="kpi"><div class="label">Jami leadlar</div><div class="value">{{ d.total }}</div><div class="sub">Telefon bilan: {{ d.with_phone }}</div></div>
+  <div class="kpi"><div class="label">✅ Kursga qabul qilingan</div><div class="value">{{ d.accepted_total }}</div><div class="sub">Shu oy: {{ d.accepted_month }} · konversiya {{ d.conversion }}%</div></div>
+  <div class="kpi"><div class="label">⏳ Navbatdagi murojaatlar</div><div class="value" style="color:{{ '#c93a3a' if d.waiting else 'inherit' }}">{{ d.waiting }}</div><div class="sub">Faol chatlar: {{ d.active }} · bugun: {{ d.chats_today }}</div></div>
+  <div class="kpi"><div class="label">⭐ O'rtacha baho</div><div class="value">{{ d.avg_rating or '—' }}</div><div class="sub">operatorlar xizmati</div></div>
+  <div class="kpi"><div class="label">🤖 AI bugun</div><div class="value">{{ usage.requests }}</div><div class="sub">so'rov · {{ '{:,}'.format(usage.input_tokens + usage.output_tokens).replace(',', ' ') }} token</div></div>
+</div>
+
+{% if waiting %}
+<div class="card">
+  <div class="card-head"><h2>⏳ Navbatda kutayotganlar</h2><a class="btn btn-sm" href="/chats">Chatlarga o'tish</a></div>
+  <div class="table-wrap"><table>
+    <tr><th>Lead</th><th>Telefon</th><th>Sabab</th><th>So'rov vaqti</th><th></th></tr>
+    {% for c in waiting %}
+    <tr><td>{{ c.lead.display }}</td><td>{{ c.lead.phone or '—' }}</td><td>{{ REASON_LABELS.get(c.reason, c.reason) }}</td><td>{{ c.requested_at|dt }}</td>
+      <td><a class="btn btn-sm btn-success" href="/chats/{{ c.id }}">Ochish</a></td></tr>
+    {% endfor %}
+  </table></div>
+</div>
+{% endif %}
+
+<div class="grid grid-2">
+  <div class="card"><h2>📅 Leadlar — oxirgi 30 kun</h2><div class="chart-box"><canvas id="daily"></canvas></div></div>
+  <div class="card"><h2>🗓 Leadlar — oylar kesimida</h2><div class="chart-box"><canvas id="monthly"></canvas></div></div>
+</div>
+<div class="grid grid-3">
+  <div class="card"><h2>🎯 Maqsadlar</h2><div class="chart-box"><canvas id="goals"></canvas></div></div>
+  <div class="card"><h2>📌 Statuslar (voronka)</h2><div class="chart-box"><canvas id="statuses"></canvas></div></div>
+  <div class="card">
+    <h2>👤 Mening bugungi natijam</h2>
+    <dl class="kv">
+      <dt>Olingan chatlar</dt><dd>{{ mine.chats }}</dd>
+      <dt>Yopilgan</dt><dd>{{ mine.closed }}</dd>
+      <dt>Birinchi javob</dt><dd>{{ mine.avg_first_response|secs }}</dd>
+      <dt>O'rtacha baho</dt><dd>{{ mine.avg_rating or '—' }}</dd>
+      <dt>Qabul qilindi</dt><dd>{{ mine.accepted }}</dd>
+      <dt>Xabarlar</dt><dd>{{ mine.messages }}</dd>
+    </dl>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>🔗 Manbalar (30 kun)</h2>{% if me.is_admin %}<a href="/sources" class="btn btn-sm btn-ghost">Havolalarni boshqarish</a>{% endif %}</div>
+  <div class="table-wrap"><table>
+    <tr><th>Manba</th><th>Kod</th><th class="num">Leadlar</th><th class="num">Telefon</th><th class="num">Qabul qilindi</th><th class="num">Konversiya</th></tr>
+    {% for s in sources %}<tr><td>{{ s.name }}</td><td><code>{{ s.code }}</code></td><td class="num">{{ s.leads }}</td><td class="num">{{ s.phone }}</td><td class="num">{{ s.accepted }}</td><td class="num">{{ s.conv }}%</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">Hozircha ma'lumot yo'q</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const C = { blue: "#2952cc", green: "#17915a", orange: "#e08a00", purple: "#7043c9", red: "#c93a3a", teal: "#0e9aa7", gray: "#8a93a8" };
+const series = {{ series|tojson }}, monthly = {{ monthly|tojson }}, goals = {{ goals|tojson }}, statuses = {{ d.by_status|tojson }};
+Chart.defaults.font.family = getComputedStyle(document.documentElement).fontFamily;
+new Chart(document.getElementById("daily"), { type: "line", data: { labels: series.labels, datasets: [
+  { label: "Yangi leadlar", data: series.new, borderColor: C.blue, backgroundColor: C.blue + "22", fill: true, tension: .3 },
+  { label: "Telefon qoldirgan", data: series.with_phone, borderColor: C.orange, tension: .3 },
+  { label: "Qabul qilindi", data: series.accepted, borderColor: C.green, tension: .3 } ] },
+  options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+new Chart(document.getElementById("monthly"), { type: "bar", data: { labels: monthly.labels, datasets: [
+  { label: "Yangi leadlar", data: monthly.new, backgroundColor: C.blue },
+  { label: "Qabul qilindi", data: monthly.accepted, backgroundColor: C.green } ] },
+  options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+new Chart(document.getElementById("goals"), { type: "doughnut", data: { labels: Object.keys(goals), datasets: [{ data: Object.values(goals), backgroundColor: [C.blue, C.orange, C.green, C.purple, C.gray] }] }, options: { maintainAspectRatio: false } });
+new Chart(document.getElementById("statuses"), { type: "bar", data: { labels: Object.keys(statuses), datasets: [{ label: "Leadlar", data: Object.values(statuses), backgroundColor: [C.teal, C.blue, C.orange, C.purple, C.green, C.red] }] },
+  options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } } });
+ATKO.on("chat_new", () => setTimeout(() => location.reload(), 1500));
+</script>
+{% endblock %}
