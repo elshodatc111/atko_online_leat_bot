@@ -10,18 +10,19 @@ from aiogram.types import Message as TgMessage
 from sqlalchemy import select
 
 from ...db import session_scope
-from ...models import Chat, Faq, InfoPage, Material, Tariff
-from ...services import ai, settings
+from ...models import Chat, InfoPage, SubscriptionPlan, Tariff
+from ...services import ai, settings, subscriptions, worktime
 from ...services.knowledge import CATEGORY_LABELS
 from ...services.notify import hub, telegram_staff
-from ..actions import operator_request, require_phone, send_material, trial_request
+from ..actions import enroll_request, last_payments, operator_request, require_phone, show_buy, start_payment
 from ..common import esc, get_lead, get_or_create_lead, send_menu, strip_placeholders, update_lead
 from ..keyboards import cta_kb, ib, lang_kb, quiz_level_kb, skip_comment_kb
-from ..texts import all_button_texts, t
+from ..texts import all_button_texts, money, t
 
 router = Router(name="menu")
 
-CAT_RU = {"group": "Групповые тарифы", "individual": "Индивидуальные тарифы (1-на-1)", "hybrid": "Гибридное обучение"}
+CAT_RU = {"group": "Групповые тарифы", "individual": "Индивидуальные тарифы (1-на-1)", "hybrid": "Гибридное обучение",
+          "subscription": "Подписка"}
 
 
 async def _lead(event) -> object:
@@ -31,18 +32,13 @@ async def _lead(event) -> object:
     return lead
 
 
-# ------------------------------------------------------------------ kurslar
+# ------------------------------------------------------------------ tariflar va narxlar
 
 
 async def _courses_kb(lang: str) -> InlineKeyboardMarkup:
     async with session_scope() as s:
         items = (await s.execute(select(Tariff).where(Tariff.is_active.is_(True)).order_by(Tariff.sort, Tariff.id))).scalars().all()
-    rows = []
-    for cat in ("group", "individual", "hybrid"):
-        for x in items:
-            if x.category == cat:
-                rows.append([ib(x.name_ru if lang == "ru" else x.name_uz, f"tariff:{x.id}")])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+    return InlineKeyboardMarkup(inline_keyboard=[[ib(x.name_ru if lang == "ru" else x.name_uz, f"tariff:{x.id}")] for x in items])
 
 
 @router.message(F.text.in_(all_button_texts("btn_courses")))
@@ -58,99 +54,129 @@ async def courses_cb(cb: CallbackQuery) -> None:
     await cb.answer()
 
 
+async def tariff_price_text(tr: Tariff, lang: str) -> str:
+    if tr.is_subscription:
+        async with session_scope() as s:
+            plans = (await s.execute(select(SubscriptionPlan).where(SubscriptionPlan.tariff_id == tr.id, SubscriptionPlan.is_active.is_(True))
+                                     .order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
+        if not plans:
+            return f"{t('price_label', lang)}: {t('price_ask_admin', lang)}"
+        lines = [f"{t('price_label', lang)}:"]
+        for p in plans:
+            title = p.title_ru if lang == "ru" else p.title_uz
+            lines.append(f"• {esc(title)} — <b>{money(p.price, lang)}</b>" if p.price > 0 else f"• {esc(title)} — {t('price_ask_admin', lang)}")
+        return "\n".join(lines)
+    if tr.price > 0:
+        period = f" / {esc(tr.price_period)}" if tr.price_period else ""
+        return f"{t('price_label', lang)}: <b>{money(tr.price, lang)}</b>{period}"
+    return f"{t('price_label', lang)}: {t('price_ask_admin', lang)}"
+
+
 @router.callback_query(F.data.startswith("tariff:"))
 async def tariff_detail(cb: CallbackQuery) -> None:
     lead = await _lead(cb)
-    tid = int(cb.data.split(":")[1])
     async with session_scope() as s:
-        x = await s.get(Tariff, tid)
+        x = await s.get(Tariff, int(cb.data.split(":")[1]))
     if not x:
         await cb.answer()
         return
     name = x.name_ru if lead.lang == "ru" else x.name_uz
     desc = x.desc_ru if lead.lang == "ru" else x.desc_uz
-    cat = CAT_RU[x.category] if lead.lang == "ru" else CATEGORY_LABELS.get(x.category, "")
     await update_lead(lead.id, interested_tariff=x.name_uz)
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [ib(t("trial_btn_inline", lead.lang), "cta:trial")],
-        [ib(t("operator_btn_inline", lead.lang), "cta:operator")],
-        [ib(t("back", lead.lang), "courses")],
-    ])
-    text = f"<i>{esc(cat)}</i>\n<b>{esc(name)}</b>\n\n{esc(strip_placeholders(desc))}\n\n{t('price_answer', lead.lang)}"
-    await cb.message.edit_text(text, reply_markup=kb)
-    await cb.answer()
-
-
-# ------------------------------------------------------------------ FAQ
-
-
-async def _faq_kb(lang: str) -> InlineKeyboardMarkup | None:
-    async with session_scope() as s:
-        items = (await s.execute(select(Faq).where(Faq.is_active.is_(True)).order_by(Faq.sort, Faq.asked_count.desc(), Faq.id))).scalars().all()
-    if not items:
-        return None
     rows = []
-    for f in items[:40]:
-        q = f.q_ru if lang == "ru" else f.q_uz
-        rows.append([ib((q[:60] + "…") if len(q) > 60 else q, f"faq:{f.id}")])
-    return InlineKeyboardMarkup(inline_keyboard=rows)
+    if x.is_subscription:
+        rows.append([ib(t("buy_btn_inline", lead.lang), "buy")])
+    rows.append([ib(t("admin_btn_inline", lead.lang), f"enroll:{x.id}")])
+    rows.append([ib(t("back", lead.lang), "courses")])
+    text = (f"<b>{esc(name)}</b>\n\n{esc(strip_placeholders(desc))}\n\n{await tariff_price_text(x, lead.lang)}\n\n"
+            f"{t('price_note', lead.lang)}")
+    await cb.message.edit_text(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
+    await cb.answer()
 
 
-@router.message(F.text.in_(all_button_texts("btn_faq")))
-async def faq(msg: TgMessage) -> None:
+@router.callback_query(F.data.startswith("enroll:"))
+async def enroll(cb: CallbackQuery) -> None:
+    lead = await _lead(cb)
+    await cb.answer()
+    await enroll_request(lead, int(cb.data.split(":")[1]))
+
+
+# ------------------------------------------------------------------ obuna sotib olish
+
+
+@router.message(F.text.in_(all_button_texts("btn_buy")))
+async def buy(msg: TgMessage) -> None:
+    await show_buy(await _lead(msg))
+
+
+@router.callback_query(F.data == "buy")
+async def buy_cb(cb: CallbackQuery) -> None:
+    await cb.answer()
+    await show_buy(await _lead(cb))
+
+
+@router.callback_query(F.data.startswith("plan:"))
+async def plan_cb(cb: CallbackQuery) -> None:
+    await cb.answer()
+    await start_payment(await _lead(cb), int(cb.data.split(":")[1]))
+
+
+# ------------------------------------------------------------------ mening obunam
+
+
+def _bar(days_left: int, total_days: int) -> str:
+    total_days = max(total_days, 1)
+    filled = max(0, min(10, round(days_left / total_days * 10)))
+    return "🟩" * filled + "⬜️" * (10 - filled)
+
+
+async def mysub_text(lead) -> tuple[str, InlineKeyboardMarkup]:
+    sub = await subscriptions.get(lead.tg_id)
+    tariff = html.escape(await subscriptions.premium_tariff_name(lead.lang))
+    limit = int(await settings.get("tutor_trial_daily") or 0)
+    rows = []
+    if sub and sub.whitelisted:
+        text = t("mysub_forever", lead.lang, tariff=tariff)
+        rows.append([ib(t("mysub_link_btn", lead.lang), "sublink")])
+    elif sub and sub.is_active:
+        total = max(1, int((sub.expires_at - sub.started_at).total_seconds() // 86400))
+        text = t("mysub_active", lead.lang, tariff=tariff, start=subscriptions.fmt_date(sub.started_at),
+                 until=subscriptions.fmt_date(sub.expires_at), left=sub.days_left, bar=_bar(sub.days_left, total))
+        rows.append([ib(t("mysub_link_btn", lead.lang), "sublink")])
+        rows.append([ib(t("renew_btn", lead.lang), "buy")])
+    elif sub:
+        text = t("mysub_expired", lead.lang, tariff=tariff, until=subscriptions.fmt_date(sub.expires_at), limit=limit)
+        rows.append([ib(t("renew_btn", lead.lang), "buy")])
+    else:
+        text = t("mysub_none", lead.lang, limit=limit)
+        rows.append([ib(t("btn_buy", lead.lang), "buy")])
+    pays = await last_payments(lead.tg_id)
+    if pays:
+        items = "\n".join(
+            f"{'✅' if p.state == 2 else '↩️'} {worktime.fmt(p.paid_at or p.created_at, '%d.%m.%Y')} — {money(p.amount, lead.lang)} ({p.days} kun)"
+            for p in pays)
+        text += t("mysub_payments", lead.lang, items=items)
+    rows.append([ib(t("operator_btn_inline", lead.lang), "cta:operator")])
+    return text, InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+@router.message(F.text.in_(all_button_texts("btn_mysub")))
+async def mysub(msg: TgMessage) -> None:
     lead = await _lead(msg)
-    kb = await _faq_kb(lead.lang)
-    await msg.answer(t("faq_title", lead.lang) if kb else t("faq_empty", lead.lang), reply_markup=kb)
+    text, kb = await mysub_text(lead)
+    await msg.answer(text, reply_markup=kb)
 
 
-@router.callback_query(F.data == "faq")
-async def faq_cb(cb: CallbackQuery) -> None:
-    lead = await _lead(cb)
-    kb = await _faq_kb(lead.lang)
-    await cb.message.edit_text(t("faq_title", lead.lang) if kb else t("faq_empty", lead.lang), reply_markup=kb)
+@router.callback_query(F.data == "sublink")
+async def sublink(cb: CallbackQuery) -> None:
     await cb.answer()
-
-
-@router.callback_query(F.data.startswith("faq:"))
-async def faq_detail(cb: CallbackQuery) -> None:
     lead = await _lead(cb)
-    async with session_scope() as s:
-        f = await s.get(Faq, int(cb.data.split(":")[1]))
-        if f:
-            f.asked_count = (f.asked_count or 0) + 1
-    if not f:
-        await cb.answer()
+    if not await subscriptions.is_active(lead.tg_id):
+        await show_buy(lead)
         return
-    q, a = (f.q_ru, f.a_ru) if lead.lang == "ru" else (f.q_uz, f.a_uz)
-    kb = InlineKeyboardMarkup(inline_keyboard=[[ib(t("operator_btn_inline", lead.lang), "cta:operator")],
-                                               [ib(t("back", lead.lang), "faq")]])
-    await cb.message.edit_text(f"❓ <b>{esc(q)}</b>\n\n{esc(a)}", reply_markup=kb)
-    await cb.answer()
-
-
-# ------------------------------------------------------------------ materiallar
-
-
-@router.message(F.text.in_(all_button_texts("btn_materials")))
-async def materials(msg: TgMessage) -> None:
-    lead = await _lead(msg)
-    async with session_scope() as s:
-        items = (await s.execute(select(Material).where(Material.is_free.is_(True)).order_by(Material.id.desc()))).scalars().all()
-    if not items:
-        await msg.answer(t("materials_empty", lead.lang))
-        return
-    kb = InlineKeyboardMarkup(inline_keyboard=[[ib(f"📄 {m.title[:55]}", f"mat:{m.id}")] for m in items[:40]])
-    await msg.answer(t("materials_title", lead.lang), reply_markup=kb)
-
-
-@router.callback_query(F.data.startswith("mat:"))
-async def material_get(cb: CallbackQuery) -> None:
-    lead = await _lead(cb)
-    mid = int(cb.data.split(":")[1])
-    await cb.answer()
-    if not await require_phone(lead, "after_phone_material", mid):
-        return
-    await send_material(lead, mid)
+    ok, link, err = await subscriptions.send_access(lead.tg_id, "access_granted")
+    if not ok and not link:
+        await cb.message.answer(t("buy_unavailable", lead.lang))
 
 
 # ------------------------------------------------------------------ markaz haqida
@@ -179,22 +205,12 @@ async def info_detail(cb: CallbackQuery) -> None:
     await cb.answer()
 
 
-# ------------------------------------------------------------------ til
+# ------------------------------------------------------------------ til / operator
 
 
 @router.message(F.text.in_(all_button_texts("btn_lang")))
 async def change_lang(msg: TgMessage) -> None:
     await msg.answer(t("choose_lang", "uz"), reply_markup=lang_kb())
-
-
-# ------------------------------------------------------------------ bepul dars / operator
-
-
-@router.message(F.text.in_(all_button_texts("btn_trial")))
-async def trial(msg: TgMessage) -> None:
-    lead = await _lead(msg)
-    if await require_phone(lead, "after_phone_trial"):
-        await trial_request(lead)
 
 
 @router.message(F.text.in_(all_button_texts("btn_operator")))
@@ -208,16 +224,32 @@ async def operator(msg: TgMessage) -> None:
 async def cta(cb: CallbackQuery) -> None:
     lead = await _lead(cb)
     await cb.answer()
-    what = cb.data.split(":")[1]
-    if what == "trial":
-        if await require_phone(lead, "after_phone_trial"):
-            await trial_request(lead)
-    elif what == "operator":
-        if await require_phone(lead, "after_phone_operator"):
-            await operator_request(lead)
+    if cb.data.split(":")[1] == "operator" and await require_phone(lead, "after_phone_operator"):
+        await operator_request(lead)
 
 
-# ------------------------------------------------------------------ tutor
+# ------------------------------------------------------------------ AI mentor
+
+
+async def tutor_state(lead) -> tuple[bool, int, int]:
+    """(cheksizmi, bugun qolgan savollar, kunlik limit)"""
+    limit = int(await settings.get("tutor_trial_daily") or 0)
+    if await subscriptions.is_active(lead.tg_id):
+        return True, 10**6, limit
+    today = worktime.now_local().date()
+    used = lead.tutor_count if lead.tutor_day == today else 0
+    return False, max(0, limit - used), limit
+
+
+async def tutor_allowed(lead) -> bool:
+    unlimited, left, _ = await tutor_state(lead)
+    return unlimited or left > 0
+
+
+async def tutor_consume(lead) -> None:
+    today = worktime.now_local().date()
+    count = lead.tutor_count if lead.tutor_day == today else 0
+    await update_lead(lead.id, tutor_day=today, tutor_count=count + 1)
 
 
 @router.message(F.text.in_(all_button_texts("btn_tutor")))
@@ -226,8 +258,12 @@ async def tutor_on(msg: TgMessage) -> None:
     if not await settings.get("tutor_enabled"):
         await msg.answer(t("tutor_disabled", lead.lang))
         return
+    if not await require_phone(lead):
+        return
     lead = await update_lead(lead.id, mode="tutor")
-    await send_menu(msg.chat.id, lead, t("tutor_intro", lead.lang))
+    unlimited, left, limit = await tutor_state(lead)
+    info = t("tutor_unlimited", lead.lang) if unlimited else t("tutor_daily", lead.lang, left=left, limit=limit)
+    await send_menu(msg.chat.id, lead, t("tutor_intro", lead.lang, limit_info=info))
 
 
 @router.message(F.text.in_(all_button_texts("btn_consultant")))
@@ -235,26 +271,6 @@ async def consultant_on(msg: TgMessage) -> None:
     lead = await _lead(msg)
     lead = await update_lead(lead.id, mode="consultant", quiz_state=None)
     await send_menu(msg.chat.id, lead, t("consultant_on", lead.lang))
-
-
-async def tutor_allowed(lead) -> bool:
-    """Kursga qabul qilinganlar — cheksiz; boshqalar — kunlik bepul limit."""
-    if lead.status == "accepted":
-        return True
-    from ...services import worktime
-
-    limit = int(await settings.get("tutor_trial_daily") or 0)
-    today = worktime.now_local().date()
-    count = lead.tutor_count if lead.tutor_day == today else 0
-    return count < limit
-
-
-async def tutor_consume(lead) -> None:
-    from ...services import worktime
-
-    today = worktime.now_local().date()
-    count = lead.tutor_count if lead.tutor_day == today else 0
-    await update_lead(lead.id, tutor_day=today, tutor_count=count + 1)
 
 
 @router.message(F.text.in_(all_button_texts("btn_quiz")))
@@ -265,7 +281,7 @@ async def quiz_start(msg: TgMessage) -> None:
 
 async def _send_quiz(cb: CallbackQuery, lead, level: str, state: dict | None) -> None:
     if not await tutor_allowed(lead):
-        await cb.message.answer(t("tutor_limit", lead.lang, limit=await settings.get("tutor_trial_daily")), reply_markup=cta_kb(lead.lang))
+        await cb.message.answer(t("tutor_limit", lead.lang, limit=await settings.get("tutor_trial_daily")), reply_markup=cta_kb(lead.lang, operator=False))
         return
     if not await ai.is_available():
         await cb.message.answer(t("ai_unavailable", lead.lang))
@@ -359,7 +375,7 @@ async def rate(cb: CallbackQuery) -> None:
         chat.rating = val
         op_name = chat.operator.display_name if chat.operator else "—"
     await update_lead(lead.id, pending_input="rating_comment", pending_ref=chat_id)
-    await cb.message.edit_text(f"{t('rating_ask', lead.lang)}\n{'⭐' * val}")
+    await cb.message.edit_text(f"{t('rating_ask', lead.lang)} {'⭐' * val}")
     await cb.message.answer(t("rating_comment_ask", lead.lang), reply_markup=skip_comment_kb(chat_id, lead.lang))
     await cb.answer()
     await hub.emit("chat_rated", {"chat_id": chat_id, "rating": val})

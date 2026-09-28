@@ -27,6 +27,7 @@ REASON_LABELS = {
     "ready_to_enroll": "🔥 Kursga yozilishga tayyor",
     "complex": "Murakkab savol",
     "trial": "🎁 Bepul darsga yozilish",
+    "enroll": "📝 Tarifga yozilmoqchi",
 }
 
 
@@ -240,9 +241,9 @@ async def transfer(chat_id: int, staff: Staff, to_staff_id: int) -> Chat:
 
 
 def rating_kb(chat_id: int) -> InlineKeyboardMarkup:
+    # bitta qatorda 5 ta ixcham tugma
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⭐" * i, callback_data=f"rate:{chat_id}:{i}") for i in range(1, 4)],
-        [InlineKeyboardButton(text="⭐" * i, callback_data=f"rate:{chat_id}:{i}") for i in range(4, 6)],
+        [InlineKeyboardButton(text=f"{i}⭐", callback_data=f"rate:{chat_id}:{i}") for i in range(1, 6)],
     ])
 
 
@@ -281,6 +282,11 @@ async def close(chat_id: int, staff: Staff | None, silent: bool = False) -> Chat
     return chat
 
 
+def operator_header(staff: Staff) -> str:
+    """Leadga boradigan har bir operator xabari tepasida kim yozgani."""
+    return f"👨‍💼 <b>{html.escape(staff.display_name)}</b> · <i>ATKO</i>\n┄┄┄┄┄┄┄┄┄┄┄┄\n"
+
+
 async def _check_writer(chat_id: int, staff: Staff) -> Chat:
     async with session_scope() as s:
         chat = await s.get(Chat, chat_id)
@@ -307,7 +313,7 @@ async def operator_send_text(chat_id: int, staff: Staff, text: str) -> Message:
     if not text:
         raise ChatError("Bo'sh xabar")
     lead = chat.lead
-    mid = await sender.send_text(lead.tg_id, html.escape(text))
+    mid = await sender.send_text(lead.tg_id, operator_header(staff) + html.escape(text))
     if mid is None:
         raise ChatError("Xabar yetkazilmadi: foydalanuvchi botni bloklagan bo'lishi mumkin")
     await _after_operator_msg(chat_id)
@@ -330,8 +336,8 @@ async def operator_send_file(chat_id: int, staff: Staff, path: Path, file_name: 
     elif kind == "audio" and path.suffix.lower() not in (".mp3", ".m4a"):
         send_kind = "document"
     try:
-        await sender.send_file(lead.tg_id, send_kind, send_path, caption=html.escape(caption) if caption else None,
-                               file_name=file_name)
+        cap = operator_header(staff) + (html.escape(caption) if caption else "")
+        await sender.send_file(lead.tg_id, send_kind, send_path, caption=cap.rstrip()[:1024], file_name=file_name)
     except TelegramForbiddenError:
         raise ChatError("Foydalanuvchi botni bloklagan")
     except Exception as e:  # noqa: BLE001

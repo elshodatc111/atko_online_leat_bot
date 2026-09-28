@@ -58,8 +58,7 @@
         <dt>Telegram</dt><dd>{% if lead.tg_username %}<a href="https://t.me/{{ lead.tg_username }}" target="_blank">@{{ lead.tg_username }}</a>{% endif %} <code>{{ lead.tg_id }}</code></dd>
         <dt>Telegram ismi</dt><dd>{{ lead.tg_name or '—' }}</dd>
         <dt>Manba</dt><dd>{{ lead.source.name if lead.source else "To'g'ridan-to'g'ri" }}</dd>
-        <dt>Bot rejimi</dt><dd>{{ '🎓 Tutor' if lead.mode == 'tutor' else '📚 Konsultant' }}</dd>
-        <dt>Bepul dars</dt><dd>{{ "🎁 So'ragan" if lead.trial_requested else '—' }}</dd>
+        <dt>Bot rejimi</dt><dd>{{ '🎓 AI mentor' if lead.mode == 'tutor' else '📚 Konsultant' }}</dd>
         <dt>Ro'yxatdan</dt><dd>{{ lead.created_at|dt }}</dd>
         <dt>Oxirgi faollik</dt><dd>{{ lead.last_activity|dt }}</dd>
       </dl>

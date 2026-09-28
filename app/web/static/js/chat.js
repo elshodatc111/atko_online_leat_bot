@@ -4,7 +4,7 @@
   const esc = ATKO.esc;
   const layout = $("chat-layout");
   const STATUS = {
-    new: "🆕 Yangi", contacted: "📞 Aloqada", thinking: "🤔 O'ylab ko'radi", trial: "🎓 Bepul darsga yozildi",
+    new: "🆕 Yangi", contacted: "📞 Aloqada", thinking: "🤔 O'ylab ko'radi", trial: "📝 Kursga yozilmoqchi",
     accepted: "✅ Kursga qabul qilindi", rejected: "❌ Rad etdi",
   };
   const REJECT = ["Narx qimmat", "Vaqt to'g'ri kelmadi", "Boshqa markazni tanladi", "Qiziqmay qoldi", "Aloqaga chiqmadi", "Boshqa"];
@@ -134,7 +134,6 @@
         <dt>Tarif</dt><dd>${esc(l.tariff || "—")}</dd>
         <dt>Manba</dt><dd>${esc(l.source || "To'g'ridan-to'g'ri")}</dd>
         <dt>Qiziqish</dt><dd>${esc(l.temperature || "—")}</dd>
-        <dt>Bepul dars</dt><dd>${l.trial ? "🎁 So'ragan" : "—"}</dd>
         <dt>Ro'yxatdan</dt><dd>${esc(l.created)}</dd>
       </dl>
       <h3>📌 Status</h3>

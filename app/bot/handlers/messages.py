@@ -99,7 +99,7 @@ async def any_message(msg: TgMessage) -> None:
         chat_id = chat.id if chat else None
         chat_status = chat.status if chat else None
         off_hours = chat.off_hours if chat else False
-    mode = "consultant" if chat_id else lead.mode
+    mode = "consultant" if chat_status == "active" else lead.mode
     stored = await chat_svc.add_message(
         lead.id, "lead", chat_id=chat_id, text=data["text"], kind=data["kind"], mode=mode,
         file_path=data["file_path"], file_name=data["file_name"], mime=data["mime"], file_size=data["size"],
@@ -112,8 +112,8 @@ async def any_message(msg: TgMessage) -> None:
 
     if chat_id:
         await chat_svc.on_lead_message(lead.id, chat_id)
-        if chat_status == "active" or not off_hours:
-            return  # operator javob beradi, AI jim turadi
+        if chat_status == "active" or (not off_hours and lead.mode != "tutor"):
+            return  # operator javob beradi, AI jim turadi (AI mentor rejimida navbatda turganda ham mentor javob beradi)
         # ish vaqtidan tashqari navbatda — AI javob beradi (pastda)
 
     # 6) AI javobi
@@ -127,7 +127,7 @@ async def any_message(msg: TgMessage) -> None:
             m = await s.get(Message, stored.id)
             text = m.transcript if m else None
         if not text:
-            await msg.answer(t("ai_unavailable", lead.lang), reply_markup=cta_kb(lead.lang, trial=False))
+            await msg.answer(t("ai_unavailable", lead.lang), reply_markup=cta_kb(lead.lang, buy=False))
             return
     image = data["file_path"] if data["kind"] == "photo" else None
     if not text and not image:
@@ -135,7 +135,7 @@ async def any_message(msg: TgMessage) -> None:
             await msg.answer(t("unsupported", lead.lang))
         return
 
-    if lead.mode == "tutor" and not chat_id:
+    if lead.mode == "tutor" and chat_status != "active":
         await _tutor(msg, lead, text, image, stored.id)
     else:
         await _consultant(msg, lead, text, image, stored.id, chat_id)
@@ -170,9 +170,10 @@ async def _consultant(msg: TgMessage, lead, text: str | None, image: str | None,
             uq_id = uq.id
     if not await ai.is_available():
         if text and PRICE_RE.search(text):
-            await msg.answer(t("price_answer", lead.lang), reply_markup=cta_kb(lead.lang))
-            if not lead.phone:
-                await msg.answer(t("phone_needed", lead.lang), reply_markup=contact_kb(lead.lang))
+            from .menu import _courses_kb
+
+            await msg.answer(t("courses_title", lead.lang) + "\n\n" + t("price_note", lead.lang),
+                             reply_markup=await _courses_kb(lead.lang))
         else:
             await msg.answer(t("ai_unavailable", lead.lang), reply_markup=cta_kb(lead.lang))
         return
@@ -208,7 +209,7 @@ async def _consultant(msg: TgMessage, lead, text: str | None, image: str | None,
     kb = None
     escalate = res.escalate and await settings.get("ai_auto_escalate") and not chat_id
     if res.unanswered and not escalate:
-        kb = cta_kb(lead.lang, trial=False)
+        kb = cta_kb(lead.lang, buy=False)
     if res.text:
         await _send_ai(msg, lead, res.text, kb)
         await chat_svc.add_message(lead.id, "ai", chat_id=chat_id, text=res.text, mode="consultant")
@@ -221,8 +222,6 @@ async def _consultant(msg: TgMessage, lead, text: str | None, image: str | None,
             await require_phone(lead, "after_phone_operator")
             return
         await operator_request(lead, reason=reason, note=note)
-    elif not lead.phone and upd.get("temperature") == "hot":
-        await msg.answer(t("phone_needed", lead.lang), reply_markup=contact_kb(lead.lang))
 
 
 async def _tutor(msg: TgMessage, lead, text: str | None, image: str | None, stored_id: int) -> None:
@@ -231,14 +230,16 @@ async def _tutor(msg: TgMessage, lead, text: str | None, image: str | None, stor
         await send_menu(msg.chat.id, lead, t("tutor_disabled", lead.lang))
         return
     if not await tutor_allowed(lead):
-        await msg.answer(t("tutor_limit", lead.lang, limit=await settings.get("tutor_trial_daily")), reply_markup=cta_kb(lead.lang))
+        await msg.answer(t("tutor_limit", lead.lang, limit=await settings.get("tutor_trial_daily")), reply_markup=cta_kb(lead.lang, operator=False))
         return
     if not await ai.is_available():
         await msg.answer(t("ai_unavailable", lead.lang))
         return
     await _typing(msg)
     try:
-        answer = await ai.tutor_reply(lead, text, image, exclude_id=stored_id, is_student=lead.status == "accepted")
+        from ...services import subscriptions
+
+        answer = await ai.tutor_reply(lead, text, image, exclude_id=stored_id, is_student=await subscriptions.is_active(lead.tg_id))
     except Exception as e:  # noqa: BLE001
         log.warning("AI tutor xatosi: %s", e)
         await msg.answer(t("ai_unavailable", lead.lang))

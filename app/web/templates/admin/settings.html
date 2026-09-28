@@ -39,9 +39,9 @@
   </div>
 
   <div class="card">
-    <h2>🎓 Tutor va ⏰ eslatmalar</h2>
-    <label class="check"><input type="checkbox" name="tutor_enabled" {{ 'checked' if s.tutor_enabled }}> Tutor rejimi yoqilgan</label>
-    <div class="field" style="margin-top:8px"><label>Kursga qabul qilinmaganlar uchun kunlik bepul tutor savollari</label><input type="number" min="0" name="tutor_trial_daily" value="{{ s.tutor_trial_daily }}"><div class="hint">0 — faqat ATKO o'quvchilari (status «Kursga qabul qilindi») foydalana oladi</div></div>
+    <h2>🎓 AI mentor va ⏰ eslatmalar</h2>
+    <label class="check"><input type="checkbox" name="tutor_enabled" {{ 'checked' if s.tutor_enabled }}> AI mentor yoqilgan</label>
+    <div class="field" style="margin-top:8px"><label>Obunasi yo'q foydalanuvchilar uchun kunlik savollar</label><input type="number" min="0" name="tutor_trial_daily" value="{{ s.tutor_trial_daily }}"><div class="hint">Premium obunachilar — cheksiz. 0 — faqat obunachilar foydalana oladi.</div></div>
     <hr>
     <label class="check"><input type="checkbox" name="reminders_enabled" {{ 'checked' if s.reminders_enabled }}> Avto-eslatmalar yoqilgan</label>
     <div class="form-row" style="margin-top:8px">
@@ -57,6 +57,48 @@
   </div>
 </div>
 
+<div class="grid grid-2">
+  <div class="card" id="payme">
+    <h2>💳 Payme (Merchant API)</h2>
+    <div class="flash flash-info" style="font-size:12.5px">Payme kabinetida (business.payme.uz → Kassa → Sozlamalar) <b>Endpoint URL</b>: <code>{{ payme_endpoint }}</code><br>
+      Hisob maydoni (account) nomi: <code>{{ s.payme_account_field or 'order_id' }}</code>. Localhost bilan sinash — README dagi «ngrok» bo'limiga qarang.</div>
+    <label class="check"><input type="checkbox" name="payme_test_mode" {{ 'checked' if s.payme_test_mode }}> 🧪 Test rejimi (test.paycom.uz + test kaliti)</label>
+    <div class="form-row" style="margin-top:8px">
+      <div><label>Merchant (kassa) ID</label><input type="text" name="payme_merchant_id" value="{{ s.payme_merchant_id }}" placeholder="{{ payme_mid or '64f…' }}"></div>
+      <div><label>Hisob maydoni nomi</label><input type="text" name="payme_account_field" value="{{ s.payme_account_field or 'order_id' }}"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Test kaliti</label><input type="password" name="payme_test_key" autocomplete="off" placeholder="{{ payme_test_key_mask or 'kiritilmagan' }}">
+        {% if payme_test_key_mask %}<label class="check"><input type="checkbox" name="clear_payme_test_key"> o'chirish</label>{% endif %}</div>
+      <div><label>Asosiy (ishchi) kalit</label><input type="password" name="payme_key" autocomplete="off" placeholder="{{ payme_key_mask or 'kiritilmagan' }}">
+        {% if payme_key_mask %}<label class="check"><input type="checkbox" name="clear_payme_key"> o'chirish</label>{% endif %}</div>
+    </div>
+    <div class="hint" style="margin-top:-6px;margin-bottom:10px">Kalit maydonini bo'sh qoldirsangiz, eski qiymat o'zgarmaydi.</div>
+    <h3>🧾 Soliq cheki (fiskal)</h3>
+    <div class="form-row">
+      <div><label>MXIK (IKPU) kodi</label><input type="text" name="payme_ikpu" value="{{ s.payme_ikpu }}" placeholder="buxgalterdan oling"></div>
+      <div><label>O'lchov birligi (qadoq) kodi</label><input type="text" name="payme_package_code" value="{{ s.payme_package_code }}"></div>
+      <div><label>QQS, %</label><input type="number" min="0" max="100" name="payme_vat_percent" value="{{ s.payme_vat_percent }}"></div>
+    </div>
+    <div class="hint" style="margin-top:-6px">MXIK kiritilmaguncha chek ma'lumotlari Payme'ga yuborilmaydi.</div>
+    <div class="field" style="margin-top:10px"><label>To'lovdan keyin qaytish havolasi (ixtiyoriy)</label><input type="text" name="payme_return_url" value="{{ s.payme_return_url }}" placeholder="https://t.me/sizning_bot"></div>
+  </div>
+
+  <div class="card" id="group">
+    <h2>👥 Yopiq Premium guruh</h2>
+    <p class="muted" style="margin-top:-6px">Botni guruhga <b>admin</b> qilib qo'shing: «Havola orqali taklif qilish» va «Foydalanuvchilarni bloklash» huquqlari bilan. Qo'shilgach guruh shu ro'yxatda paydo bo'ladi.</p>
+    <div class="field"><label>Guruh</label>
+      <select name="group_chat_id">
+        <option value="">— tanlanmagan —</option>
+        {% for cid, info in known_chats.items() %}<option value="{{ cid }}" {{ 'selected' if s.group_chat_id|string == cid }}>{{ info.title }} ({{ cid }}) — {{ info.status }}</option>{% endfor %}
+        {% if s.group_chat_id and s.group_chat_id|string not in known_chats %}<option value="{{ s.group_chat_id }}" selected>{{ s.group_chat_id }}</option>{% endif %}
+      </select>
+      <div class="hint">Ro'yxatda bo'lmasa: botni guruhdan olib, qayta admin qilib qo'shing.</div></div>
+    <label class="check"><input type="checkbox" name="group_kick_unpaid" {{ 'checked' if s.group_kick_unpaid }}> Obunasiz qo'shilganlarni avtomatik chiqarish (xodimlar va qo'lda ruxsat berilganlar bundan mustasno)</label>
+    <p class="hint" style="margin-top:10px">⏰ Obuna tugashidan 3 va 1 kun oldin eslatma yuboriladi. Muddati tugaganlar har 15 daqiqada tekshiriladi va guruhdan chiqariladi. Holatini <a href="/system">Tizim holati</a> bo'limida ko'ring.</p>
+  </div>
+</div>
+
 <div class="card" id="ai">
   <div class="card-head"><h2>🤖 OpenAI sozlamalari</h2></div>
   <div class="grid grid-2">
@@ -68,7 +110,7 @@
         <input type="password" name="openai_api_key" placeholder="{{ masked_key or 'sk-...' }}" autocomplete="off">
         <div class="hint">{% if key_from_env %}Hozir .env faylidagi kalit ishlatilmoqda ({{ masked_key }}).{% elif masked_key %}Panelda saqlangan kalit: {{ masked_key }} <label class="check" style="display:inline-flex"><input type="checkbox" name="clear_api_key"> o'chirish</label>{% else %}Kalit kiritilmagan.{% endif %} Bo'sh qoldirsangiz o'zgarmaydi.</div></div>
       <div class="form-row">
-        <div><label>Asosiy model</label><input type="text" name="ai_model" value="{{ s.ai_model }}"><div class="hint">Masalan: gpt-5.4-mini, gpt-5.4, gpt-4.1-mini</div></div>
+        <div><label>Asosiy model</label><input type="text" name="ai_model" value="{{ s.ai_model }}"><div class="hint">Masalan: gpt-6-luna (tejamkor), gpt-6-sol, gpt-5.4-mini</div></div>
         <div><label>Reasoning effort</label><select name="ai_reasoning_effort">
           {% for v in ['', 'minimal', 'low', 'medium', 'high'] %}<option value="{{ v }}" {{ 'selected' if s.ai_reasoning_effort == v }}>{{ v or "yo'q (yuborilmaydi)" }}</option>{% endfor %}</select></div>
       </div>
@@ -87,6 +129,8 @@
         <div><label>Narx: 1M chiqish tokeni ($)</label><input type="text" name="ai_price_output_per_1m" value="{{ s.ai_price_output_per_1m }}"></div>
       </div>
       <div class="hint" style="margin-top:-6px;margin-bottom:10px">Taxminiy xarajatni ko'rsatish uchun. Joriy narxlarni platform.openai.com/pricing sahifasidan oling.</div>
+      <div class="field"><label>📚 AI mentor darsliklari — Vector store ID</label><input type="text" name="ai_vector_store_ids" value="{{ s.ai_vector_store_ids }}" placeholder="vs_abc123 (bir nechta bo'lsa vergul bilan)">
+        <div class="hint">platform.openai.com → Storage → Vector stores → «Create» → PDF darsliklarni yuklang → ID ni (vs_…) shu yerga kiriting. AI mentor javob berishda shu darsliklardan qidiradi.</div></div>
       <div class="field"><label>AI uchun qo'shimcha ko'rsatmalar</label><textarea name="ai_extra_instructions" rows="4" placeholder="Masalan: Hozir sentabr aksiyasi — birinchi oyga 20% chegirma haqida ayting.">{{ s.ai_extra_instructions }}</textarea></div>
     </div>
   </div>

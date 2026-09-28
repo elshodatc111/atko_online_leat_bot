@@ -11,6 +11,8 @@
   <div class="kpi"><div class="label">Jami leadlar</div><div class="value">{{ d.total }}</div><div class="sub">Telefon bilan: {{ d.with_phone }}</div></div>
   <div class="kpi"><div class="label">✅ Kursga qabul qilingan</div><div class="value">{{ d.accepted_total }}</div><div class="sub">Shu oy: {{ d.accepted_month }} · konversiya {{ d.conversion }}%</div></div>
   <div class="kpi"><div class="label">⏳ Navbatdagi murojaatlar</div><div class="value" style="color:{{ '#c93a3a' if d.waiting else 'inherit' }}">{{ d.waiting }}</div><div class="sub">Faol chatlar: {{ d.active }} · bugun: {{ d.chats_today }}</div></div>
+  {% if me.is_admin %}<div class="kpi"><div class="label">💳 Bugungi tushum</div><div class="value" style="font-size:21px">{{ '{:,}'.format(k.day_sum).replace(',', ' ') }}</div><div class="sub">shu oy: {{ '{:,}'.format(k.month_sum).replace(',', ' ') }} so'm</div></div>{% endif %}
+  <div class="kpi"><div class="label">💎 Faol obunachilar</div><div class="value">{{ k.active_subs }}</div><div class="sub">3 kunda tugaydi: {{ k.expiring }}</div></div>
   <div class="kpi"><div class="label">⭐ O'rtacha baho</div><div class="value">{{ d.avg_rating or '—' }}</div><div class="sub">operatorlar xizmati</div></div>
   <div class="kpi"><div class="label">🤖 AI bugun</div><div class="value">{{ usage.requests }}</div><div class="sub">so'rov · {{ '{:,}'.format(usage.input_tokens + usage.output_tokens).replace(',', ' ') }} token</div></div>
 </div>

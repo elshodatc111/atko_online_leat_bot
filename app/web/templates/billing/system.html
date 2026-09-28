@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Tizim holati{% endblock %}
+{% block heading %}🩺 Tizim holati{% endblock %}
+{% block content %}
+<div class="kpis">
+  <div class="kpi" style="border-left:4px solid #17915a"><div class="label">🟢 Ishlayapti</div><div class="value">{{ counts.get('ok', 0) }}</div></div>
+  <div class="kpi" style="border-left:4px solid #e08a00"><div class="label">🟡 E'tibor kerak</div><div class="value">{{ counts.get('warn', 0) }}</div></div>
+  <div class="kpi" style="border-left:4px solid #c93a3a"><div class="label">🔴 Ishlamayapti</div><div class="value">{{ counts.get('fail', 0) }}</div></div>
+  <div class="kpi"><div class="label">⏱ Dastur ishlayapti</div><div class="value" style="font-size:20px">{{ uptime }}</div><div class="sub">tizim har 5 daqiqada o'zini tekshiradi</div></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Qismlar holati</h2><a class="btn btn-sm btn-ghost" href="/system">↻ Yangilash</a></div>
+  <div class="table-wrap"><table>
+    {% for it in items %}
+    <tr>
+      <td style="width:34px;font-size:20px">{{ '🟢' if it.status == 'ok' else ('🟡' if it.status == 'warn' else '🔴') }}</td>
+      <td style="width:260px"><b>{{ it.title }}</b></td>
+      <td>{{ it.details }}{% if it.hint %}<div class="hint">💡 {{ it.hint }}</div>{% endif %}</td>
+      <td style="width:1%;white-space:nowrap"><div class="btns">
+        {% for action, label in it.fixes %}
+        <form method="post" action="/system/fix/{{ action }}"><button class="btn btn-sm {{ 'btn-danger' if it.status == 'fail' else 'btn-ghost' }}">🛠 {{ label }}</button></form>
+        {% endfor %}</div></td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  <p class="hint">Avtomatik tuzatish: bot xabarlarni qabul qilishni to'xtatsa yoki fon vazifasi to'xtab qolsa, tizim ularni o'zi qayta ishga tushiradi. Biror qism ishdan chiqsa yoki tiklansa, adminga Telegram orqali xabar boradi. Noto'g'ri token, kalit yoki guruh huquqlari kabi muammolarni esa 💡 ko'rsatmaga qarab qo'lda tuzatish kerak.</p>
+</div>
+<div class="card">
+  <div class="card-head"><h2>🧾 Oxirgi xatolar ({{ errors|length }})</h2>
+    <form method="post" action="/system/fix/clear_errors"><button class="btn btn-sm btn-ghost">Tozalash</button></form></div>
+  <div class="table-wrap" style="max-height:480px"><table>
+    <tr><th>Vaqt</th><th>Manba</th><th>Xabar</th></tr>
+    {% for e in errors %}<tr><td><small>{{ fmt_ts(e.time) }}</small></td><td><small>{{ e.logger }}</small></td><td><small class="pre">{{ e.message }}</small></td></tr>
+    {% else %}<tr><td colspan="3" class="empty">Xatolar yo'q 🎉</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

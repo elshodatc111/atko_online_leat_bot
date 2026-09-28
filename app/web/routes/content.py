@@ -27,15 +27,22 @@ def back(url: str) -> RedirectResponse:
 
 @router.get("/content/tariffs")
 async def tariffs_page(request: Request, staff: Staff = Depends(admin_required)):
+    from ...models import SubscriptionPlan
+    from ...services import payme
+
     async with session_scope() as s:
-        rows = (await s.execute(select(Tariff).order_by(Tariff.category, Tariff.sort, Tariff.id))).scalars().all()
-    return render(request, "content/tariffs.html", staff, rows=rows, cats=knowledge.CATEGORY_LABELS)
+        rows = (await s.execute(select(Tariff).order_by(Tariff.sort, Tariff.id))).scalars().all()
+        plans = (await s.execute(select(SubscriptionPlan).order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
+    cats = {k: v for k, v in knowledge.CATEGORY_LABELS.items() if k != "hybrid"}
+    return render(request, "content/tariffs.html", staff, rows=rows, cats=cats, plans=plans,
+                  payme_ok=await payme.is_configured())
 
 
 @router.post("/content/tariffs/save")
 async def tariff_save(request: Request, id: str = Form(""), category: str = Form("group"), name_uz: str = Form(...),
                       name_ru: str = Form(...), desc_uz: str = Form(...), desc_ru: str = Form(...), sort: int = Form(0),
-                      is_active: bool = Form(False), staff: Staff = Depends(admin_required)):
+                      is_active: bool = Form(False), price: str = Form("0"), price_period: str = Form(""),
+                      staff: Staff = Depends(admin_required)):
     async with session_scope() as s:
         x = await s.get(Tariff, int(id)) if id.isdigit() else None
         if x is None:
@@ -44,8 +51,48 @@ async def tariff_save(request: Request, id: str = Form(""), category: str = Form
         x.category = category if category in knowledge.CATEGORY_LABELS else "group"
         x.name_uz, x.name_ru, x.desc_uz, x.desc_ru = name_uz.strip(), name_ru.strip(), desc_uz.strip(), desc_ru.strip()
         x.sort, x.is_active = sort, is_active
-        await audit.log(staff.id, "content_edit", "tariff", x.id, name_uz, session=s)
+        x.is_subscription = x.category == "subscription"
+        x.price = _money(price)
+        x.price_period = price_period.strip()[:32]
+        await audit.log(staff.id, "content_edit", "tariff", x.id, f"{name_uz}: {x.price} so'm", session=s)
     flash(request, "Tarif saqlandi")
+    return back("/content/tariffs")
+
+
+def _money(raw: str) -> int:
+    digits = "".join(ch for ch in str(raw or "") if ch.isdigit())
+    return int(digits) if digits else 0
+
+
+@router.post("/content/plans/save")
+async def plan_save(request: Request, id: str = Form(""), tariff_id: int = Form(...), title_uz: str = Form(...),
+                    title_ru: str = Form(...), days: int = Form(30), price: str = Form("0"), sort: int = Form(0),
+                    is_active: bool = Form(False), staff: Staff = Depends(admin_required)):
+    from ...models import SubscriptionPlan
+
+    if days <= 0:
+        flash(request, "Kunlar soni 0 dan katta bo'lishi kerak", "danger")
+        return back("/content/tariffs")
+    async with session_scope() as s:
+        p = await s.get(SubscriptionPlan, int(id)) if id.isdigit() else None
+        if p is None:
+            p = SubscriptionPlan(tariff_id=tariff_id, title_uz="", title_ru="")
+            s.add(p)
+        p.title_uz, p.title_ru, p.days, p.price, p.sort, p.is_active = title_uz.strip(), title_ru.strip(), days, _money(price), sort, is_active
+        await audit.log(staff.id, "content_edit", "plan", p.id, f"{title_uz}: {p.price} so'm / {days} kun", session=s)
+    flash(request, "Obuna varianti saqlandi")
+    return back("/content/tariffs")
+
+
+@router.post("/content/plans/{pid}/delete")
+async def plan_delete(pid: int, request: Request, staff: Staff = Depends(admin_required)):
+    from ...models import SubscriptionPlan
+
+    async with session_scope() as s:
+        p = await s.get(SubscriptionPlan, pid)
+        if p:
+            await s.delete(p)
+    flash(request, "O'chirildi")
     return back("/content/tariffs")
 
 
@@ -199,81 +246,6 @@ async def faq_translate(text: str = Form(...), target: str = Form("ru"), staff: 
         return {"ok": True, "text": await ai.translate(text, target)}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": str(e)}
-
-
-# ================================================================ materiallar
-
-
-@router.get("/content/materials")
-async def materials_page(request: Request, staff: Staff = Depends(admin_required)):
-    async with session_scope() as s:
-        rows = (await s.execute(select(Material).order_by(Material.id.desc()))).scalars().all()
-    return render(request, "content/materials.html", staff, rows=rows)
-
-
-@router.post("/content/materials/upload")
-async def material_upload(request: Request, title: str = Form(...), description: str = Form(""),
-                          is_free: bool = Form(False), for_tutor: bool = Form(False), file: UploadFile = File(...),
-                          staff: Staff = Depends(admin_required)):
-    data = await file.read()
-    if len(data) > media.TELEGRAM_UPLOAD_LIMIT_MB * 1024 * 1024:
-        flash(request, f"Fayl {media.TELEGRAM_UPLOAD_LIMIT_MB} MB dan katta — Telegram bot orqali yuborib bo'lmaydi", "danger")
-        return back("/content/materials")
-    p = media.new_path(media.guess_ext(file.filename, file.content_type, ".pdf"), "materials")
-    p.write_bytes(data)
-    async with session_scope() as s:
-        m = Material(title=title.strip(), description=description.strip() or None, file_path=str(p),
-                     file_name=file.filename or p.name, file_size=len(data), is_free=is_free, for_tutor=for_tutor,
-                     index_status="pending" if for_tutor else "none")
-        s.add(m)
-        await s.flush()
-        mid = m.id
-        await audit.log(staff.id, "material_upload", "material", mid, title, session=s)
-    if for_tutor:
-        asyncio.create_task(knowledge.index_material(mid))
-    flash(request, "Material yuklandi" + (". Tutor uchun indekslanmoqda…" if for_tutor else ""))
-    return back("/content/materials")
-
-
-@router.post("/content/materials/{mid}/edit")
-async def material_edit(mid: int, request: Request, title: str = Form(...), description: str = Form(""),
-                        is_free: bool = Form(False), for_tutor: bool = Form(False), staff: Staff = Depends(admin_required)):
-    reindex = False
-    async with session_scope() as s:
-        m = await s.get(Material, mid)
-        if m:
-            m.title, m.description, m.is_free = title.strip(), description.strip() or None, is_free
-            if for_tutor and not m.for_tutor:
-                reindex = True
-            m.for_tutor = for_tutor
-    if reindex:
-        asyncio.create_task(knowledge.index_material(mid))
-    flash(request, "Saqlandi")
-    return back("/content/materials")
-
-
-@router.post("/content/materials/{mid}/reindex")
-async def material_reindex(mid: int, request: Request, staff: Staff = Depends(admin_required)):
-    asyncio.create_task(knowledge.index_material(mid))
-    flash(request, "Qayta indekslash boshlandi", "info")
-    return back("/content/materials")
-
-
-@router.post("/content/materials/{mid}/delete")
-async def material_delete(mid: int, request: Request, staff: Staff = Depends(admin_required)):
-    from pathlib import Path
-
-    async with session_scope() as s:
-        m = await s.get(Material, mid)
-        if m:
-            try:
-                Path(m.file_path).unlink(missing_ok=True)
-            except OSError:
-                pass
-            await s.delete(m)
-            await audit.log(staff.id, "material_delete", "material", mid, m.title, session=s)
-    flash(request, "Material o'chirildi")
-    return back("/content/materials")
 
 
 # ================================================================ eslatmalar

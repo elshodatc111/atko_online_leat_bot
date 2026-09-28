@@ -5,37 +5,61 @@
   <div class="login-card">
     <div class="brand-logo">한</div>
     <h1>ATKO Lead platforma</h1>
-    <p>Operator va admin paneli. Kirish Telegram orqali amalga oshiriladi.</p>
-    <button class="btn tg-btn" id="tg-login">✈️ Telegram orqali kirish</button>
+    <p>Operator va admin paneli</p>
+    <form id="step1" style="text-align:left;margin-top:18px">
+      <label>Telegram ID raqamingiz</label>
+      <input type="text" id="tg" inputmode="numeric" autocomplete="username" placeholder="Masalan: 123456789" required>
+      <div class="hint">ID ni bilmasangiz, botga <code>/myid</code> deb yozing.</div>
+      <button class="btn tg-btn" id="send-btn">✈️ Kodni Telegramga yuborish</button>
+    </form>
+    <form id="step2" style="text-align:left;margin-top:18px" hidden>
+      <label>Tasdiqlash kodi</label>
+      <input type="text" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 xonali kod" required
+             style="font-size:22px;letter-spacing:6px;text-align:center">
+      <div class="hint">Kod bot orqali Telegramingizga yuborildi (5 daqiqa amal qiladi).</div>
+      <button class="btn tg-btn" id="verify-btn">🔓 Kirish</button>
+      <div class="btns" style="justify-content:space-between;margin-top:10px">
+        <a href="#" id="back">← ID ni o'zgartirish</a>
+        <a href="#" id="resend">Kodni qayta yuborish</a>
+      </div>
+    </form>
     <div class="login-status" id="status"></div>
-    <p style="font-size:12px;margin-top:18px">Bot sizga «Kirishni tasdiqlash» tugmasini yuboradi. Tasdiqlaganingizdan so'ng panel avtomatik ochiladi.</p>
   </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
 (function () {
-  const btn = document.getElementById("tg-login"), st = document.getElementById("status");
-  let timer = null;
-  btn.onclick = async () => {
-    btn.disabled = true;
-    st.textContent = "⏳ Havola tayyorlanmoqda...";
+  const $ = (id) => document.getElementById(id), st = $("status");
+  const saved = (() => { try { return localStorage.getItem("atko_tg") || ""; } catch (e) { return ""; } })();
+  $("tg").value = saved;
+  async function post(url, data) {
+    const fd = new FormData(); Object.entries(data).forEach(([k, v]) => fd.append(k, v));
+    const r = await fetch(url, { method: "POST", body: fd });
+    const j = await r.json().catch(() => ({ ok: false, error: "Server xatosi" }));
+    if (!r.ok || !j.ok) throw new Error(j.error || "Xatolik");
+    return j;
+  }
+  async function sendCode() {
+    const tg = $("tg").value.trim();
+    st.style.color = ""; st.textContent = "⏳ Yuborilmoqda...";
     try {
-      const r = await fetch("/login/start", { method: "POST" });
-      const j = await r.json();
-      window.open(j.link, "_blank");
-      st.innerHTML = `Telegramda <b>@${j.bot}</b> botida «✅ Kirishni tasdiqlash» tugmasini bosing.<br><a href="${j.link}" target="_blank">Bot ochilmadimi? Shu yerni bosing</a>`;
-      clearInterval(timer);
-      const started = Date.now();
-      timer = setInterval(async () => {
-        if (Date.now() - started > 5 * 60 * 1000) { clearInterval(timer); st.textContent = "⌛ Vaqt tugadi. Qaytadan urinib ko'ring."; btn.disabled = false; return; }
-        const c = await (await fetch("/login/check/" + j.token)).json();
-        if (c.status === "ok") { clearInterval(timer); st.textContent = "✅ Muvaffaqiyatli! Yo'naltirilmoqda..."; location.href = "/"; }
-        else if (c.status === "rejected") { clearInterval(timer); st.textContent = "❌ Kirish rad etildi yoki siz xodim emassiz."; btn.disabled = false; }
-        else if (c.status === "expired") { clearInterval(timer); st.textContent = "⌛ Havola eskirdi. Qaytadan urinib ko'ring."; btn.disabled = false; }
-      }, 2000);
-    } catch (e) { st.textContent = "Xatolik: " + e.message; btn.disabled = false; }
+      const j = await post("/login/code", { tg_id: tg });
+      try { localStorage.setItem("atko_tg", tg); } catch (e) {}
+      $("step1").hidden = true; $("step2").hidden = false; $("code").value = ""; $("code").focus();
+      st.textContent = "✅ " + j.message;
+    } catch (e) { st.style.color = "#c93a3a"; st.textContent = e.message; }
+  }
+  $("step1").onsubmit = (e) => { e.preventDefault(); sendCode(); };
+  $("resend").onclick = (e) => { e.preventDefault(); sendCode(); };
+  $("back").onclick = (e) => { e.preventDefault(); $("step2").hidden = true; $("step1").hidden = false; st.textContent = ""; };
+  $("step2").onsubmit = async (e) => {
+    e.preventDefault();
+    st.style.color = ""; st.textContent = "⏳ Tekshirilmoqda...";
+    try { await post("/login/verify", { tg_id: $("tg").value.trim(), code: $("code").value.trim() }); st.textContent = "✅ Xush kelibsiz!"; location.href = "/"; }
+    catch (err) { st.style.color = "#c93a3a"; st.textContent = err.message; }
   };
+  $("code").oninput = () => { if ($("code").value.replace(/\D/g, "").length === 6) $("step2").requestSubmit(); };
 })();
 </script>
 {% endblock %}

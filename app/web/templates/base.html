@@ -28,17 +28,19 @@
       <a href="/operators" class="{{ 'active' if path.startswith('/operators') }}">👨‍💼 <span>Operatorlar</span></a>
       <a href="/sources" class="{{ 'active' if path.startswith('/sources') }}">🔗 <span>Manba havolalari</span></a>
       <a href="/broadcasts" class="{{ 'active' if path.startswith('/broadcasts') }}">📣 <span>Ommaviy xabar</span></a>
-      <a href="/faq" class="{{ 'active' if path.startswith('/faq') }}">💡 <span>FAQ va savollar</span></a>
+      <a href="/subscriptions" class="{{ 'active' if path.startswith('/subscriptions') }}">💎 <span>Obunachilar</span></a>
+      <a href="/payments" class="{{ 'active' if path.startswith('/payments') }}">💳 <span>To'lovlar</span></a>
+      <a href="/faq" class="{{ 'active' if path.startswith('/faq') }}">💡 <span>Savollar tahlili</span></a>
       <div class="nav-title">Kontent</div>
-      <a href="/content/tariffs" class="{{ 'active' if path.startswith('/content/tariffs') }}">📚 <span>Tariflar</span></a>
+      <a href="/content/tariffs" class="{{ 'active' if path.startswith('/content/tariffs') }}">📚 <span>Tariflar va narxlar</span></a>
       <a href="/content/info" class="{{ 'active' if path.startswith('/content/info') }}">ℹ️ <span>Markaz ma'lumotlari</span></a>
-      <a href="/content/materials" class="{{ 'active' if path.startswith('/content/materials') }}">📄 <span>Materiallar (PDF)</span></a>
       <a href="/content/reminders" class="{{ 'active' if path.startswith('/content/reminders') }}">⏰ <span>Avto-eslatmalar</span></a>
       <a href="/content/templates" class="{{ 'active' if path.startswith('/content/templates') }}">🧩 <span>Javob shablonlari</span></a>
       <a href="/texts" class="{{ 'active' if path.startswith('/texts') }}">✏️ <span>Bot matnlari</span></a>
       <div class="nav-title">Tizim</div>
       <a href="/exports" class="{{ 'active' if path.startswith('/exports') }}">📑 <span>Excel eksport</span></a>
       <a href="/audit" class="{{ 'active' if path.startswith('/audit') }}">🧾 <span>Harakatlar jurnali</span></a>
+      <a href="/system" class="{{ 'active' if path.startswith('/system') }}">🩺 <span>Tizim holati</span> <em class="badge" id="nav-health" hidden>!</em></a>
       <a href="/settings" class="{{ 'active' if path.startswith('/settings') }}">⚙️ <span>Sozlamalar</span></a>
       {% endif %}
     </nav>

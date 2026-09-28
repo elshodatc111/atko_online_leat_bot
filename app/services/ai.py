@@ -307,7 +307,7 @@ def _consultant_prompt(kb: str, lead: Lead, extra: str) -> str:
     known = []
     if lead.name:
         known.append(f"ism: {lead.name}")
-    known.append("telefon: " + ("bor ✅" if lead.phone else "YO'Q"))
+    known.append("telefon: " + ("tasdiqlangan ✅" if lead.phone else "yo'q"))
     if lead.goal:
         known.append(f"maqsad: {lead.goal}")
     if lead.study_format:
@@ -321,19 +321,23 @@ def _consultant_prompt(kb: str, lead: Lead, extra: str) -> str:
 {_lang_rule(lead.lang)}
 {FORMAT_RULE}
 
-MAQSAD: mijoz ehtiyojini tushunish (maqsad, daraja, vaqt, format), 1-2 ta mos tarifni sababi bilan tavsiya qilish, bepul 1-dars / bepul PDF / TOPIK test tahlilini taklif qilish va kontakt (ism + telefon) olish.
+MAQSAD: mijoz ehtiyojini tushunish (maqsad, daraja, vaqt, format), 1-2 ta mos tarifni sababi bilan tavsiya qilish va kursga yozilishga yo'naltirish.
+
+TARIFLAR VA TO'LOV:
+- 1-tarif (Premium video darslar, yopiq Telegram guruh) — botning «💳 Obuna sotib olish» bo'limida Payme orqali onlayn sotib olinadi (1/3/12 oy). To'lovdan so'ng guruh havolasi avtomatik keladi. Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.
+- 2, 3, 4-tariflar (Zoom guruh, Zoom intensiv, Individual) — oldindan to'lov, to'lov admin bilan bog'lanib amalga oshiriladi: foydalanuvchiga tarif sahifasidagi «👨‍💼 Admin bilan bog'lanish» tugmasini bosishni tavsiya qiling.
+- Narxlarni BILIMLAR BAZASIdagidek aniq ayting. Narx belgilanmagan bo'lsa — admin bilan aniqlashtirishni ayting. Har doim narxlar o'zgarishi mumkinligini va aniq narx/chegirmalarni admin bilan aniqlashtirib olish tavsiya etilishini qisqa eslating. Chegirma yoki narxni o'ylab topmang.
+- BEPUL DARS YO'Q. Bepul dars, bepul material yoki sinov darsi va'da qilmang.
 
 QOIDALAR:
 1. Faqat quyidagi BILIMLAR BAZASIdagi ma'lumotga tayaning. Yo'q ma'lumotni O'YLAB TOPMANG. "[TO'LDIRILSIN]" belgisi — ma'lumot yo'q degani. Bunday holda "Bu bo'yicha aniq ma'lumotni menejerimiz beradi" deng va knowledge_gap funksiyasini chaqiring.
-2. NARXNI AYTMANG va taxmin qilmang: individual yondashuv va maxsus chegirmalar borligi uchun narxni menejer aniq hisoblab berishini ayting; telefon raqami bo'lmasa — «📱 Kontaktni ulashish» tugmasi orqali qoldirishni so'rang.
-3. Telefon raqamni matnda yozishni so'ramang — pastdagi «📱 Kontaktni ulashish» tugmasini bosishni so'rang. Telefon allaqachon bor bo'lsa, qayta so'ramang.
-4. Kafolat bermang: imtihondan o'tish, ball, viza yoki Koreyada ish kafolatlanmaydi. EPS-TOPIK ro'yxatdan o'tish va ishga yuborish faqat rasmiy davlat idoralari orqali. ATKO faqat imtihonga TAYYORLAYDI.
-5. "Intensive VIP" (guruh) va "Individual VIP" nomlarini aytganda har doim "guruh" yoki "individual" so'zini qo'shing.
-6. Foydalanuvchi o'zi haqida ma'lumot aytsa (ism, maqsad, daraja, shahar, format, qiziqqan tarif) — save_lead_info ni chaqiring. Qiziqish darajasini ham baholang (temperature).
-7. Foydalanuvchi operator/odam bilan gaplashmoqchi bo'lsa, shikoyat, to'lov muammosi, jahl yoki kursga yozilishga tayyor bo'lsa — escalate_to_operator ni chaqiring va qisqa javob bering.
-8. Raqobatchilar haqida salbiy gapirmang; siyosat va din mavzulariga kirmang.
-9. Koreys tili bo'yicha oddiy savol bersa — qisqa, misollar bilan (koreyscha + tarjima) javob bering va batafsil yordam uchun «🎓 Tutor» bo'limini tavsiya qiling.
-10. Faqat birinchi xabarda salomlashing. Javob oxirida suhbatni davom ettiruvchi BITTA savol yoki taklif (Call-to-Action) bering.
+2. Telefon raqam allaqachon tasdiqlangan — uni so'ramang.
+3. Kafolat bermang: imtihondan o'tish, ball, viza yoki Koreyada ish kafolatlanmaydi. EPS-TOPIK ro'yxatdan o'tish va ishga yuborish faqat rasmiy davlat idoralari orqali. ATKO faqat imtihonga TAYYORLAYDI.
+4. Foydalanuvchi o'zi haqida ma'lumot aytsa (ism, maqsad, daraja, shahar, format, qiziqqan tarif) — save_lead_info ni chaqiring. Qiziqish darajasini ham baholang (temperature).
+5. Foydalanuvchi operator/odam bilan gaplashmoqchi bo'lsa, shikoyat, to'lov muammosi, jahl yoki 2–4-tariflarga yozilishga tayyor bo'lsa — escalate_to_operator ni chaqiring va qisqa javob bering.
+6. Raqobatchilar haqida salbiy gapirmang; siyosat va din mavzulariga kirmang.
+7. Koreys tili bo'yicha savol bersa — qisqa, misollar bilan (koreyscha + tarjima) javob bering va batafsil yordam uchun «🎓 AI mentor» bo'limini tavsiya qiling.
+8. Faqat birinchi xabarda salomlashing. Javob oxirida suhbatni davom ettiruvchi BITTA savol yoki taklif (Call-to-Action) bering.
 
 MIJOZ HAQIDA MA'LUM MA'LUMOTLAR: {", ".join(known)}
 {("QO'SHIMCHA KO'RSATMALAR (admin):" + chr(10) + extra) if extra else ""}
@@ -398,7 +402,7 @@ async def consultant_reply(lead: Lead, text: str | None, image_path: str | None 
 
 
 def _tutor_prompt(lead: Lead, context: str, is_student: bool) -> str:
-    return f"""Siz "ATKO Koreys Tili O'quv Markazi"ning AI-tutorisiz — koreys tili bo'yicha shaxsiy o'qituvchi-yordamchi. TOPIK va EPS-TOPIK bo'yicha mutaxassissiz.
+    return f"""Siz "ATKO Koreys Tili O'quv Markazi"ning AI mentorisiz — koreys tili bo'yicha shaxsiy o'qituvchi-yordamchi. TOPIK va EPS-TOPIK bo'yicha mutaxassissiz.
 
 {_lang_rule(lead.lang)}
 {FORMAT_RULE}
@@ -415,20 +419,82 @@ VAZIFA: o'quvchining koreys tilini haqiqatan o'rganishiga yordam berish.
 - Bu rejimda kurs sotmang va reklama qilmang. Koreys tilidan tashqari mavzularda muloyimlik bilan asosiy mavzuga qayting.
 - Javob oxirida o'qishni davom ettiruvchi taklif bering (masalan, "Mustahkamlash uchun 3 ta mashq beraymi?").
 
-O'QUVCHI: {"ATKO o'quvchisi" if is_student else "sinov foydalanuvchisi"}; daraja: {lead.level or "noma'lum"}.
-{("ATKO DARSLIKLARIDAN MOS PARCHALAR (javobda shulardan foydalaning, manbani qisqa eslating):" + chr(10) + context) if context else ""}"""
+O'QUVCHI: {"ATKO Premium obunachisi" if is_student else "bepul foydalanuvchi"}; daraja: {lead.level or "noma'lum"}.
+{("ATKO DARSLIKLARI: savolga mos ma'lumotni file_search orqali darsliklardan qidiring va javobda ulardan foydalaning, manbani qisqa eslating." if context == "file_search" else "")}"""
+
+
+async def vector_store_ids() -> list[str]:
+    raw = str(await settings.get("ai_vector_store_ids") or "")
+    return [x.strip() for x in raw.replace(";", ",").replace("\n", ",").split(",") if x.strip()]
+
+
+def _responses_input(messages: list[dict]) -> list[dict]:
+    """chat.completions formatidagi xabarlarni Responses API formatiga o'tkazadi."""
+    out = []
+    for m in messages:
+        c = m["content"]
+        if isinstance(c, list):
+            parts = []
+            for p in c:
+                if p.get("type") == "text":
+                    parts.append({"type": "input_text", "text": p["text"]})
+                elif p.get("type") == "image_url":
+                    parts.append({"type": "input_image", "image_url": p["image_url"]["url"]})
+            out.append({"role": m["role"], "content": parts})
+        else:
+            out.append({"role": m["role"], "content": c})
+    return out
+
+
+async def respond_with_files(system: str, messages: list[dict], stores: list[str], max_tokens: int = 3500) -> str:
+    """Responses API + file_search (OpenAI Storage'dagi darsliklar)."""
+    if not await is_available():
+        raise AIUnavailable()
+    client = await get_client()
+    kwargs: dict[str, Any] = {
+        "model": await settings.get("ai_model"), "instructions": system, "input": _responses_input(messages),
+        "tools": [{"type": "file_search", "vector_store_ids": stores, "max_num_results": 6}],
+        "max_output_tokens": max_tokens,
+    }
+    effort = (await settings.get("ai_reasoning_effort") or "").strip()
+    if effort:
+        kwargs["reasoning"] = {"effort": effort}
+    from openai import BadRequestError
+
+    for _ in range(3):
+        try:
+            resp = await client.responses.create(**kwargs)
+            u = getattr(resp, "usage", None)
+            await _record(getattr(u, "input_tokens", 0) or 0, getattr(u, "output_tokens", 0) or 0)
+            return getattr(resp, "output_text", "") or ""
+        except BadRequestError as e:
+            if "reasoning" in str(e).lower() and "reasoning" in kwargs:
+                kwargs.pop("reasoning")
+                continue
+            await _record(error=True)
+            raise
+        except Exception:
+            await _record(error=True)
+            raise
+    raise AIUnavailable()
 
 
 async def tutor_reply(lead: Lead, text: str | None, image_path: str | None = None,
                       exclude_id: int | None = None, is_student: bool = False) -> str:
-    context = ""
-    if text:
-        found = await knowledge.search_materials(text)
-        if found:
-            context = "\n\n".join(f"[{title}{f', {page}-bet' if page else ''}] {chunk}" for title, page, chunk in found)
-    messages: list[dict] = [{"role": "system", "content": _tutor_prompt(lead, context, is_student)}]
-    messages += await _history(lead.id, "tutor", exclude_id)
-    messages.append({"role": "user", "content": _user_content(text, image_path)})
+    stores = await vector_store_ids()
+    history = await _history(lead.id, "tutor", exclude_id)
+    user_msg = {"role": "user", "content": _user_content(text, image_path)}
+    if stores:
+        system = _tutor_prompt(lead, "file_search", is_student)
+        try:
+            return await respond_with_files(system, history + [user_msg], stores)
+        except AIUnavailable:
+            raise
+        except Exception as e:  # noqa: BLE001
+            log.warning("file_search bilan javob bo'lmadi, oddiy rejimga o'tildi: %s", e)
+    messages: list[dict] = [{"role": "system", "content": _tutor_prompt(lead, "", is_student)}]
+    messages += history
+    messages.append(user_msg)
     msg = await complete(messages, max_tokens=3500)
     return msg.content or ""
 

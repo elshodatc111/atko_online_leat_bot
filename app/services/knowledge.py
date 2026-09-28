@@ -13,7 +13,8 @@ from . import settings, worktime
 
 log = logging.getLogger(__name__)
 
-CATEGORY_LABELS = {"group": "Guruh tariflari", "individual": "Individual (1-ga-1) tariflar", "hybrid": "Gibrid ta'lim"}
+CATEGORY_LABELS = {"subscription": "Obuna — yopiq Telegram guruh", "group": "Zoom guruh darslari",
+                   "individual": "Individual (1-ga-1) darslar", "hybrid": "Gibrid ta'lim"}
 
 
 async def course_knowledge(lang: str = "uz") -> str:
@@ -27,15 +28,24 @@ async def course_knowledge(lang: str = "uz") -> str:
     parts: list[str] = []
     parts.append("## OPERATORLAR ISH VAQTI\n"
                  f"{await worktime.work_hours_text()} (Toshkent vaqti). Dam olish: {off_names} va bayram kunlari.")
-    for cat in ("group", "individual", "hybrid"):
-        items = [x for x in tariffs if x.category == cat]
-        if not items:
-            continue
-        parts.append(f"## {CATEGORY_LABELS[cat].upper()}")
-        for x in items:
-            name = x.name_ru if lang == "ru" else x.name_uz
-            desc = x.desc_ru if lang == "ru" else x.desc_uz
-            parts.append(f"### {name}\n{desc}")
+    from ..models import SubscriptionPlan
+
+    async with session_scope() as s2:
+        plans = (await s2.execute(select(SubscriptionPlan).where(SubscriptionPlan.is_active.is_(True))
+                                  .order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
+    parts.append("## TARIFLAR VA NARXLAR (so'mda)")
+    for i, x in enumerate(tariffs, start=1):
+        name = x.name_ru if lang == "ru" else x.name_uz
+        desc = x.desc_ru if lang == "ru" else x.desc_uz
+        if x.is_subscription:
+            pl = [p for p in plans if p.tariff_id == x.id]
+            price = "; ".join(f"{p.title_uz} ({p.days} kun) — {p.price:,} so'm".replace(",", " ") if p.price else f"{p.title_uz} — narx belgilanmagan"
+                              for p in pl) or "narx belgilanmagan"
+            how = "Botda «💳 Obuna sotib olish» orqali Payme bilan onlayn to'lanadi."
+        else:
+            price = (f"{x.price:,} so'm".replace(",", " ") + (f" / {x.price_period}" if x.price_period else "")) if x.price else "narx belgilanmagan — admin bilan aniqlashtiriladi"
+            how = "Oldindan to'lov, admin bilan bog'lanib amalga oshiriladi."
+        parts.append(f"### {name}\n{desc}\nNarx: {price}\nTo'lov: {how}")
     for p in pages:
         title = p.title_ru if lang == "ru" else p.title_uz
         body = p.body_ru if lang == "ru" else p.body_uz

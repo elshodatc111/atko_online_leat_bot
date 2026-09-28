@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Obunachilar{% endblock %}
+{% block heading %}💎 Obunachilar (yopiq guruh){% endblock %}
+{% block content %}
+{% if not group_id %}
+<div class="flash flash-warning">⚠️ Yopiq guruh hali tanlanmagan. Botni guruhga <b>admin</b> qilib qo'shing («Havola orqali taklif qilish» va «Foydalanuvchilarni bloklash» huquqlari bilan), so'ng <a href="/settings#group">Sozlamalar → Yopiq guruh</a> bo'limida guruhni tanlang.</div>
+{% endif %}
+{% if link %}
+<div class="flash flash-info">🔗 Shaxsiy havola (foydalanuvchiga o'zingiz yuboring): <code>{{ link }}</code>
+  <button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText('{{ link }}');ATKO.toast('Nusxalandi','success')">📋</button><br>
+  <small>Havola «qo'shilish so'rovi» turida: boshqa odam bossa ham bot faqat obunasi bor foydalanuvchini qabul qiladi.</small></div>
+{% endif %}
+<div class="kpis">
+  <div class="kpi accent"><div class="label">💎 Faol obunachilar</div><div class="value">{{ k.active_subs }}</div></div>
+  <div class="kpi"><div class="label">⏰ 3 kunda tugaydi</div><div class="value">{{ k.expiring }}</div></div>
+  <div class="kpi"><div class="label">Shu oy tushum</div><div class="value">{{ '{:,}'.format(k.month_sum).replace(',', ' ') }}</div><div class="sub">so'm</div></div>
+</div>
+
+<div class="card">
+  <h2>➕ Qo'lda obuna berish</h2>
+  <p class="muted" style="margin-top:-6px">Naqd yoki karta orqali to'lagan, yoki guruhda allaqachon bor a'zolar uchun. Telegram bot foydalanuvchini guruhga to'g'ridan-to'g'ri qo'sha olmaydi — bot unga shaxsiy «qo'shilish» havolasini yuboradi (foydalanuvchi botga /start bosgan bo'lishi kerak).</p>
+  <form method="post" action="/subscriptions/add">
+    <div class="form-row">
+      <div><label>Telegram ID</label><input type="text" name="tg_id" inputmode="numeric" required placeholder="123456789"><div class="hint">Foydalanuvchi botga /myid yozib bilishi mumkin</div></div>
+      <div><label>Necha kunga</label><input type="number" name="days" value="30" min="0"><div class="hint">30 — 1 oy, 90 — 3 oy, 365 — 1 yil</div></div>
+      <div><label>Ism (ixtiyoriy)</label><input type="text" name="name"></div>
+      <div><label>Izoh</label><input type="text" name="note" placeholder="Masalan: naqd to'lov"></div>
+    </div>
+    <div class="btns">
+      <label class="check"><input type="checkbox" name="send_link" checked> Guruh havolasini bot orqali yuborish</label>
+      <label class="check"><input type="checkbox" name="whitelisted"> Muddatsiz (o'qituvchi, mentor va h.k.)</label>
+      <button class="btn">Obuna berish</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="tabs" style="margin:0;border:0">
+      <a href="?flt=active" class="{{ 'active' if flt == 'active' }}">✅ Faol</a>
+      <a href="?flt=expiring" class="{{ 'active' if flt == 'expiring' }}">⏰ 7 kunda tugaydi</a>
+      <a href="?flt=expired" class="{{ 'active' if flt == 'expired' }}">⌛️ Tugagan</a>
+      <a href="?flt=all" class="{{ 'active' if flt == 'all' }}">Barchasi</a>
+    </div>
+    <div class="btns">
+      <form method="get"><input type="hidden" name="flt" value="{{ flt }}"><input type="search" name="q" value="{{ q }}" placeholder="🔍 Ism yoki ID"></form>
+      <form method="post" action="/subscriptions/sync"><button class="btn btn-sm btn-ghost" title="Har bir obunachining guruhdagi holatini tekshiradi">🔄 Guruhni sinxronlash</button></form>
+      <form method="post" action="/subscriptions/check"><button class="btn btn-sm btn-ghost" title="Eslatmalar va muddati tugaganlarni chiqarish">⏱ Hozir tekshirish</button></form>
+      <form method="post" action="/exports/subscriptions"><button class="btn btn-sm btn-ghost">📑 Excel</button></form>
+    </div>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>Foydalanuvchi</th><th>Telegram ID</th><th>Boshlangan</th><th>Tugaydi</th><th class="num">Qoldi</th><th>Guruhda</th><th>Izoh</th><th></th></tr>
+    {% for x in rows %}
+    <tr>
+      <td>{% if x.lead %}<a href="/leads/{{ x.lead_id }}"><b>{{ x.lead.display }}</b></a><br><small>{{ x.lead.phone or '' }}</small>{% else %}<b>{{ x.name or '—' }}</b>{% endif %}</td>
+      <td><code>{{ x.tg_id }}</code></td>
+      <td><small>{{ x.started_at|dt('%d.%m.%Y') }}</small></td>
+      <td>{% if x.whitelisted %}<span class="pill pill-active">♾ muddatsiz</span>{% else %}{{ x.expires_at|dt('%d.%m.%Y %H:%M') }}{% endif %}</td>
+      <td class="num">{% if x.whitelisted %}∞{% elif x.is_active %}<b style="color:{{ '#c93a3a' if x.days_left <= 3 else 'inherit' }}">{{ x.days_left }} kun</b>{% else %}<span class="pill pill-danger">tugagan</span>{% endif %}</td>
+      <td>{{ '✅' if x.in_group else '—' }}</td>
+      <td><small>{{ x.note or '' }}</small></td>
+      <td>
+        <details class="edit"><summary class="btn btn-sm btn-ghost">⚙️</summary>
+          <form method="post" action="/subscriptions/{{ x.id }}/extend" class="btns" style="margin-bottom:8px">
+            <select name="days" style="width:auto">
+              <option value="30">+30 kun</option><option value="90">+90 kun</option><option value="365">+365 kun</option>
+              <option value="7">+7 kun</option><option value="1">+1 kun</option><option value="-1">−1 kun</option><option value="-7">−7 kun</option><option value="-30">−30 kun</option>
+            </select>
+            <button class="btn btn-sm">Qo'llash</button>
+          </form>
+          <form method="post" action="/subscriptions/{{ x.id }}/set">
+            <div class="field"><label>Aniq tugash sanasi</label><input type="date" name="expires" value="{{ x.expires_at|dt('%Y-%m-%d') }}"></div>
+            <div class="field"><label>Izoh</label><input type="text" name="note" value="{{ x.note or '' }}"></div>
+            <label class="check"><input type="checkbox" name="whitelisted" {{ 'checked' if x.whitelisted }}> Muddatsiz</label>
+            <button class="btn btn-sm">Saqlash</button>
+          </form>
+          <div class="btns" style="margin-top:8px">
+            <form method="post" action="/subscriptions/{{ x.id }}/link"><button class="btn btn-sm btn-ghost">🔗 Havolani yuborish</button></form>
+            <form method="post" action="/subscriptions/{{ x.id }}/revoke" onsubmit="return confirm('Obunani bekor qilib, guruhdan chiqarasizmi?')"><button class="btn btn-sm btn-danger">⛔️ Bekor qilish</button></form>
+          </div>
+        </details>
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="8" class="empty">Obunachilar yo'q</td></tr>{% endfor %}
+  </table></div>
+</div>
+
+<div class="card">
+  <h2>🕘 Oxirgi hodisalar</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Vaqt</th><th>Obunachi</th><th>Hodisa</th><th class="num">Kun</th><th>Kim</th><th>Izoh</th></tr>
+    {% for e in events %}<tr><td><small>{{ e.created_at|dt }}</small></td><td>{{ sub_names.get(e.subscription_id, '') }}</td>
+      <td>{{ labels.get(e.kind, e.kind) }}</td><td class="num">{{ e.days if e.days is not none else '' }}</td>
+      <td>{{ e.staff.full_name if e.staff else 'Tizim' }}</td><td><small>{{ e.note or '' }}</small></td></tr>
+    {% else %}<tr><td colspan="6" class="empty">Hodisalar yo'q</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>ATKO.on("subscription", () => {});</script>{% endblock %}

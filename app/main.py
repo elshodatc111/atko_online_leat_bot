@@ -12,7 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import config
 from .db import init_db
-from .seed import seed
+from .seed import migrate_v2, seed
 from .services import scheduler, settings, worktime
 from .web.deps import WEB_DIR, LoginRequired, render
 
@@ -23,6 +23,9 @@ logging.basicConfig(
 logging.getLogger("aiogram.event").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("atko")
+from .services import health as _health  # noqa: E402
+
+_health.install_error_handler()
 
 
 @asynccontextmanager
@@ -32,6 +35,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     await seed()
     await settings.load()
+    await migrate_v2()
     await worktime.reload_holidays()
     await start_bot()
     scheduler.start_all()
@@ -43,7 +47,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="ATKO Lead Platform", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY, session_cookie="atko_session",
-                   max_age=60 * 60 * 24 * 14, same_site="lax", https_only=config.PANEL_URL.startswith("https"))
+                   max_age=60 * 60 * 24 * 14, same_site="lax", https_only=False)
 app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
 
 
@@ -84,12 +88,25 @@ async def tg_webhook(secret: str, request: Request):
 _bg_tasks: set = set()
 
 
+@app.post("/payme")
+async def payme_endpoint(request: Request):
+    """Payme Merchant API (JSON-RPC). Payme kassa sozlamalarida endpoint: {PANEL_URL}/payme"""
+    from .services import payme
+
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"jsonrpc": "2.0", "id": None,
+                             "error": {"code": -32700, "message": {"uz": "JSON xato", "ru": "Ошибка парсинга", "en": "Parse error"}}})
+    return JSONResponse(await payme.handle(body, request.headers.get("authorization")))
+
+
 @app.get("/health")
 async def health():
     return {"ok": True}
 
 
-from .web.routes import admin, auth, chats, content, dashboard, leads  # noqa: E402
+from .web.routes import admin, auth, billing, chats, content, dashboard, leads  # noqa: E402
 
 app.include_router(auth.router)
 app.include_router(dashboard.router)
@@ -97,3 +114,4 @@ app.include_router(chats.router)
 app.include_router(leads.router)
 app.include_router(admin.router)
 app.include_router(content.router)
+app.include_router(billing.router)

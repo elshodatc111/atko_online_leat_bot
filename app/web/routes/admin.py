@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 
 from ...bot.instance import bot_username, deep_link
 from ...bot.texts import EDITABLE, TEXTS
+from ...config import config
 from ...db import session_scope, utcnow
 from ...models import AiUsage, AuditLog, Broadcast, Holiday, Lead, Source, Staff
 from ...services import ai, audit, broadcast, excel, media, settings, stats, worktime
@@ -236,12 +237,14 @@ async def broadcast_cancel(bid: int, request: Request, staff: Staff = Depends(ad
 
 INT_KEYS = ["max_chats_per_operator", "sla_wait_minutes", "idle_reply_minutes", "max_photo_mb", "max_audio_mb",
             "max_video_mb", "max_document_mb", "ai_daily_token_limit", "ai_history_messages", "tutor_trial_daily",
-            "faq_auto_hour", "faq_min_count"]
+            "faq_auto_hour", "faq_min_count", "payme_vat_percent"]
 FLOAT_KEYS = ["ai_price_input_per_1m", "ai_price_output_per_1m"]
 BOOL_KEYS = ["sla_notify_lead", "ai_enabled", "ai_transcribe_voice", "ai_auto_escalate", "tutor_enabled",
-             "faq_auto_enabled", "reminders_enabled"]
+             "faq_auto_enabled", "reminders_enabled", "payme_test_mode", "group_kick_unpaid"]
 STR_KEYS = ["work_start", "work_end", "ai_model", "ai_transcribe_model", "ai_embedding_model", "ai_reasoning_effort",
-            "ai_extra_instructions", "reminder_hours_from", "reminder_hours_to"]
+            "ai_extra_instructions", "reminder_hours_from", "reminder_hours_to", "ai_vector_store_ids",
+            "payme_merchant_id", "payme_account_field", "payme_ikpu", "payme_package_code", "payme_return_url", "group_chat_id"]
+SECRET_KEYS = ["payme_key", "payme_test_key"]
 
 
 @router.get("/settings")
@@ -256,7 +259,15 @@ async def settings_page(request: Request, staff: Staff = Depends(admin_required)
     cost = await ai.estimate_cost(today_usage.input_tokens, today_usage.output_tokens)
     usage = [{"day": u.day, "requests": u.requests, "inp": u.input_tokens, "out": u.output_tokens, "errors": u.errors,
               "cost": await ai.estimate_cost(u.input_tokens, u.output_tokens)} for u in usage_rows]
+    from ...services import payme
+
+    def _mask(v: str) -> str:
+        return (v[:4] + "…" + v[-4:]) if v and len(v) > 8 else ("•••" if v else "")
+
     return render(request, "admin/settings.html", staff, s=data, holidays=hol, masked_key=masked,
+                  payme_endpoint=f"{config.PANEL_URL}/payme", payme_key_mask=_mask(data.get("payme_key") or config.PAYME_KEY),
+                  payme_test_key_mask=_mask(data.get("payme_test_key") or config.PAYME_TEST_KEY),
+                  payme_mid=await payme.merchant_id(), known_chats=data.get("known_chats") or {},
                   key_from_env=bool(key) and not data.get("openai_api_key"), usage=usage, today_usage=today_usage,
                   today_cost=cost, ffmpeg=media.ffmpeg_available(), weekdays=worktime.WEEKDAYS_UZ)
 
@@ -280,6 +291,14 @@ async def settings_save(request: Request, staff: Staff = Depends(admin_required)
         if k in form:
             values[k] = str(form[k]).strip()
     values["days_off"] = [int(x) for x in form.getlist("days_off") if str(x).isdigit()]
+    for k in SECRET_KEYS:
+        v = str(form.get(k, "")).strip()
+        if v:
+            values[k] = v
+        if form.get(f"clear_{k}"):
+            values[k] = ""
+    if "group_chat_id" in values and values["group_chat_id"] and not values["group_chat_id"].lstrip("-").isdigit():
+        values.pop("group_chat_id")
     new_key = str(form.get("openai_api_key", "")).strip()
     if new_key:
         values["openai_api_key"] = new_key
@@ -402,6 +421,8 @@ EXPORTS = {
     "operators": ("Operatorlar statistikasi", excel.operators_xlsx),
     "audit": ("Harakatlar jurnali", excel.audit_xlsx),
     "questions": ("Foydalanuvchi savollari", excel.questions_xlsx),
+    "payments": ("To'lovlar", excel.payments_xlsx),
+    "subscriptions": ("Obunachilar", excel.subscriptions_xlsx),
 }
 
 

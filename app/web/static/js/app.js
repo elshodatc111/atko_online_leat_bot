@@ -135,6 +135,12 @@
     }
   });
   refreshCounters();
+  // tizim holati belgisi (admin uchun)
+  async function refreshHealth() {
+    if (!ATKO.isAdmin) return;
+    try { const j = await ATKO.api("/api/system/brief"); const b = document.getElementById("nav-health"); if (b) b.hidden = !j.fails; } catch (e) {}
+  }
+  refreshHealth(); setInterval(refreshHealth, 120000);
   // WebSocket ishlamasa (masalan, proksi to'sib qo'ysa) — har 20 soniyada yangilab turamiz
   let lastWaiting = null;
   setInterval(async () => {

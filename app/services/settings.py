@@ -40,7 +40,7 @@ DEFAULTS: dict[str, Any] = {
     "ai_extra_instructions": "",
     # Tutor
     "tutor_enabled": True,
-    "tutor_trial_daily": 5,  # kursga qabul qilinmaganlar uchun kunlik bepul savollar
+    "tutor_trial_daily": 3,  # obunasi yo'q foydalanuvchilar uchun AI mentorga kunlik savollar
     # FAQ tahlili
     "faq_auto_enabled": True,
     "faq_auto_hour": 3,
@@ -50,6 +50,22 @@ DEFAULTS: dict[str, Any] = {
     "reminders_enabled": True,
     "reminder_hours_from": "10:00",
     "reminder_hours_to": "19:00",
+    "ai_vector_store_ids": "",  # platform.openai.com → Storage → Vector stores (vs_...) — AI mentor darsliklari
+    # Payme Merchant API
+    "payme_merchant_id": "",
+    "payme_key": "",  # asosiy (production) kalit
+    "payme_test_key": "",  # test kaliti
+    "payme_test_mode": True,
+    "payme_account_field": "order_id",
+    "payme_ikpu": "",  # MXIK (IKPU) kodi — soliq cheki uchun
+    "payme_package_code": "",  # o'lchov birligi (qadoq) kodi
+    "payme_vat_percent": 0,
+    "payme_return_url": "",
+    # Yopiq Telegram guruh (1-tarif)
+    "group_chat_id": "",
+    "group_kick_unpaid": True,  # to'lovsiz qo'shilganlarni chiqarish
+    "group_reminder_days": [3, 1],
+    "known_chats": {},
     # Bot matnlari (override) — {key: {"uz": ..., "ru": ...}}
     "texts": {},
 }

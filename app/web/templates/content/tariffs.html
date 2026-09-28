@@ -1,13 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Tariflar{% endblock %}
-{% block heading %}📚 Tariflar{% endblock %}
+{% block title %}Tariflar va narxlar{% endblock %}
+{% block heading %}📚 Tariflar va narxlar{% endblock %}
 {% block content %}
-<div class="flash flash-info">Tariflar botning «📚 Kurslar va tariflar» bo'limida ko'rinadi va AI-konsultant ularga tayangan holda maslahat beradi. Narxlar botda aytilmaydi — menejer individual hisoblaydi.</div>
+<div class="flash flash-info">
+  Tariflar va narxlar botning «📚 Tariflar va narxlar» bo'limida ko'rinadi, AI-konsultant ham shu ma'lumotga tayanadi.
+  <b>Obuna</b> turidagi tarif (1-tarif) botda Payme orqali sotib olinadi — uning 1/3/12 oylik variantlari va narxlari pastda.
+  Qolgan tariflar uchun to'lov admin orqali: botda «👨‍💼 Admin bilan bog'lanish» tugmasi chiqadi.
+  Narx <b>0</b> bo'lsa, botda «Narxni admin bilan aniqlashtiring» deb ko'rsatiladi.
+  {% if not payme_ok %}<br>⚠️ Payme hali sozlanmagan — <a href="/settings#payme">Sozlamalar → Payme</a>.{% endif %}
+</div>
 {% macro tariff_form(x=None) %}
 <form method="post" action="/content/tariffs/save">
   <input type="hidden" name="id" value="{{ x.id if x else '' }}">
   <div class="form-row">
-    <div><label>Toifa</label><select name="category">{% for k, v in cats.items() %}<option value="{{ k }}" {{ 'selected' if x and x.category == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Turi</label><select name="category">{% for k, v in cats.items() %}<option value="{{ k }}" {{ 'selected' if x and x.category == k }}>{{ v }}</option>{% endfor %}</select></div>
+    {% if not x or not x.is_subscription %}
+    <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ x.price if x else 0 }}"><div class="hint">0 — «admin bilan aniqlashtiring»</div></div>
+    <div><label>Davr</label><input type="text" name="price_period" value="{{ x.price_period if x else 'oyiga' }}" placeholder="oyiga / kursga"></div>
+    {% endif %}
     <div><label>Tartib raqami</label><input type="number" name="sort" value="{{ x.sort if x else 0 }}"></div>
     <div style="align-self:end"><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not x or x.is_active }}> Faol (botda ko'rinadi)</label></div>
   </div>
@@ -20,21 +30,38 @@
   <div class="btns" style="margin-top:10px"><button class="btn">💾 Saqlash</button></div>
 </form>
 {% endmacro %}
+{% macro plan_form(tid, p=None) %}
+<form method="post" action="/content/plans/save" class="form-row" style="align-items:end">
+  <input type="hidden" name="id" value="{{ p.id if p else '' }}"><input type="hidden" name="tariff_id" value="{{ tid }}">
+  <div><label>Nomi 🇺🇿</label><input type="text" name="title_uz" value="{{ p.title_uz if p else '' }}" placeholder="1 oy" required></div>
+  <div><label>Nomi 🇷🇺</label><input type="text" name="title_ru" value="{{ p.title_ru if p else '' }}" placeholder="1 месяц" required></div>
+  <div><label>Kunlar</label><input type="number" name="days" value="{{ p.days if p else 30 }}" min="1"></div>
+  <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ p.price if p else 0 }}"></div>
+  <div><label>Tartib</label><input type="number" name="sort" value="{{ p.sort if p else 0 }}"></div>
+  <div><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not p or p.is_active }}> Faol</label>
+    <button class="btn btn-sm">💾</button></div>
+</form>
+{% endmacro %}
 <div class="card"><details class="edit"><summary class="btn">➕ Yangi tarif qo'shish</summary>{{ tariff_form() }}</details></div>
-{% for cat, label in cats.items() %}
+{% for x in rows %}
 <div class="card">
-  <h2>{{ label }}</h2>
-  {% for x in rows if x.category == cat %}
-  <div style="border-bottom:1px solid var(--line);padding:10px 0">
-    <div class="card-head" style="margin:0">
-      <div><b>{{ x.name_uz }}</b> {% if not x.is_active %}<span class="pill pill-danger">nofaol</span>{% endif %}<br><small>{{ x.name_ru }}</small></div>
-      <div class="btns">
-        <form method="post" action="/content/tariffs/{{ x.id }}/delete" onsubmit="return confirm('Tarifni o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
-      </div>
-    </div>
-    <details class="edit"><summary class="btn btn-sm btn-ghost" style="margin-top:6px">✏️ Tahrirlash</summary>{{ tariff_form(x) }}</details>
+  <div class="card-head">
+    <div><h2 style="margin:0">{{ x.name_uz }} {% if not x.is_active %}<span class="pill pill-danger">nofaol</span>{% endif %}</h2>
+      <small class="muted">{{ cats.get(x.category, x.category) }} ·
+        {% if x.is_subscription %}Payme orqali obuna{% else %}{{ ('{:,}'.format(x.price).replace(',', ' ') ~ " so'm" ~ (' / ' ~ x.price_period if x.price_period else '')) if x.price else "narx: admin bilan aniqlashtiriladi" }}{% endif %}</small></div>
+    <form method="post" action="/content/tariffs/{{ x.id }}/delete" onsubmit="return confirm('Tarifni o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
   </div>
-  {% else %}<p class="muted">Bu toifada tarif yo'q</p>{% endfor %}
+  {% if x.is_subscription %}
+  <h3>💳 Obuna variantlari (Payme)</h3>
+  {% for p in plans if p.tariff_id == x.id %}
+  <div style="display:flex;gap:8px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px">
+    <div style="flex:1">{{ plan_form(x.id, p) }}</div>
+    <form method="post" action="/content/plans/{{ p.id }}/delete" onsubmit="return confirm('O\'chirasizmi?')" style="margin-bottom:12px"><button class="btn btn-sm btn-ghost">🗑</button></form>
+  </div>
+  {% endfor %}
+  <details class="edit"><summary class="btn btn-sm btn-light">➕ Variant qo'shish</summary>{{ plan_form(x.id) }}</details>
+  {% endif %}
+  <details class="edit"><summary class="btn btn-sm btn-ghost" style="margin-top:8px">✏️ Tarifni tahrirlash</summary>{{ tariff_form(x) }}</details>
 </div>
 {% endfor %}
 {% endblock %}

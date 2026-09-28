@@ -88,15 +88,16 @@ def _fallback_label(data: str) -> str:
         "lang": {"uz": "🇺🇿 O'zbekcha", "ru": "🇷🇺 Русский"},
         "goal": {k: v["uz"] for k, v in GOALS.items()} | {"skip": "⏭ O'tkazib yuborish"},
         "fmt": {k: v["uz"] for k, v in FORMATS.items()} | {"skip": "⏭ O'tkazib yuborish"},
-        "cta": {"trial": "🎁 Bepul darsga yozilish", "operator": "👨‍💼 Operator bilan bog'lanish"},
+        "cta": {"operator": "👨‍💼 Operator bilan bog'lanish"},
     }
     if key in fixed:
         return fixed[key].get(val, data)
     if key == "rate":
         parts = data.split(":")
         return "⭐" * int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else data
-    labels = {"tariff": "📚 Tarif", "faq": "❓ FAQ savoli", "mat": "📄 Material", "info": "ℹ️ Ma'lumot",
-              "quiz": "📝 Mini-test", "rate_skip": "⏭ Bahoga izohsiz", "courses": "⬅️ Kurslar ro'yxati"}
+    labels = {"tariff": "📚 Tarif", "info": "ℹ️ Ma'lumot", "quiz": "📝 Mini-test", "rate_skip": "⏭ Bahoga izohsiz",
+              "courses": "⬅️ Tariflar ro'yxati", "buy": "💳 Obuna sotib olish", "plan": "💳 Obuna varianti",
+              "enroll": "👨‍💼 Admin bilan bog'lanish (tarif)", "sublink": "🔗 Guruh havolasi"}
     return f"{labels.get(key, key)} {val}".strip()
 
 
@@ -176,3 +177,41 @@ class LeadHistoryMiddleware(BaseMiddleware):
                     await log_lead_event(event.from_user.id, text)
             except Exception:  # noqa: BLE001
                 log.exception("Lead xabarini yozib bo'lmadi")
+
+
+class PhoneGateMiddleware(BaseMiddleware):
+    """Telefon raqam tasdiqlanmaguncha botning bo'limlari yopiq (faqat til, ism va kontakt yuborish mumkin)."""
+
+    async def __call__(self, handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
+                       event: TelegramObject, data: dict[str, Any]) -> Any:
+        from .keyboards import contact_kb
+        from .texts import all_button_texts, t
+
+        user = getattr(event, "from_user", None)
+        if isinstance(event, TgMessage):
+            if event.chat.type != "private" or not user:
+                return await handler(event, data)
+            txt = event.text or ""
+            if event.contact or txt.startswith("/") or txt in all_button_texts("btn_lang"):
+                return await handler(event, data)
+        elif isinstance(event, CallbackQuery):
+            if not user or (event.data or "").startswith(("lang:", "login_")):
+                return await handler(event, data)
+            if event.message and getattr(event.message.chat, "type", "private") != "private":
+                return await handler(event, data)
+        else:
+            return await handler(event, data)
+        lead = await _lead(user.id)
+        if lead is None or lead.phone:
+            return await handler(event, data)
+        if isinstance(event, TgMessage) and lead.onboarding_step in ("lang", "name"):
+            return await handler(event, data)
+        if isinstance(event, CallbackQuery):
+            try:
+                await event.answer()
+            except Exception:  # noqa: BLE001
+                pass
+        from .instance import get_bot
+
+        await get_bot().send_message(user.id, t("phone_required", lead.lang), reply_markup=contact_kb(lead.lang))
+        return None

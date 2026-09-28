@@ -20,16 +20,43 @@ log = logging.getLogger(__name__)
 _tasks: list[asyncio.Task] = []
 
 
+LOOP_TITLES = {
+    "chats": "Chat kechikish nazorati",
+    "subs": "Obuna va guruh nazorati",
+    "reminders": "Avto-eslatmalar",
+    "faq": "Savollar tahlili",
+    "cleanup": "Tozalash",
+    "monitor": "Tizim monitoringi",
+}
+_named: dict[str, asyncio.Task] = {}
+
+
 async def _loop(name: str, interval: int, fn) -> None:
+    from . import health
+
     await asyncio.sleep(5)
     while True:
         try:
             await fn()
+            health.loop_mark(name, True)
         except asyncio.CancelledError:
             raise
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
             log.exception("Fon vazifasi xatosi: %s", name)
+            health.loop_mark(name, False, str(e))
         await asyncio.sleep(interval)
+
+
+async def subs_check() -> None:
+    from . import subscriptions
+
+    await subscriptions.daily_check()
+
+
+async def monitor_check() -> None:
+    from . import health
+
+    await health.monitor()
 
 
 # ------------------------------------------------------------------ chat nazorati
@@ -182,15 +209,44 @@ async def auto_faq() -> None:
 
 
 async def cleanup() -> None:
+    from ..models import LoginCode
+
     async with session_scope() as s:
         await s.execute(delete(LoginToken).where(LoginToken.created_at < utcnow() - timedelta(hours=1)))
+        await s.execute(delete(LoginCode).where(LoginCode.created_at < utcnow() - timedelta(hours=1)))
 
 
-def start_all() -> None:
-    _tasks.append(asyncio.create_task(_loop("chats", 30, check_chats)))
-    _tasks.append(asyncio.create_task(_loop("reminders", 300, send_reminders)))
-    _tasks.append(asyncio.create_task(_loop("faq", 600, auto_faq)))
-    _tasks.append(asyncio.create_task(_loop("cleanup", 3600, cleanup)))
+SPECS = {
+    "chats": (30, check_chats),
+    "subs": (900, subs_check),
+    "reminders": (300, send_reminders),
+    "faq": (600, auto_faq),
+    "cleanup": (3600, cleanup),
+    "monitor": (300, monitor_check),
+}
+
+
+def start_all(only: list[str] | None = None) -> None:
+    for name, (interval, fn) in SPECS.items():
+        if only and name not in only:
+            continue
+        task = asyncio.create_task(_loop(name, interval, fn))
+        _named[name] = task
+        _tasks.append(task)
+
+
+def dead_loops() -> list[str]:
+    return [n for n in SPECS if n not in _named or _named[n].done()]
+
+
+async def restart(keep_monitor: bool = False) -> None:
+    """Fon vazifalarini qayta ishga tushirish (monitor o'zini o'zi to'xtatmasligi uchun keep_monitor)."""
+    names = [n for n in SPECS if not (keep_monitor and n == "monitor")]
+    for n in names:
+        t = _named.get(n)
+        if t and not t.done():
+            t.cancel()
+    start_all(only=names)
 
 
 async def stop_all() -> None:
@@ -202,3 +258,4 @@ async def stop_all() -> None:
         except (asyncio.CancelledError, Exception):  # noqa: BLE001
             pass
     _tasks.clear()
+    _named.clear()

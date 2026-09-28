@@ -26,7 +26,7 @@ LEAD_STATUSES: dict[str, str] = {
     "new": "🆕 Yangi",
     "contacted": "📞 Aloqada",
     "thinking": "🤔 O'ylab ko'radi",
-    "trial": "🎓 Bepul darsga yozildi",
+    "trial": "📝 Kursga yozilmoqchi",
     "accepted": "✅ Kursga qabul qilindi",
     "rejected": "❌ Rad etdi",
 }
@@ -245,6 +245,9 @@ class Tariff(Base):
     __tablename__ = "tariffs"
     id: Mapped[int] = mapped_column(primary_key=True)
     category: Mapped[str] = mapped_column(String(32), default="group")  # group / individual / hybrid
+    price: Mapped[int] = mapped_column(Integer, default=0)  # so'm (obuna bo'lmagan tariflar uchun)
+    price_period: Mapped[str] = mapped_column(String(32), default="oyiga")
+    is_subscription: Mapped[bool] = mapped_column(Boolean, default=False)  # Payme orqali obuna (yopiq guruh)
     name_uz: Mapped[str] = mapped_column(String(128))
     name_ru: Mapped[str] = mapped_column(String(128))
     desc_uz: Mapped[str] = mapped_column(Text)
@@ -399,3 +402,113 @@ class AiUsage(Base):
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
     audio_seconds: Mapped[float] = mapped_column(Float, default=0)
     errors: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class SubscriptionPlan(Base):
+    """Obuna tarifining muddatli variantlari (1 oy / 3 oy / 12 oy)."""
+
+    __tablename__ = "subscription_plans"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tariff_id: Mapped[int] = mapped_column(ForeignKey("tariffs.id", ondelete="CASCADE"), index=True)
+    title_uz: Mapped[str] = mapped_column(String(64))
+    title_ru: Mapped[str] = mapped_column(String(64))
+    days: Mapped[int] = mapped_column(Integer, default=30)
+    price: Mapped[int] = mapped_column(Integer, default=0)  # so'm
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort: Mapped[int] = mapped_column(Integer, default=0)
+
+    tariff: Mapped[Tariff] = relationship(lazy="joined")
+
+
+PAYMENT_STATES = {0: "🆕 Yaratildi", 1: "⏳ To'lov jarayonida", 2: "✅ To'landi", -1: "✖️ Bekor qilindi", -2: "↩️ Qaytarildi"}
+
+
+class Payment(Base):
+    """Payme orqali to'lov (buyurtma + Payme tranzaksiyasi)."""
+
+    __tablename__ = "payments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    lead_id: Mapped[int | None] = mapped_column(ForeignKey("leads.id", ondelete="SET NULL"), index=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    plan_id: Mapped[int | None] = mapped_column(ForeignKey("subscription_plans.id", ondelete="SET NULL"))
+    title: Mapped[str] = mapped_column(String(255))
+    days: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[int] = mapped_column(Integer)  # so'm
+    state: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    payme_id: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)
+    payme_time: Mapped[int | None] = mapped_column(BigInteger)  # Payme yuborgan time (ms)
+    create_time: Mapped[int | None] = mapped_column(BigInteger)  # ms
+    perform_time: Mapped[int | None] = mapped_column(BigInteger)
+    cancel_time: Mapped[int | None] = mapped_column(BigInteger)
+    reason: Mapped[int | None] = mapped_column(Integer)
+    fiscal: Mapped[dict | None] = mapped_column(JSON)
+    is_test: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    lead: Mapped[Lead | None] = relationship(lazy="joined")
+
+    @property
+    def state_label(self) -> str:
+        return PAYMENT_STATES.get(self.state, str(self.state))
+
+
+class Subscription(Base):
+    """Yopiq Telegram guruhga kirish huquqi (bitta Telegram akkaunt — bitta yozuv)."""
+
+    __tablename__ = "subscriptions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    lead_id: Mapped[int | None] = mapped_column(ForeignKey("leads.id", ondelete="SET NULL"))
+    name: Mapped[str | None] = mapped_column(String(128))
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    whitelisted: Mapped[bool] = mapped_column(Boolean, default=False)  # muddatsiz ruxsat
+    in_group: Mapped[bool] = mapped_column(Boolean, default=False)
+    invite_link: Mapped[str | None] = mapped_column(String(255))
+    reminded_3: Mapped[bool] = mapped_column(Boolean, default=False)
+    reminded_1: Mapped[bool] = mapped_column(Boolean, default=False)
+    expired_notified: Mapped[bool] = mapped_column(Boolean, default=False)
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    lead: Mapped[Lead | None] = relationship(lazy="joined")
+
+    @property
+    def is_active(self) -> bool:
+        return self.whitelisted or self.expires_at > utcnow()
+
+    @property
+    def days_left(self) -> int:
+        sec = (self.expires_at - utcnow()).total_seconds()
+        return max(0, int((sec + 86399) // 86400))
+
+
+class SubscriptionEvent(Base):
+    __tablename__ = "subscription_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(24))  # payme / manual / set_date / refund / revoke / removed / joined / link
+    days: Mapped[int | None] = mapped_column(Integer)
+    payment_id: Mapped[int | None] = mapped_column(Integer)
+    staff_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+    staff: Mapped[Staff | None] = relationship(lazy="joined")
+
+
+class LoginCode(Base):
+    """Panelga kirish uchun Telegramga yuboriladigan bir martalik kod."""
+
+    __tablename__ = "login_codes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    code_hash: Mapped[str] = mapped_column(String(128))
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    used: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

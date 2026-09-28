@@ -28,7 +28,9 @@ async def dashboard(request: Request, staff: Staff = Depends(current_staff)):
     usage = await ai.usage_today()
     async with session_scope() as s:
         waiting = (await s.execute(select(Chat).where(Chat.status == "waiting").order_by(Chat.sla_start).limit(10))).scalars().all()
-    return render(request, "dashboard.html", staff, d=d, series=series, monthly=monthly, sources=sources, goals=goals,
+    from .billing import revenue_kpis
+
+    return render(request, "dashboard.html", staff, d=d, k=await revenue_kpis(), series=series, monthly=monthly, sources=sources, goals=goals,
                   mine=mine, waiting=waiting, usage=usage, working=await worktime.is_working_time(),
                   hours=await worktime.work_hours_text())
 

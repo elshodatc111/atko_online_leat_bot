@@ -33,6 +33,10 @@ ACTIONS: dict[str, str] = {
     "source_edit": "Manbani tahrirladi",
     "export": "Excel eksport qildi",
     "online": "Onlayn holatini o'zgartirdi",
+    "subscription_add": "Obuna berdi",
+    "subscription_edit": "Obuna muddatini o'zgartirdi",
+    "subscription_revoke": "Obunani bekor qildi",
+    "system_fix": "Tizimni tuzatish amali",
 }
 
 

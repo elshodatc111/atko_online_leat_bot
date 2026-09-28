@@ -20,11 +20,12 @@ def lang_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[ib("🇺🇿 O'zbekcha", "lang:uz"), ib("🇷🇺 Русский", "lang:ru")]])
 
 
-def contact_kb(lang: str, allow_later: bool = True) -> ReplyKeyboardMarkup:
-    rows = [[KeyboardButton(text=t("btn_contact", lang), request_contact=True)]]
-    if allow_later:
-        rows.append([KeyboardButton(text=t("later", lang))])
-    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, one_time_keyboard=True)
+def contact_kb(lang: str) -> ReplyKeyboardMarkup:
+    """Telefon raqam faqat shu tugma orqali qabul qilinadi (majburiy)."""
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=t("btn_contact", lang), request_contact=True)]],
+        resize_keyboard=True, is_persistent=True,
+    )
 
 
 def goal_kb(lang: str) -> InlineKeyboardMarkup:
@@ -42,26 +43,24 @@ def format_kb(lang: str) -> InlineKeyboardMarkup:
 def main_menu(lead: Lead, tutor_enabled: bool = True) -> ReplyKeyboardMarkup:
     lang = lead.lang
     B = lambda k: KeyboardButton(text=t(k, lang))  # noqa: E731
-    rows: list[list[KeyboardButton]] = []
     if not lead.phone:
-        rows.append([KeyboardButton(text=t("btn_contact", lang), request_contact=True)])
+        return contact_kb(lang)
     if lead.mode == "tutor":
-        rows += [[B("btn_quiz"), B("btn_consultant")], [B("btn_operator"), B("btn_lang")]]
+        rows = [[B("btn_quiz"), B("btn_mysub")], [B("btn_consultant"), B("btn_operator")]]
     else:
-        rows += [
-            [B("btn_courses"), B("btn_trial")],
-            [B("btn_materials"), B("btn_faq")],
+        rows = [
+            [B("btn_courses"), B("btn_buy")],
+            [B("btn_mysub")] + ([B("btn_tutor")] if tutor_enabled else []),
+            [B("btn_operator")],
+            [B("btn_info"), B("btn_lang")],
         ]
-        if tutor_enabled:
-            rows.append([B("btn_tutor")])
-        rows += [[B("btn_operator")], [B("btn_info"), B("btn_lang")]]
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, input_field_placeholder="✍️ ...")
 
 
-def cta_kb(lang: str, operator: bool = True, trial: bool = True) -> InlineKeyboardMarkup | None:
+def cta_kb(lang: str, operator: bool = True, buy: bool = True) -> InlineKeyboardMarkup | None:
     rows = []
-    if trial:
-        rows.append([ib(t("trial_btn_inline", lang), "cta:trial")])
+    if buy:
+        rows.append([ib(t("btn_buy", lang), "buy")])
     if operator:
         rows.append([ib(t("operator_btn_inline", lang), "cta:operator")])
     return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None

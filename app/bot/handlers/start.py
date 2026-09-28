@@ -97,7 +97,8 @@ async def _handle_invite(msg: TgMessage, token: str) -> None:
     await hub.emit("alert", {"level": "success", "text": f"{name} panelga qo'shildi"}, admins_only=True)
     await msg.answer(
         f"🎉 Tabriklaymiz, {esc(name)}! Siz ATKO panelida <b>{'admin' if role == 'admin' else 'operator'}</b> sifatida ro'yxatdan o'tdingiz.\n\n"
-        f"🖥 Panel: {config.PANEL_URL}\nKirish uchun paneldagi «Telegram orqali kirish» tugmasini bosing.\n\n"
+        f"🖥 Panel: {config.PANEL_URL}\n🔐 Kirish: saytda Telegram ID ingizni kiriting — <code>{msg.from_user.id}</code>, "
+        "bot sizga tasdiqlash kodini yuboradi.\n\n"
         "Yangi murojaatlar haqida shu bot orqali xabar olasiz.",
         reply_markup=ReplyKeyboardRemove(),
     )
@@ -130,6 +131,11 @@ async def start(msg: TgMessage, command: CommandObject) -> None:
     if created or lead.onboarding_step == "lang":
         await update_lead(lead.id, onboarding_step="lang")
         await msg.answer(t("choose_lang", lead.lang), reply_markup=lang_kb())
+        return
+    if not lead.phone:
+        await update_lead(lead.id, onboarding_step="phone" if lead.onboarding_step in (None, "phone") else lead.onboarding_step)
+        await msg.answer(t("welcome", lead.lang))
+        await msg.answer(t("phone_required", lead.lang), reply_markup=contact_kb(lead.lang))
         return
     await send_menu(msg.chat.id, lead, t("welcome", lead.lang))
 
@@ -173,7 +179,7 @@ async def got_contact(msg: TgMessage) -> None:
     lead = await get_lead(msg.from_user.id)
     if not lead:
         lead, _ = await get_or_create_lead(msg.from_user)
-    if msg.contact.user_id and msg.contact.user_id != msg.from_user.id:
+    if msg.contact.user_id != msg.from_user.id:
         await msg.answer(t("phone_own_only", lead.lang), reply_markup=contact_kb(lead.lang))
         return
     phone = normalize_phone(msg.contact.phone_number) or ("+" + msg.contact.phone_number.lstrip("+"))
@@ -181,7 +187,11 @@ async def got_contact(msg: TgMessage) -> None:
     await hub.emit("lead_updated", {"lead_id": lead.id, "phone": phone})
     if lead.onboarding_step == "phone":
         await msg.answer(t("phone_saved", lead.lang, phone=phone), reply_markup=ReplyKeyboardRemove())
-        await ask_goal(lead)
+        if lead.goal and lead.study_format:
+            lead = await update_lead(lead.id, onboarding_step=None)
+            await send_menu(msg.chat.id, lead, t("onboarding_done", lead.lang))
+        else:
+            await ask_goal(lead)
         return
     if await run_pending_after_phone(lead):
         return
@@ -243,17 +253,8 @@ async def handle_onboarding_text(msg: TgMessage, lead) -> bool:
         await ask_phone(lead)
         return True
     if step == "phone":
-        if text in (t("later", "uz"), t("later", "ru")):
-            await msg.answer("👌", reply_markup=ReplyKeyboardRemove())
-            await ask_goal(lead)
-            return True
-        phone = normalize_phone(text)
-        if phone:
-            lead = await update_lead(lead.id, phone=phone)
-            await msg.answer(t("phone_saved", lead.lang, phone=phone), reply_markup=ReplyKeyboardRemove())
-            await ask_goal(lead)
-        else:
-            await msg.answer(t("ask_phone", lead.lang, name=html.escape(lead.name or "")), reply_markup=contact_kb(lead.lang))
+        # telefon faqat «📱 Raqamni yuborish» tugmasi orqali qabul qilinadi
+        await msg.answer(t("phone_required", lead.lang), reply_markup=contact_kb(lead.lang))
         return True
     if step in ("goal", "format"):
         # tugma o'rniga savol yozdi — ro'yxatdan o'tishni yakunlab, savolni qayta ishlaymiz

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import pagination %}
+{% block title %}To'lovlar{% endblock %}
+{% block heading %}💳 To'lovlar (Payme){% endblock %}
+{% block head %}<script src="/static/vendor/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+{% macro som(v) %}{{ '{:,}'.format(v or 0).replace(',', ' ') }} so'm{% endmacro %}
+<div class="kpis">
+  <div class="kpi accent"><div class="label">Bugungi tushum</div><div class="value">{{ som(k.day_sum) }}</div><div class="sub">{{ k.day_cnt }} ta to'lov</div></div>
+  <div class="kpi"><div class="label">Shu oy</div><div class="value">{{ som(k.month_sum) }}</div><div class="sub">{{ k.month_cnt }} ta to'lov</div></div>
+  <div class="kpi"><div class="label">Jami</div><div class="value">{{ som(k.total_sum) }}</div><div class="sub">{{ k.total_cnt }} ta to'lov</div></div>
+  <div class="kpi"><div class="label">💎 Faol obunachilar</div><div class="value">{{ k.active_subs }}</div><div class="sub">3 kunda tugaydi: {{ k.expiring }}</div></div>
+</div>
+<div class="grid grid-2">
+  <div class="card"><h2>📅 Kunlik tushum ({{ f.start }} — {{ f.end }})</h2><div class="chart-box"><canvas id="daily"></canvas></div></div>
+  <div class="card"><h2>🗓 Oylik tushum</h2><div class="chart-box"><canvas id="monthly"></canvas></div></div>
+</div>
+<div class="card">
+  <form class="filters" method="get">
+    <div style="flex:2"><label>Qidiruv</label><input type="search" name="q" value="{{ f.q }}" placeholder="Ism, telefon, Telegram ID, Payme ID"></div>
+    <div><label>Holat</label><select name="state"><option value="">Barchasi</option>
+      {% for k2, v in states.items() %}<option value="{{ k2 }}" {{ 'selected' if f.state == k2|string }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Dan</label><input type="date" name="start" value="{{ f.start }}"></div>
+    <div><label>Gacha</label><input type="date" name="end" value="{{ f.end }}"></div>
+    <div class="btns"><button class="btn">Ko'rsatish</button>
+      <button class="btn btn-ghost" formmethod="post" formaction="/exports/payments">📑 Excel → Telegram</button></div>
+  </form>
+</div>
+<div class="card">
+  <h2>Buyurtmalar: {{ total }}</h2>
+  <div class="table-wrap"><table>
+    <tr><th>№</th><th>Sana</th><th>Foydalanuvchi</th><th>Tarif</th><th class="num">Summa</th><th class="num">Kun</th><th>Holat</th><th>Payme ID</th></tr>
+    {% for p in rows %}
+    <tr>
+      <td>{{ p.id }}{% if p.is_test %} <span class="pill">test</span>{% endif %}</td>
+      <td><small>{{ p.created_at|dt }}</small>{% if p.paid_at %}<br><small class="muted">to'landi: {{ p.paid_at|dt }}</small>{% endif %}</td>
+      <td>{% if p.lead %}<a href="/leads/{{ p.lead_id }}">{{ p.lead.display }}</a><br><small>{{ p.lead.phone or '' }}</small>{% else %}<code>{{ p.tg_id }}</code>{% endif %}</td>
+      <td>{{ p.title }}</td>
+      <td class="num"><b>{{ som(p.amount) }}</b></td>
+      <td class="num">{{ p.days }}</td>
+      <td><span class="pill {{ 'pill-success' if p.state == 2 else ('pill-danger' if p.state < 0 else 'pill-waiting') }}">{{ p.state_label }}</span></td>
+      <td><small><code>{{ p.payme_id or '—' }}</code></small></td>
+    </tr>
+    {% else %}<tr><td colspan="8" class="empty">To'lovlar yo'q</td></tr>{% endfor %}
+  </table></div>
+  {{ pagination(page, pages, 'q=' ~ f.q ~ '&state=' ~ f.state ~ '&start=' ~ f.start ~ '&end=' ~ f.end) }}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const d = {{ daily|tojson }}, m = {{ monthly|tojson }};
+const money = (v) => v.toLocaleString("ru-RU").replace(/,/g, " ") + " so'm";
+new Chart(document.getElementById("daily"), { type: "bar", data: { labels: d.labels, datasets: [
+  { label: "Tushum", data: d.income, backgroundColor: "#17915a" }, { label: "Qaytarilgan", data: d.refund, backgroundColor: "#c93a3a" }] },
+  options: { maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: (c) => c.dataset.label + ": " + money(c.raw) } } }, scales: { y: { beginAtZero: true } } } });
+new Chart(document.getElementById("monthly"), { type: "bar", data: { labels: m.labels, datasets: [{ label: "Tushum", data: m.income, backgroundColor: "#2952cc" }] },
+  options: { maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: (c) => money(c.raw) } } }, scales: { y: { beginAtZero: true } } } });
+ATKO.on("payment", () => setTimeout(() => location.reload(), 1200));
+</script>
+{% endblock %}

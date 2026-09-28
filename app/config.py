@@ -40,6 +40,10 @@ class Config:
 
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "").strip()
 
+    PAYME_MERCHANT_ID: str = os.getenv("PAYME_MERCHANT_ID", "").strip()
+    PAYME_KEY: str = os.getenv("PAYME_KEY", "").strip()
+    PAYME_TEST_KEY: str = os.getenv("PAYME_TEST_KEY", "").strip()
+
     SECRET_KEY: str = os.getenv("SECRET_KEY", "").strip() or "change-me-" + secrets.token_hex(8)
     PANEL_URL: str = (os.getenv("PANEL_URL") or "http://localhost:8000").strip().rstrip("/")
 

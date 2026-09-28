@@ -13,7 +13,7 @@ from sqlalchemy import select
 
 from ..config import config
 from ..db import session_scope
-from ..models import FORMATS, GOALS, TEMPERATURES, AuditLog, Chat, Lead, UserQuestion
+from ..models import FORMATS, GOALS, TEMPERATURES, AuditLog, Chat, Lead, Payment, Subscription, UserQuestion
 from . import audit as audit_svc
 from . import stats, worktime
 
@@ -60,13 +60,13 @@ async def leads_xlsx(start: date | None = None, end: date | None = None, status:
         l.level, l.city, l.interested_tariff, l.source.name if l.source else "", l.status_label, l.reject_reason,
         TEMPERATURES.get(l.temperature or "", ""), l.last_operator.display_name if l.last_operator else "",
         l.accepted_by.display_name if l.accepted_by else "", worktime.fmt(l.accepted_at) if l.accepted_at else "",
-        "Ha" if l.trial_requested else "", "Ha" if l.is_blocked else "", worktime.fmt(l.created_at),
+        "Ha" if l.is_blocked else "", worktime.fmt(l.created_at),
         worktime.fmt(l.last_activity), l.ai_summary,
     ] for l in leads]
     wb = Workbook()
     _sheet(wb, "Leadlar", ["ID", "Ism", "Telefon", "Username", "Telegram ID", "Til", "Maqsad", "Format", "Daraja",
                            "Shahar", "Qiziqqan tarif", "Manba", "Status", "Rad etish sababi", "Qiziqish",
-                           "Oxirgi operator", "Qabul qilgan", "Qabul sanasi", "Bepul darsga so'rov", "Botni bloklagan",
+                           "Oxirgi operator", "Qabul qilgan", "Qabul sanasi", "Botni bloklagan",
                            "Yaratilgan", "Oxirgi faollik", "AI xulosa"], rows, first=True)
     p = _out_path("leadlar")
     wb.save(p)
@@ -143,6 +143,37 @@ async def questions_xlsx(start: date, end: date) -> Path:
     wb = Workbook()
     _sheet(wb, "Savollar", ["ID", "Vaqt", "Lead", "Til", "Rejim", "Savol", "AI javob topdi"], rows, first=True)
     p = _out_path("savollar")
+    wb.save(p)
+    return p
+
+
+async def payments_xlsx(start: date, end: date) -> Path:
+    s0, s1 = stats.range_utc(start, end)
+    async with session_scope() as s:
+        rows_db = (await s.execute(select(Payment).where(Payment.created_at >= s0, Payment.created_at < s1)
+                                   .order_by(Payment.id.desc()))).scalars().all()
+    rows = [[p.id, worktime.fmt(p.created_at), worktime.fmt(p.paid_at) if p.paid_at else "", p.lead.display if p.lead else "",
+             p.lead.phone if p.lead else "", p.tg_id, p.title, p.days, p.amount, p.state_label, p.payme_id or "",
+             "Ha" if p.is_test else ""] for p in rows_db]
+    wb = Workbook()
+    _sheet(wb, "To'lovlar", ["№", "Yaratilgan", "To'langan", "Foydalanuvchi", "Telefon", "Telegram ID", "Tarif", "Kun",
+                             "Summa (so'm)", "Holat", "Payme ID", "Test"], rows, first=True)
+    p = _out_path("tolovlar")
+    wb.save(p)
+    return p
+
+
+async def subscriptions_xlsx(start: date | None = None, end: date | None = None) -> Path:
+    async with session_scope() as s:
+        rows_db = (await s.execute(select(Subscription).order_by(Subscription.expires_at))).scalars().all()
+    rows = [[x.id, x.lead.display if x.lead else (x.name or ""), x.lead.phone if x.lead else "", x.tg_id,
+             worktime.fmt(x.started_at), "muddatsiz" if x.whitelisted else worktime.fmt(x.expires_at),
+             "∞" if x.whitelisted else x.days_left, "Faol" if x.is_active else "Tugagan", "Ha" if x.in_group else "",
+             x.note or ""] for x in rows_db]
+    wb = Workbook()
+    _sheet(wb, "Obunachilar", ["ID", "Foydalanuvchi", "Telefon", "Telegram ID", "Boshlangan", "Tugaydi", "Qoldi (kun)",
+                               "Holat", "Guruhda", "Izoh"], rows, first=True)
+    p = _out_path("obunachilar")
     wb.save(p)
     return p
 
