@@ -27,6 +27,7 @@ LOOP_TITLES = {
     "faq": "Savollar tahlili",
     "cleanup": "Tozalash",
     "payments": "To'lov eslatmalari",
+    "promos": "Promokod muddati va limiti nazorati",
     "monitor": "Tizim monitoringi",
 }
 _named: dict[str, asyncio.Task] = {}
@@ -221,6 +222,10 @@ async def pay_reminders() -> None:
     from .chats import add_message
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+    from . import promo as promo_svc
+
+    # promokodi endi amal qilmaydigan (limit tugagan, muddati o'tgan, o'chirilgan) to'lanmagan buyurtmalar — bekor
+    await promo_svc.sweep()
     if not await settings.get("pay_reminder_enabled"):
         return
     minutes = max(5, int(await settings.get("pay_reminder_minutes") or 60))
@@ -246,6 +251,8 @@ async def pay_reminders() -> None:
         if paid_after.get(p.id) or p.tg_id in seen:
             continue
         seen.add(p.tg_id)
+        if p.promo_id and await promo_svc.validate_order(p):
+            continue  # promokod joyini boshqalar egallagan — to'lashga undamaymiz
         lead = leads.get(p.id)
         if lead and lead.is_blocked:
             continue
@@ -266,6 +273,12 @@ async def pay_reminders() -> None:
         await asyncio.sleep(0.1)
 
 
+async def promo_check() -> None:
+    from . import promo as promo_svc
+
+    await promo_svc.sweep()
+
+
 async def cleanup() -> None:
     from ..models import LoginCode
 
@@ -281,6 +294,7 @@ SPECS = {
     "faq": (600, auto_faq),
     "cleanup": (3600, cleanup),
     "payments": (300, pay_reminders),
+    "promos": (60, promo_check),
     "monitor": (300, monitor_check),
 }
 

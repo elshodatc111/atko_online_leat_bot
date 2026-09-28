@@ -175,6 +175,16 @@ Model nomi **Sozlamalar → Asosiy model** maydonida o'zgartiriladi (masalan, `g
   - 🎟 promokodlar: 1–100%, «birinchi N ta», muddat, variant; har bir foydalanuvchi bir marta; to'lov jarayonidagi buyurtmalar 30 daqiqa joy band qiladi; 100% — bepul faollashtirish;
   - ⏳ yarim qolgan to'lov eslatmasi (Sozlamalar → Yopiq Premium guruh);
   - paneldagi ketma-ket xabarnomalar (flash) yo'qolib qolishi tuzatildi.
+- **v2.3:**
+  - tarif oynasida (1-tarif) «Sotib olish» ostida «🎬 Namuna darsni ko'rish» tugmasi;
+  - promokod limiti to'lov bilan to'lganda shu promokodli to'lanmagan buyurtmalar avtomatik bekor qilinadi, foydalanuvchiga «Sotib olish» tugmali xabar boradi;
+  - Payme tekshiruvida ham promokod qayta tekshiriladi: joyi boshqaga o'tgan eski buyurtma bekor qilinadi, pul olinmaydi;
+  - promokod nofaol qilinsa, o'chirilsa yoki muddati o'tsa ham to'lanmagan buyurtmalar bekor qilinadi (har 5 daqiqada fon tekshiruvi);
+  - qo'llangan promokod amal qilmay qolsa, bot to'liq narxda jimgina buyurtma yaratmaydi — sababini aytib, narxlarni qayta ko'rsatadi.
+- **v2.4:**
+  - promokod muddati soat/daqiqagacha belgilanadi; muddat tugashi bilan (1 daqiqa ichida) promokod avtomatik o'chadi, to'lanmagan buyurtmalari bekor bo'ladi, foydalanuvchilarga va adminga xabar boradi;
+  - panelda muddatni o'zgartirish/uzaytirish (✏️) — uzaytirilsa promokod qayta faol bo'ladi;
+  - o'tgan sana bilan promokod yaratib bo'lmaydi.
 - **v2.1:** «Obuna sotib olish» asosiy menyudan olindi, sotib olish oynasida obuna haqida batafsil ma'lumot.
 - **v2.0:**
   - telefon majburiy (faqat tugma orqali);

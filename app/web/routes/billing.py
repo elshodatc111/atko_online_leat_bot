@@ -289,6 +289,44 @@ async def promos_page(request: Request, staff: Staff = Depends(admin_required)):
                   codes=codes, pending=pending, now=utcnow())
 
 
+def _parse_expires(value: str):
+    """«2026-10-05» (kun oxirigacha, 23:59:59) yoki «2026-10-05T18:30» (Toshkent vaqti) → UTC."""
+    value = (value or "").strip()
+    if not value:
+        return None
+    if "T" in value or " " in value:
+        dt = datetime.fromisoformat(value.replace(" ", "T"))
+    else:
+        dt = datetime.combine(date.fromisoformat(value), datetime.max.time().replace(microsecond=0))
+    return worktime.local_to_utc_naive(dt)
+
+
+@router.post("/promos/{pid}/expires")
+async def promos_expires(pid: int, request: Request, expires: str = Form(""), staff: Staff = Depends(admin_required)):
+    """Muddatni o'zgartirish / uzaytirish (bo'sh — muddatsiz). Muddati tugab o'chgan promokod qayta yoqiladi."""
+    from ...models import PromoCode
+
+    try:
+        exp = _parse_expires(expires)
+    except ValueError:
+        flash(request, "Sana noto'g'ri", "danger")
+        return RedirectResponse("/promos", 303)
+    if exp and exp <= utcnow():
+        flash(request, "Yangi muddat kelajakdagi vaqt bo'lishi kerak", "danger")
+        return RedirectResponse("/promos", 303)
+    async with session_scope() as s:
+        p = await s.get(PromoCode, pid)
+        if not p:
+            return RedirectResponse("/promos", 303)
+        p.expires_at = exp
+        if p.closed_reason == "expired":
+            p.is_active, p.closed_reason, p.closed_at = True, None, None
+        await audit.log(staff.id, "content_edit", "promo", pid, f"{p.code}: muddat → {expires or 'muddatsiz'}", session=s)
+        code = p.code
+    flash(request, f"✅ {code}: muddat yangilandi" + (f" — {worktime.fmt(exp, '%d.%m.%Y %H:%M')} gacha" if exp else " (muddatsiz)"))
+    return RedirectResponse("/promos", 303)
+
+
 @router.post("/promos/add")
 async def promos_add(request: Request, code: str = Form(...), percent: int = Form(...), max_uses: int = Form(0),
                      plan_id: str = Form(""), expires: str = Form(""), note: str = Form(""), staff: Staff = Depends(admin_required)):
@@ -302,13 +340,14 @@ async def promos_add(request: Request, code: str = Form(...), percent: int = For
     if not 1 <= percent <= 100:
         flash(request, "Chegirma 1% dan 100% gacha bo'lishi kerak", "danger")
         return RedirectResponse("/promos", 303)
-    exp = None
-    if expires:
-        try:
-            exp = worktime.local_to_utc_naive(datetime.combine(date.fromisoformat(expires), datetime.max.time().replace(microsecond=0)))
-        except ValueError:
-            flash(request, "Sana noto'g'ri", "danger")
-            return RedirectResponse("/promos", 303)
+    try:
+        exp = _parse_expires(expires)
+    except ValueError:
+        flash(request, "Sana noto'g'ri", "danger")
+        return RedirectResponse("/promos", 303)
+    if exp and exp <= utcnow():
+        flash(request, "Amal qilish muddati kelajakdagi vaqt bo'lishi kerak", "danger")
+        return RedirectResponse("/promos", 303)
     async with session_scope() as s:
         if (await s.execute(select(PromoCode).where(PromoCode.code == c))).scalars().first():
             flash(request, "Bunday promokod mavjud", "danger")
@@ -326,8 +365,20 @@ async def promos_toggle(pid: int, request: Request, staff: Staff = Depends(admin
 
     async with session_scope() as s:
         p = await s.get(PromoCode, pid)
+        off = False
+        if p and not p.is_active and p.expires_at and p.expires_at <= utcnow():
+            flash(request, f"{p.code}: muddati tugagan. Qayta yoqish uchun avval muddatini uzaytiring", "danger")
+            return RedirectResponse("/promos", 303)
         if p:
             p.is_active = not p.is_active
+            off = not p.is_active
+            p.closed_reason, p.closed_at = None, None
+    if off:
+        from ...services import promo as promo_svc
+
+        n = await promo_svc.cancel_pending(pid, "promo_inactive")
+        flash(request, "Promokod o'chirildi (nofaol)" + (f" — {n} ta to'lanmagan buyurtma bekor qilindi" if n else ""))
+        return RedirectResponse("/promos", 303)
     flash(request, "Saqlandi")
     return RedirectResponse("/promos", 303)
 
@@ -335,6 +386,9 @@ async def promos_toggle(pid: int, request: Request, staff: Staff = Depends(admin
 @router.post("/promos/{pid}/delete")
 async def promos_delete(pid: int, request: Request, staff: Staff = Depends(admin_required)):
     from ...models import PromoCode
+    from ...services import promo as promo_svc
+
+    await promo_svc.cancel_pending(pid, "promo_inactive")
 
     async with session_scope() as s:
         p = await s.get(PromoCode, pid)

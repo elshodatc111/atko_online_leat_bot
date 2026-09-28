@@ -86,6 +86,10 @@ async def tariff_detail(cb: CallbackQuery) -> None:
     rows = []
     if x.is_subscription:
         rows.append([ib(t("buy_btn_inline", lead.lang), "buy")])
+        from ...services import settings as _st
+
+        if await _st.get("sample_video_file_id"):
+            rows.append([ib(t("sample_btn", lead.lang), "sample")])
     rows.append([ib(t("admin_btn_inline", lead.lang), f"enroll:{x.id}")])
     rows.append([ib(t("back", lead.lang), "courses")])
     text = (f"<b>{esc(name)}</b>\n\n{esc(strip_placeholders(desc))}\n\n{await tariff_price_text(x, lead.lang)}\n\n"

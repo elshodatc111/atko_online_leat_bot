@@ -116,10 +116,16 @@ async def plans_kb(lead: Lead) -> tuple[str | None, InlineKeyboardMarkup | None,
 
 
 async def show_buy(lead: Lead) -> None:
+    lost = None
+    if lead.promo_id:
+        _, lost = await promo_svc.check(int(lead.promo_id), lead.tg_id)
     name, kb, promo = await plans_kb(lead)
     if not name:
         await get_bot().send_message(lead.tg_id, t("buy_unavailable", lead.lang))
         return
+    if lost:
+        # qo'llangan promokod endi amal qilmaydi (limit tugadi, muddati o'tdi...) — foydalanuvchiga aytamiz
+        await get_bot().send_message(lead.tg_id, t(lost, lead.lang))
     text = t("buy_title", lead.lang, tariff=html.escape(name), desc="").replace("\n\n\n\n", "\n\n")
     if promo:
         text += "\n\n" + t("promo_applied_line", lead.lang, code=promo.code, percent=promo.percent)
@@ -166,6 +172,14 @@ async def start_payment(lead: Lead, plan_id: int) -> None:
     if plan.price <= 0:
         await bot.send_message(lead.tg_id, t("buy_unavailable", lead.lang), reply_markup=admin_kb)
         return
+    if lead.promo_id:
+        _, lost = await promo_svc.check(int(lead.promo_id), lead.tg_id)
+        if lost:
+            # promokod qo'llangan edi, lekin endi amal qilmaydi — to'liq narxda jimgina buyurtma yaratmaymiz
+            lead = await update_lead(lead.id, promo_id=None)
+            await bot.send_message(lead.tg_id, t("promo_lost", lead.lang, reason=t(lost, lead.lang)))
+            await show_buy(lead)
+            return
     promo = await active_promo(lead)
     if promo and promo.plan_id and promo.plan_id != plan.id:
         await bot.send_message(lead.tg_id, t("promo_wrong_plan", lead.lang))
@@ -184,6 +198,8 @@ async def start_payment(lead: Lead, plan_id: int) -> None:
             pid = pay.id
         await promo_svc.mark_used(promo.id, lead.tg_id, pid, 0, discount)
         await update_lead(lead.id, promo_id=None)
+        if await promo_svc.is_exhausted(promo.id):
+            await promo_svc.cancel_pending(promo.id, "promo_exhausted")
         await subscriptions.extend(lead.tg_id, plan.days, kind="manual", payment_id=pid, note=f"Promokod {promo.code} (100%)")
         await subscriptions.send_access(lead.tg_id, "free_ok")
         await chat_svc.add_message(lead.id, "system", text=f"🎁 100% promokod ({promo.code}) bilan obuna faollashtirildi: {plan.days} kun")

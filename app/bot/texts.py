@@ -197,6 +197,14 @@ TEXTS: dict[str, dict[str, str]] = {
         "uz": "🎉 <b>Tabriklaymiz!</b> Promokod bilan obuna <b>bepul</b> faollashtirildi.\n📅 Amal qilish muddati: <b>{until}</b> gacha\n\n👇 Guruhga qo'shilish uchun pastdagi tugmani bosing va «Qo'shilish so'rovi»ni yuboring.",
         "ru": "🎉 <b>Поздравляем!</b> Подписка по промокоду активирована <b>бесплатно</b>.\n📅 Действует до: <b>{until}</b>\n\n👇 Нажмите кнопку ниже и отправьте «Заявку на вступление».",
     },
+    "promo_order_cancelled": {
+        "uz": "❌ <b>Buyurtma №{order} bekor qilindi</b>\n\n{reason}\nPromokod bilan yaratilgan to'lanmagan buyurtma avtomatik bekor bo'ldi. Obunani oddiy narxda yoki boshqa promokod bilan sotib olishingiz mumkin 👇",
+        "ru": "❌ <b>Заказ №{order} отменён</b>\n\n{reason}\nНеоплаченный заказ с промокодом отменён автоматически. Вы можете оформить подписку по обычной цене или с другим промокодом 👇",
+    },
+    "promo_lost": {
+        "uz": "{reason}\nNarxlar yangilandi — obuna muddatini qaytadan tanlang 👇",
+        "ru": "{reason}\nЦены обновлены — выберите срок подписки заново 👇",
+    },
     "sample_btn": {"uz": "🎬 Namuna darsni ko'rish", "ru": "🎬 Посмотреть пример урока"},
     "pay_reminder": {
         "uz": "⏳ <b>To'lov yakunlanmadi</b>\n\nSiz <b>{title}</b> uchun buyurtma yaratgan edingiz ({amount}), lekin to'lov amalga oshmadi.\n\nTo'lovni davom ettirish uchun pastdagi tugmani bosing. Muammo bo'lsa, operatorimiz yordam beradi 👇",
@@ -244,6 +252,8 @@ EDITABLE: dict[str, str] = {
     "join_denied": "Obunasiz guruhga kirishga urinish",
     "pay_reminder": "To'lov yakunlanmadi — eslatma ({title}, {amount})",
     "free_ok": "100% promokod bilan bepul faollashtirildi ({until})",
+    "promo_order_cancelled": "Promokod limiti tugagani uchun to'lanmagan buyurtma bekor qilindi ({order}, {reason})",
+    "promo_lost": "Qo'llangan promokod endi amal qilmaydi ({reason})",
 }
 
 

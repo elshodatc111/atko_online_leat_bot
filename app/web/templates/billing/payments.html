@@ -38,7 +38,7 @@
       <td>{{ p.title }}</td>
       <td class="num"><b>{{ som(p.amount) }}</b>{% if p.original_amount %}<br><small class="muted"><s>{{ som(p.original_amount) }}</s> 🎟</small>{% endif %}</td>
       <td class="num">{{ p.days }}</td>
-      <td><span class="pill {{ 'pill-success' if p.state == 2 else ('pill-danger' if p.state < 0 else 'pill-waiting') }}">{{ p.state_label }}</span></td>
+      <td><span class="pill {{ 'pill-success' if p.state == 2 else ('pill-danger' if p.state < 0 else 'pill-waiting') }}">{{ p.state_label }}</span>{% if p.state == -1 and p.reason == 100 %}<br><small class="muted">🎟 promokod amal qilmay qoldi</small>{% endif %}</td>
       <td><small><code>{{ p.payme_id or '—' }}</code></small></td>
     </tr>
     {% else %}<tr><td colspan="8" class="empty">To'lovlar yo'q</td></tr>{% endfor %}

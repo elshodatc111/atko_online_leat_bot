@@ -530,6 +530,8 @@ class PromoCode(Base):
     plan_id: Mapped[int | None] = mapped_column(Integer)  # faqat shu variant uchun (bo'sh — hammasi)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    closed_reason: Mapped[str | None] = mapped_column(String(20))  # "expired" — muddati tugab avtomatik o'chirilgan
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime)
     note: Mapped[str | None] = mapped_column(String(255))
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

@@ -13,7 +13,7 @@
       <div><label>Nechta foydalanuvchi</label><input type="number" name="max_uses" min="0" value="3"><div class="hint">0 — cheklovsiz</div></div>
       <div><label>Qaysi muddat uchun</label><select name="plan_id"><option value="">Barcha variantlar</option>
         {% for p in plans.values() %}<option value="{{ p.id }}">{{ p.title_uz }} ({{ p.days }} kun)</option>{% endfor %}</select></div>
-      <div><label>Amal qilish muddati (ixtiyoriy)</label><input type="date" name="expires"></div>
+      <div><label>Amal qilish muddati (ixtiyoriy)</label><input type="datetime-local" name="expires"><div class="hint">Shu vaqtda promokod avtomatik o'chadi va to'lanmagan buyurtmalari bekor bo'ladi</div></div>
       <div><label>Izoh</label><input type="text" name="note" placeholder="Masalan: Instagram bloger"></div>
     </div>
     <button class="btn">Yaratish</button>
@@ -30,8 +30,11 @@
       <td class="num"><b>−{{ p.percent }}%</b></td>
       <td class="num">{{ p.used_count }} / {{ p.max_uses or '∞' }}{% if pending.get(p.id) %}<br><small class="muted">+{{ pending[p.id] }} to'lov jarayonida</small>{% endif %}</td>
       <td>{{ plans[p.plan_id].title_uz if p.plan_id and p.plan_id in plans else 'Barchasi' }}</td>
-      <td>{{ p.expires_at|dt('%d.%m.%Y') if p.expires_at else '—' }}</td>
-      <td>{% if not p.is_active %}<span class="pill">o'chirilgan</span>{% elif p.expires_at and p.expires_at < now %}<span class="pill pill-danger">muddati tugagan</span>{% elif left is not none and left <= 0 %}<span class="pill pill-danger">limit tugagan</span>{% else %}<span class="pill pill-success">faol</span>{% endif %}</td>
+      <td>{{ p.expires_at|dt('%d.%m.%Y %H:%M') if p.expires_at else '—' }}
+        <details class="edit"><summary class="btn btn-sm btn-ghost">✏️</summary>
+          <form method="post" action="/promos/{{ p.id }}/expires" style="margin-top:6px"><input type="datetime-local" name="expires" value="{{ p.expires_at|dt('%Y-%m-%dT%H:%M') if p.expires_at else '' }}">
+            <button class="btn btn-sm">Saqlash</button><div class="hint">Bo'sh — muddatsiz</div></form></details></td>
+      <td>{% if p.closed_reason == 'expired' %}<span class="pill pill-danger">⌛ muddati tugadi</span><br><small class="muted">avtomatik o'chirildi {{ p.closed_at|dt }}</small>{% elif not p.is_active %}<span class="pill">o'chirilgan</span>{% elif p.expires_at and p.expires_at < now %}<span class="pill pill-danger">muddati tugagan</span>{% elif left is not none and left <= 0 %}<span class="pill pill-danger">limit tugagan</span>{% else %}<span class="pill pill-success">faol</span>{% endif %}</td>
       <td><small>{{ p.note or '' }}</small></td>
       <td><div class="btns">
         <form method="post" action="/promos/{{ p.id }}/toggle"><button class="btn btn-sm btn-ghost">{{ 'Yoqish' if not p.is_active else "O'chirish" }}</button></form>
