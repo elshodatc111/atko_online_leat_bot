@@ -122,7 +122,10 @@ Payme serveri `localhost` ga ulana olmaydi, shuning uchun vaqtincha ochiq manzil
 5. `.env` da `PANEL_URL=https://ab12-34-56.ngrok-free.app` yozing va `start.bat` ni qayta ishga tushiring.
 6. Payme **test** kassasida Endpoint URL ni `https://ab12-34-56.ngrok-free.app/payme` qiling.
 7. Payme sinov muhitida ([test.paycom.uz](https://test.paycom.uz)) kassani tanlang va sinov stsenariylarini ishga tushiring. Tekshiriladigan usullar: CheckPerformTransaction, CreateTransaction, PerformTransaction, CancelTransaction, CheckTransaction, GetStatement.
-8. Botda **💳 Obuna sotib olish → 1 oy → Payme orqali to'lash** — test kartasi bilan to'lang. Obuna yoqilishi va guruh havolasi kelishi kerak.
+8. Botda **📚 Tariflar → Premium → 💳 Sotib olish → 1 oy → Payme orqali to'lash** — test kartasi bilan to'lang: `8600 4954 7331 6478`, muddati `03/99`, SMS kod `666666`. Obuna yoqilishi va guruh havolasi kelishi kerak.
+   - Payme so'rovlarini jonli ko'rish: brauzerda `http://127.0.0.1:4040` (ngrok inspektori).
+   - Endpoint tekshiruvi: brauzerda `https://…ngrok-free.app/payme` ochilsa `{"detail":"Method Not Allowed"}` chiqishi — manzil ishlayapti degani.
+   - Sinov muhitidagi har bir stsenariy uchun botdan **yangi buyurtma** yarating (summa tiyinda: so'm × 100).
 9. **🩺 Tizim holati → Payme** qatorida «Payme so'rovi: … oldin» yozuvi ko'rinadi.
 
 > ngrok'ning bepul manzili har safar o'zgaradi. O'zgarsa, `.env` va Payme kabinetini yangilang. Sinov tugagach, Test rejimini o'chiring va ishchi server manzilini kiriting.
