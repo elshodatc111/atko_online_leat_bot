@@ -180,6 +180,28 @@ TEXTS: dict[str, dict[str, str]] = {
     },
     "mysub_payments": {"uz": "\n\n🧾 <b>Oxirgi to'lovlar:</b>\n{items}", "ru": "\n\n🧾 <b>Последние платежи:</b>\n{items}"},
     "mysub_link_btn": {"uz": "🔗 Guruhga kirish havolasi", "ru": "🔗 Ссылка на группу"},
+    # ---------------- promokod, namuna video, to'lov eslatmasi
+    "promo_btn": {"uz": "🎟 Promokod kiritish", "ru": "🎟 Ввести промокод"},
+    "promo_remove_btn": {"uz": "✖️ Promokodni bekor qilish", "ru": "✖️ Отменить промокод"},
+    "promo_ask": {"uz": "🎟 Promokodni yozib yuboring:", "ru": "🎟 Отправьте промокод:"},
+    "promo_ok": {"uz": "✅ Promokod <b>{code}</b> qo'llandi: <b>−{percent}%</b> chegirma!\nEndi obuna muddatini tanlang 👇", "ru": "✅ Промокод <b>{code}</b> применён: скидка <b>−{percent}%</b>!\nТеперь выберите срок подписки 👇"},
+    "promo_applied_line": {"uz": "🎟 Qo'llangan promokod: <b>{code}</b> (−{percent}%)", "ru": "🎟 Применён промокод: <b>{code}</b> (−{percent}%)"},
+    "promo_not_found": {"uz": "❌ Bunday promokod topilmadi. Tekshirib, qayta yozing.", "ru": "❌ Такой промокод не найден. Проверьте и введите снова."},
+    "promo_inactive": {"uz": "❌ Bu promokod faol emas.", "ru": "❌ Этот промокод не активен."},
+    "promo_expired": {"uz": "⌛️ Bu promokodning muddati tugagan.", "ru": "⌛️ Срок действия промокода истёк."},
+    "promo_exhausted": {"uz": "😔 Afsuski, bu promokod limiti tugagan.", "ru": "😔 К сожалению, лимит этого промокода исчерпан."},
+    "promo_used_by_you": {"uz": "ℹ️ Siz bu promokoddan allaqachon foydalangansiz.", "ru": "ℹ️ Вы уже использовали этот промокод."},
+    "promo_wrong_plan": {"uz": "ℹ️ Bu promokod boshqa obuna muddati uchun amal qiladi.", "ru": "ℹ️ Этот промокод действует для другого срока подписки."},
+    "promo_removed": {"uz": "Promokod bekor qilindi.", "ru": "Промокод отменён."},
+    "free_ok": {
+        "uz": "🎉 <b>Tabriklaymiz!</b> Promokod bilan obuna <b>bepul</b> faollashtirildi.\n📅 Amal qilish muddati: <b>{until}</b> gacha\n\n👇 Guruhga qo'shilish uchun pastdagi tugmani bosing va «Qo'shilish so'rovi»ni yuboring.",
+        "ru": "🎉 <b>Поздравляем!</b> Подписка по промокоду активирована <b>бесплатно</b>.\n📅 Действует до: <b>{until}</b>\n\n👇 Нажмите кнопку ниже и отправьте «Заявку на вступление».",
+    },
+    "sample_btn": {"uz": "🎬 Namuna darsni ko'rish", "ru": "🎬 Посмотреть пример урока"},
+    "pay_reminder": {
+        "uz": "⏳ <b>To'lov yakunlanmadi</b>\n\nSiz <b>{title}</b> uchun buyurtma yaratgan edingiz ({amount}), lekin to'lov amalga oshmadi.\n\nTo'lovni davom ettirish uchun pastdagi tugmani bosing. Muammo bo'lsa, operatorimiz yordam beradi 👇",
+        "ru": "⏳ <b>Оплата не завершена</b>\n\nВы создали заказ на <b>{title}</b> ({amount}), но оплата не прошла.\n\nЧтобы продолжить, нажмите кнопку ниже. Если возникли трудности — оператор поможет 👇",
+    },
     # ================================================================ menyu tugmalari
     "btn_courses": {"uz": "📚 Tariflar va narxlar", "ru": "📚 Тарифы и цены"},
     "btn_buy": {"uz": "💳 Obuna sotib olish", "ru": "💳 Купить подписку"},
@@ -220,6 +242,8 @@ EDITABLE: dict[str, str] = {
     "sub_remind": "Obuna tugashi haqida eslatma ({days}, {until})",
     "sub_expired": "Obuna tugadi — guruhdan chiqarildi",
     "join_denied": "Obunasiz guruhga kirishga urinish",
+    "pay_reminder": "To'lov yakunlanmadi — eslatma ({title}, {amount})",
+    "free_ok": "100% promokod bilan bepul faollashtirildi ({until})",
 }
 
 

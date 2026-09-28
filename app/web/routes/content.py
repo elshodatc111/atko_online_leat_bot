@@ -35,7 +35,67 @@ async def tariffs_page(request: Request, staff: Staff = Depends(admin_required))
         plans = (await s.execute(select(SubscriptionPlan).order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
     cats = {k: v for k, v in knowledge.CATEGORY_LABELS.items() if k != "hybrid"}
     return render(request, "content/tariffs.html", staff, rows=rows, cats=cats, plans=plans,
-                  payme_ok=await payme.is_configured())
+                  payme_ok=await payme.is_configured(), sample_fid=await settings.get("sample_video_file_id"),
+                  sample_cap_uz=await settings.get("sample_video_caption_uz"), sample_cap_ru=await settings.get("sample_video_caption_ru"))
+
+
+@router.post("/content/sample-video")
+async def sample_video_upload(request: Request, file: UploadFile | None = File(None), caption_uz: str = Form(""),
+                              caption_ru: str = Form(""), staff: Staff = Depends(admin_required)):
+    """Video bir marta Telegramga (adminning o'ziga) yuboriladi va file_id saqlanadi — keyin serverdan yuklanmaydi."""
+    from pathlib import Path
+
+    from aiogram.types import FSInputFile
+
+    from ...bot.instance import get_bot
+
+    values = {"sample_video_caption_uz": caption_uz.strip(), "sample_video_caption_ru": caption_ru.strip()}
+    if file and file.filename:
+        if not staff.tg_id:
+            flash(request, "Telegram akkauntingiz biriktirilmagan", "danger")
+            return back("/content/tariffs#sample")
+        data = await file.read()
+        if len(data) > media.TELEGRAM_UPLOAD_LIMIT_MB * 1024 * 1024:
+            flash(request, f"Video {media.TELEGRAM_UPLOAD_LIMIT_MB} MB dan katta. Kattaroq videoni botga to'g'ridan-to'g'ri yuboring — "
+                           "bot uni «Namuna video» qilib saqlashni taklif qiladi.", "danger")
+            return back("/content/tariffs#sample")
+        p = media.new_path(media.guess_ext(file.filename, file.content_type, ".mp4"), "tmp")
+        p.write_bytes(data)
+        try:
+            m = await get_bot().send_video(staff.tg_id, FSInputFile(p, filename=file.filename),
+                                           caption="✅ Namuna video Telegram bulutiga saqlandi")
+            if not m.video:
+                raise ValueError("Telegram videoni qabul qilmadi (mp4 formatda yuklang)")
+            values["sample_video_file_id"] = m.video.file_id
+        except Exception as e:  # noqa: BLE001
+            flash(request, f"Videoni yuklab bo'lmadi: {e}", "danger")
+            return back("/content/tariffs#sample")
+        finally:
+            Path(p).unlink(missing_ok=True)
+    await settings.set_many(values)
+    await audit.log(staff.id, "content_edit", "sample_video", None, "Namuna video")
+    flash(request, "Namuna video saqlandi" if file and file.filename else "Saqlandi")
+    return back("/content/tariffs#sample")
+
+
+@router.post("/content/sample-video/delete")
+async def sample_video_delete(request: Request, staff: Staff = Depends(admin_required)):
+    await settings.set_value("sample_video_file_id", "")
+    flash(request, "Namuna video o'chirildi")
+    return back("/content/tariffs#sample")
+
+
+@router.post("/content/sample-video/preview")
+async def sample_video_preview(request: Request, staff: Staff = Depends(admin_required)):
+    from ...bot.instance import get_bot
+
+    fid = await settings.get("sample_video_file_id")
+    try:
+        await get_bot().send_video(staff.tg_id, fid, caption="👀 Namuna video (ko'rib chiqish)")
+        flash(request, "Video Telegramingizga yuborildi")
+    except Exception as e:  # noqa: BLE001
+        flash(request, f"Xatolik: {e}", "danger")
+    return back("/content/tariffs#sample")
 
 
 @router.post("/content/tariffs/save")

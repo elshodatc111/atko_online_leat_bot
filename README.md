@@ -23,7 +23,9 @@ ATKO Koreys Tili O'quv Markazi uchun **Telegram bot** va operatorlar ishlaydigan
 |---|---|
 | Ro'yxatdan o'tish | Til → ism → **«📱 Raqamni yuborish»** (majburiy) → maqsad → format. Raqam tasdiqlanmaguncha botning boshqa bo'limlari yopiq. Raqam faqat shu tugma orqali qabul qilinadi |
 | 📚 Tariflar va narxlar | 4 ta tarif. Narxlar paneldan kiritiladi. Har bir narx ostida «aniq narxni admin bilan aniqlashtiring» eslatmasi turadi |
-| 💳 Obuna sotib olish | 1-tarif (yopiq Telegram guruh, 1/3/12 oy) — **Payme** orqali. To'lovdan keyin guruh havolasi avtomatik keladi |
+| 💳 Obuna sotib olish | 1-tarif (yopiq Telegram guruh, 1/3/12 oy) — **Payme** orqali. Asosiy menyuda tugma yo'q; «Tariflar», «Mening obunam» va AI mentor limiti xabarlaridan ochiladi. Oynada: batafsil ma'lumot, 🎟 promokod, 🎬 namuna dars. To'lovdan keyin guruh havolasi avtomatik keladi |
+| 🎟 Promokod | Foizli chegirma (1–100%). «Birinchi N ta foydalanuvchi», muddat va obuna varianti bo'yicha cheklash mumkin. **100%** bo'lsa — Payme'siz darhol bepul faollashadi |
+| ⏳ To'lov eslatmasi | To'lov oynasini ochib, to'lamay qolganlarga 60 daqiqadan keyin (sozlanadi) **bir marta** «To'lash» tugmali eslatma |
 | 👤 Mening obunam | Holat, tugash sanasi, qolgan kunlar, progress, to'lovlar tarixi, «Guruh havolasi» va «Uzaytirish» tugmalari |
 | 🎓 AI mentor | Koreys tili yordamchisi: grammatika, uyga vazifani tekshirish (matn, rasm, ovoz), mini-testlar. OpenAI'ga yuklangan darsliklardan foydalanadi. **Premium obunachilarga cheksiz**, qolganlarga kuniga 3 ta savol |
 | 👨‍💼 Operator bilan bog'lanish | Ish vaqtida «2–10 daqiqada ulanadi», ish vaqtidan tashqari navbatga qo'yadi (ungacha AI javob beradi). 2–4-tariflar uchun «Admin bilan bog'lanish» |
@@ -55,7 +57,9 @@ Assalomu alaykum! ...
   - Telegram ID va kunlar soni bo'yicha **qo'lda obuna berish**;
   - muddatni ± uzaytirish yoki aniq sana qo'yish, muddatsiz ruxsat, bekor qilish;
   - guruh havolasini qayta yuborish, guruhni sinxronlash, hodisalar tarixi.
-- **💳 To'lovlar:** Payme buyurtmalari, kunlik va oylik tushum grafiklari, Excel.
+- **💳 To'lovlar:** Payme buyurtmalari (chegirma bo'lsa asl narx ham), kunlik va oylik tushum grafiklari, Excel.
+- **🎟 Promokodlar:** yaratish, limit (birinchi N ta), muddat, variant, yoqish/o'chirish; kim ishlatgani va to'lov jarayonidagilar.
+- **🎬 Namuna video:** «Tariflar va narxlar» → 1-tarif kartasi. Video bir marta Telegram bulutiga yuklanadi (`file_id`), foydalanuvchilarga serverdan emas, Telegramdan yuboriladi.
 - **📚 Tariflar va narxlar:** 4 ta tarif, narx va davr, 1-tarifning 1/3/12 oylik variantlari (narxi va kunlar soni).
 - **🩺 Tizim holati:**
   - tekshiriladi: bot, webhook/polling, guruh va bot huquqlari, OpenAI, vector store, Payme, baza, disk, fon vazifalari, operatorlar;
@@ -166,6 +170,12 @@ Model nomi **Sozlamalar → Asosiy model** maydonida o'zgartiriladi (masalan, `g
 | AI javob bermayapti | 🩺 Tizim holati → «AI ni sinash». Kalit, model nomi va kunlik limitni tekshiring |
 
 ## 8. O'zgarishlar tarixi
+- **v2.2:**
+  - 🎬 namuna video: paneldan (50 MB gacha) yoki admin botga to'g'ridan-to'g'ri yuboradi (hajm cheklovi yo'q) → «Namuna video sifatida saqlash»; almashtirish — yangi videoni yuklash;
+  - 🎟 promokodlar: 1–100%, «birinchi N ta», muddat, variant; har bir foydalanuvchi bir marta; to'lov jarayonidagi buyurtmalar 30 daqiqa joy band qiladi; 100% — bepul faollashtirish;
+  - ⏳ yarim qolgan to'lov eslatmasi (Sozlamalar → Yopiq Premium guruh);
+  - paneldagi ketma-ket xabarnomalar (flash) yo'qolib qolishi tuzatildi.
+- **v2.1:** «Obuna sotib olish» asosiy menyudan olindi, sotib olish oynasida obuna haqida batafsil ma'lumot.
 - **v2.0:**
   - telefon majburiy (faqat tugma orqali);
   - bepul dars, bepul materiallar va FAQ botdan olib tashlandi;

@@ -64,6 +64,17 @@ async def any_message(msg: TgMessage) -> None:
             await run_pending_after_phone(lead)
             return
 
+    # 2b) Promokod kiritish
+    if lead.pending_input == "promo" and msg.text:
+        lead = await update_lead(lead.id, pending_input=None)
+        code = msg.text.strip()
+        if code and len(code) <= 32 and " " not in code and not code.startswith("/"):
+            from ..actions import apply_promo_code
+
+            await apply_promo_code(lead, code)
+            return
+        # promokod emas, oddiy savol — davom etamiz
+
     # 3) Baho izohi
     if lead.pending_input == "rating_comment" and msg.text:
         chat_id = lead.pending_ref

@@ -104,6 +104,43 @@ async def _handle_invite(msg: TgMessage, token: str) -> None:
     )
 
 
+_last_admin_video: dict[int, str] = {}
+
+
+@router.message(F.video, F.chat.type == "private")
+async def admin_video(msg: TgMessage) -> None:
+    """Admin botga video yuborsa — uni «Namuna video» sifatida saqlash taklif qilinadi (Telegram bulutida, file_id)."""
+    staff = await _staff_by_tg(msg.from_user.id)
+    if not staff or staff.role != "admin":
+        from aiogram.dispatcher.event.bases import SkipHandler
+
+        raise SkipHandler()
+    _last_admin_video[msg.from_user.id] = msg.video.file_id
+    kb = InlineKeyboardMarkup(inline_keyboard=[[ib("✅ Namuna video sifatida saqlash", "setsample")],
+                                               [ib("✖️ Yo'q", "setsample_no")]])
+    await msg.answer("🎬 Bu videoni obuna oynasidagi <b>«Namuna darsni ko'rish»</b> videosi qilib saqlaymi?\n"
+                     "Video Telegram bulutida qoladi — serverdan qayta yuklanmaydi.", reply_markup=kb)
+
+
+@router.callback_query(F.data.in_({"setsample", "setsample_no"}))
+async def admin_video_save(cb: CallbackQuery) -> None:
+    from ...services import settings as st
+
+    staff = await _staff_by_tg(cb.from_user.id)
+    fid = _last_admin_video.pop(cb.from_user.id, None)
+    if cb.data == "setsample_no" or not staff or staff.role != "admin":
+        await cb.message.edit_text("Bekor qilindi.")
+        await cb.answer()
+        return
+    if not fid:
+        await cb.answer("Video topilmadi, qayta yuboring", show_alert=True)
+        return
+    await st.set_value("sample_video_file_id", fid)
+    await audit.log(staff.id, "content_edit", "sample_video", None, "Namuna video (bot orqali)")
+    await cb.message.edit_text("✅ Namuna video saqlandi! Endi obuna oynasida «🎬 Namuna darsni ko'rish» tugmasi chiqadi.")
+    await cb.answer()
+
+
 @router.message(Command("myid"))
 async def my_id(msg: TgMessage) -> None:
     await msg.answer(f"Telegram ID: <code>{msg.from_user.id}</code>")

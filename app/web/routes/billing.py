@@ -267,3 +267,79 @@ async def system_status(staff: Staff = Depends(admin_required)):
 async def system_brief(staff: Staff = Depends(admin_required)):
     fails = [k for k, v in health._last_status.items() if v == "fail"]
     return {"fails": len(fails)}
+
+
+# ================================================================ promokodlar
+
+
+@router.get("/promos")
+async def promos_page(request: Request, staff: Staff = Depends(admin_required)):
+    from ...models import PromoCode, PromoUse, SubscriptionPlan
+
+    async with session_scope() as s:
+        rows = (await s.execute(select(PromoCode).order_by(PromoCode.id.desc()))).scalars().all()
+        plans = (await s.execute(select(SubscriptionPlan).order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
+        uses = (await s.execute(select(PromoUse).order_by(PromoUse.id.desc()).limit(100))).scalars().all()
+        leads = {x.tg_id: x for x in (await s.execute(select(Lead).where(Lead.tg_id.in_([u.tg_id for u in uses] or [0])))).scalars().all()}
+        pending = dict((await s.execute(select(Payment.promo_id, func.count(Payment.id)).where(
+            Payment.promo_id.is_not(None), Payment.state.in_((0, 1)),
+            Payment.created_at > utcnow() - timedelta(minutes=30)).group_by(Payment.promo_id))).all())
+    codes = {p.id: p.code for p in rows}
+    return render(request, "billing/promos.html", staff, rows=rows, plans={p.id: p for p in plans}, uses=uses, leads=leads,
+                  codes=codes, pending=pending, now=utcnow())
+
+
+@router.post("/promos/add")
+async def promos_add(request: Request, code: str = Form(...), percent: int = Form(...), max_uses: int = Form(0),
+                     plan_id: str = Form(""), expires: str = Form(""), note: str = Form(""), staff: Staff = Depends(admin_required)):
+    from ...models import PromoCode
+    from ...services import promo as promo_svc
+
+    c = promo_svc.normalize(code)
+    if len(c) < 3:
+        flash(request, "Promokod kamida 3 ta belgidan iborat bo'lsin (lotin harf, raqam, _ yoki -)", "danger")
+        return RedirectResponse("/promos", 303)
+    if not 1 <= percent <= 100:
+        flash(request, "Chegirma 1% dan 100% gacha bo'lishi kerak", "danger")
+        return RedirectResponse("/promos", 303)
+    exp = None
+    if expires:
+        try:
+            exp = worktime.local_to_utc_naive(datetime.combine(date.fromisoformat(expires), datetime.max.time().replace(microsecond=0)))
+        except ValueError:
+            flash(request, "Sana noto'g'ri", "danger")
+            return RedirectResponse("/promos", 303)
+    async with session_scope() as s:
+        if (await s.execute(select(PromoCode).where(PromoCode.code == c))).scalars().first():
+            flash(request, "Bunday promokod mavjud", "danger")
+            return RedirectResponse("/promos", 303)
+        s.add(PromoCode(code=c, percent=percent, max_uses=max(0, max_uses), plan_id=int(plan_id) if plan_id.isdigit() else None,
+                        expires_at=exp, note=note.strip() or None, created_by_id=staff.id))
+        await audit.log(staff.id, "content_edit", "promo", None, f"{c}: -{percent}%, limit {max_uses or '∞'}", session=s)
+    flash(request, f"✅ Promokod {c} yaratildi: −{percent}%" + (f", birinchi {max_uses} ta foydalanuvchi" if max_uses else ""))
+    return RedirectResponse("/promos", 303)
+
+
+@router.post("/promos/{pid}/toggle")
+async def promos_toggle(pid: int, request: Request, staff: Staff = Depends(admin_required)):
+    from ...models import PromoCode
+
+    async with session_scope() as s:
+        p = await s.get(PromoCode, pid)
+        if p:
+            p.is_active = not p.is_active
+    flash(request, "Saqlandi")
+    return RedirectResponse("/promos", 303)
+
+
+@router.post("/promos/{pid}/delete")
+async def promos_delete(pid: int, request: Request, staff: Staff = Depends(admin_required)):
+    from ...models import PromoCode
+
+    async with session_scope() as s:
+        p = await s.get(PromoCode, pid)
+        if p:
+            await s.delete(p)
+            await audit.log(staff.id, "content_edit", "promo", pid, f"O'chirildi: {p.code}", session=s)
+    flash(request, "Promokod o'chirildi")
+    return RedirectResponse("/promos", 303)

@@ -26,6 +26,7 @@ LOOP_TITLES = {
     "reminders": "Avto-eslatmalar",
     "faq": "Savollar tahlili",
     "cleanup": "Tozalash",
+    "payments": "To'lov eslatmalari",
     "monitor": "Tizim monitoringi",
 }
 _named: dict[str, asyncio.Task] = {}
@@ -208,6 +209,63 @@ async def auto_faq() -> None:
                              admins=True, path="/faq")
 
 
+# ------------------------------------------------------------------ yarim qolgan to'lov
+
+
+async def pay_reminders() -> None:
+    """To'lov oynasi ochilib, to'lanmay qolgan buyurtmalarga bir marta eslatma."""
+    from ..bot.keyboards import ib
+    from ..bot.texts import money, t
+    from ..models import Payment
+    from . import payme, sender
+    from .chats import add_message
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+    if not await settings.get("pay_reminder_enabled"):
+        return
+    minutes = max(5, int(await settings.get("pay_reminder_minutes") or 60))
+    now = utcnow()
+    async with session_scope() as s:
+        rows = (await s.execute(select(Payment).where(
+            Payment.state.in_((0, 1)), Payment.reminded.is_(False), Payment.amount > 0,
+            Payment.created_at <= now - timedelta(minutes=minutes),
+            Payment.created_at >= now - timedelta(hours=12),
+        ).order_by(Payment.created_at))).scalars().all()
+        paid_after = {}
+        for p in rows:
+            later = (await s.execute(select(Payment.id).where(
+                Payment.tg_id == p.tg_id, Payment.id != p.id,
+                (Payment.id > p.id) | ((Payment.state == 2) & (Payment.paid_at >= p.created_at))))).first()
+            paid_after[p.id] = bool(later)
+            obj = await s.get(Payment, p.id)
+            obj.reminded = True  # har holda bir marta
+        leads = {p.id: (await s.get(Lead, p.lead_id)) if p.lead_id else None for p in rows}
+    seen: set[int] = set()
+    for p in rows:
+        # keyinroq yangi buyurtma yaratgan yoki to'lagan bo'lsa — eslatmaymiz; bir odamga bitta eslatma
+        if paid_after.get(p.id) or p.tg_id in seen:
+            continue
+        seen.add(p.tg_id)
+        lead = leads.get(p.id)
+        if lead and lead.is_blocked:
+            continue
+        lang = lead.lang if lead else "uz"
+        try:
+            url = await payme.checkout_url(p, lang)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Checkout URL xatosi: %s", e)
+            continue
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=t("pay_btn", lang), url=url)],
+            [ib(t("operator_btn_inline", lang), "cta:operator")],
+        ])
+        text = t("pay_reminder", lang, title=html.escape(p.title), amount=money(p.amount, lang))
+        ok = (await sender.send_text(p.tg_id, text, reply_markup=kb)) is not None
+        if ok and lead:
+            await add_message(lead.id, "bot", text=f"[To'lov eslatmasi] {p.title} — {money(p.amount)}", emit=False)
+        await asyncio.sleep(0.1)
+
+
 async def cleanup() -> None:
     from ..models import LoginCode
 
@@ -222,6 +280,7 @@ SPECS = {
     "reminders": (300, send_reminders),
     "faq": (600, auto_faq),
     "cleanup": (3600, cleanup),
+    "payments": (300, pay_reminders),
     "monitor": (300, monitor_check),
 }
 

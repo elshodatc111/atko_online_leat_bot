@@ -52,6 +52,24 @@
     <form method="post" action="/content/tariffs/{{ x.id }}/delete" onsubmit="return confirm('Tarifni o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
   </div>
   {% if x.is_subscription %}
+  <div id="sample" style="background:#fafbfd;border-radius:10px;padding:12px;margin-bottom:12px">
+    <h3>🎬 Namuna video (obuna oynasida «Namuna darsni ko'rish»)</h3>
+    <p class="muted" style="margin-top:-4px">Video bir marta Telegram bulutiga yuklanadi (file_id saqlanadi) — foydalanuvchilarga har safar serverdan emas, Telegramdan yuboriladi.
+      50 MB dan katta videoni <b>botga to'g'ridan-to'g'ri yuboring</b> (admin sifatida) — bot uni saqlashni taklif qiladi.</p>
+    <p>Holat: {% if sample_fid %}<span class="pill pill-success">✅ Video saqlangan (Telegram bulutida)</span>{% else %}<span class="pill pill-waiting">video yuklanmagan</span>{% endif %}</p>
+    <form method="post" action="/content/sample-video" enctype="multipart/form-data">
+      <div class="form-row">
+        <div><label>Video fayl (mp4, 50 MB gacha)</label><input type="file" name="file" accept="video/mp4,video/*"></div>
+        <div><label>Izoh 🇺🇿</label><input type="text" name="caption_uz" value="{{ sample_cap_uz or '' }}"></div>
+        <div><label>Izoh 🇷🇺</label><input type="text" name="caption_ru" value="{{ sample_cap_ru or '' }}"></div>
+      </div>
+      <div class="btns"><button class="btn btn-sm">💾 Saqlash / yuklash</button></div>
+    </form>
+    {% if sample_fid %}<div class="btns" style="margin-top:8px">
+      <form method="post" action="/content/sample-video/preview"><button class="btn btn-sm btn-ghost">👀 Telegramda ko'rish</button></form>
+      <form method="post" action="/content/sample-video/delete" onsubmit="return confirm('Namuna videoni o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑 O'chirish</button></form>
+    </div>{% endif %}
+  </div>
   <h3>💳 Obuna variantlari (Payme)</h3>
   {% for p in plans if p.tariff_id == x.id %}
   <div style="display:flex;gap:8px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px">

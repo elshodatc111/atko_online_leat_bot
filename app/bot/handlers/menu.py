@@ -14,7 +14,7 @@ from ...models import Chat, InfoPage, SubscriptionPlan, Tariff
 from ...services import ai, settings, subscriptions, worktime
 from ...services.knowledge import CATEGORY_LABELS
 from ...services.notify import hub, telegram_staff
-from ..actions import enroll_request, last_payments, operator_request, require_phone, show_buy, start_payment
+from ..actions import enroll_request, last_payments, operator_request, require_phone, send_sample, show_buy, start_payment
 from ..common import esc, get_lead, get_or_create_lead, send_menu, strip_placeholders, update_lead
 from ..keyboards import cta_kb, ib, lang_kb, quiz_level_kb, skip_comment_kb
 from ..texts import all_button_texts, money, t
@@ -112,7 +112,32 @@ async def buy(msg: TgMessage) -> None:
 @router.callback_query(F.data == "buy")
 async def buy_cb(cb: CallbackQuery) -> None:
     await cb.answer()
-    await show_buy(await _lead(cb))
+    lead = await _lead(cb)
+    if lead.pending_input == "promo":
+        lead = await update_lead(lead.id, pending_input=None)
+    await show_buy(lead)
+
+
+@router.callback_query(F.data == "promo")
+async def promo_cb(cb: CallbackQuery) -> None:
+    await cb.answer()
+    lead = await _lead(cb)
+    await update_lead(lead.id, pending_input="promo")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[ib(t("back", lead.lang), "buy")]])
+    await cb.message.answer(t("promo_ask", lead.lang), reply_markup=kb)
+
+
+@router.callback_query(F.data == "promo_off")
+async def promo_off(cb: CallbackQuery) -> None:
+    await cb.answer(t("promo_removed", "uz"))
+    lead = await update_lead((await _lead(cb)).id, promo_id=None, pending_input=None)
+    await show_buy(lead)
+
+
+@router.callback_query(F.data == "sample")
+async def sample_cb(cb: CallbackQuery) -> None:
+    await cb.answer()
+    await send_sample(await _lead(cb))
 
 
 @router.callback_query(F.data.startswith("plan:"))

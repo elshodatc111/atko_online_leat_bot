@@ -56,7 +56,8 @@ async def admin_required(staff: Staff = Depends(current_staff)) -> Staff:
 
 
 def flash(request: Request, text: str, level: str = "success") -> None:
-    request.session.setdefault("_flash", []).append({"text": text, "level": level})
+    # yangi ro'yxat berib qayta yozamiz — joyida append qilinsa sessiya o'zgargani sezilmaydi
+    request.session["_flash"] = [*request.session.get("_flash", []), {"text": text, "level": level}][-5:]
 
 
 def pop_flash(request: Request) -> list[dict]:

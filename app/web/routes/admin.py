@@ -237,10 +237,10 @@ async def broadcast_cancel(bid: int, request: Request, staff: Staff = Depends(ad
 
 INT_KEYS = ["max_chats_per_operator", "sla_wait_minutes", "idle_reply_minutes", "max_photo_mb", "max_audio_mb",
             "max_video_mb", "max_document_mb", "ai_daily_token_limit", "ai_history_messages", "tutor_trial_daily",
-            "faq_auto_hour", "faq_min_count", "payme_vat_percent"]
+            "faq_auto_hour", "faq_min_count", "payme_vat_percent", "pay_reminder_minutes"]
 FLOAT_KEYS = ["ai_price_input_per_1m", "ai_price_output_per_1m"]
 BOOL_KEYS = ["sla_notify_lead", "ai_enabled", "ai_transcribe_voice", "ai_auto_escalate", "tutor_enabled",
-             "faq_auto_enabled", "reminders_enabled", "payme_test_mode", "group_kick_unpaid"]
+             "faq_auto_enabled", "reminders_enabled", "payme_test_mode", "group_kick_unpaid", "pay_reminder_enabled"]
 STR_KEYS = ["work_start", "work_end", "ai_model", "ai_transcribe_model", "ai_embedding_model", "ai_reasoning_effort",
             "ai_extra_instructions", "reminder_hours_from", "reminder_hours_to", "ai_vector_store_ids",
             "payme_merchant_id", "payme_account_field", "payme_ikpu", "payme_package_code", "payme_return_url", "group_chat_id"]

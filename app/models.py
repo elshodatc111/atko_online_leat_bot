@@ -133,6 +133,7 @@ class Lead(Base):
     pending_input: Mapped[str | None] = mapped_column(String(32))  # rating_comment va h.k.
     pending_ref: Mapped[int | None] = mapped_column(Integer)
     quiz_state: Mapped[dict | None] = mapped_column(JSON)
+    promo_id: Mapped[int | None] = mapped_column(Integer)  # qo'llangan (hali ishlatilmagan) promokod
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_activity: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
@@ -443,6 +444,9 @@ class Payment(Base):
     reason: Mapped[int | None] = mapped_column(Integer)
     fiscal: Mapped[dict | None] = mapped_column(JSON)
     is_test: Mapped[bool] = mapped_column(Boolean, default=False)
+    promo_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    original_amount: Mapped[int | None] = mapped_column(Integer)  # chegirmagacha summa
+    reminded: Mapped[bool] = mapped_column(Boolean, default=False)  # "to'lov yakunlanmadi" eslatmasi
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime)
@@ -511,4 +515,33 @@ class LoginCode(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     used: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class PromoCode(Base):
+    """Promokod: foiz chegirma (1–100%), foydalanish soni va muddati cheklovi bilan."""
+
+    __tablename__ = "promo_codes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    percent: Mapped[int] = mapped_column(Integer)  # 1..100
+    max_uses: Mapped[int] = mapped_column(Integer, default=0)  # 0 — cheklovsiz
+    used_count: Mapped[int] = mapped_column(Integer, default=0)
+    plan_id: Mapped[int | None] = mapped_column(Integer)  # faqat shu variant uchun (bo'sh — hammasi)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str | None] = mapped_column(String(255))
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class PromoUse(Base):
+    __tablename__ = "promo_uses"
+    __table_args__ = (UniqueConstraint("promo_id", "tg_id"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    promo_id: Mapped[int] = mapped_column(ForeignKey("promo_codes.id", ondelete="CASCADE"), index=True)
+    tg_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    payment_id: Mapped[int | None] = mapped_column(Integer)
+    amount: Mapped[int] = mapped_column(Integer, default=0)
+    discount: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

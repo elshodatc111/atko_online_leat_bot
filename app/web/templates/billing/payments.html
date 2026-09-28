@@ -36,7 +36,7 @@
       <td><small>{{ p.created_at|dt }}</small>{% if p.paid_at %}<br><small class="muted">to'landi: {{ p.paid_at|dt }}</small>{% endif %}</td>
       <td>{% if p.lead %}<a href="/leads/{{ p.lead_id }}">{{ p.lead.display }}</a><br><small>{{ p.lead.phone or '' }}</small>{% else %}<code>{{ p.tg_id }}</code>{% endif %}</td>
       <td>{{ p.title }}</td>
-      <td class="num"><b>{{ som(p.amount) }}</b></td>
+      <td class="num"><b>{{ som(p.amount) }}</b>{% if p.original_amount %}<br><small class="muted"><s>{{ som(p.original_amount) }}</s> 🎟</small>{% endif %}</td>
       <td class="num">{{ p.days }}</td>
       <td><span class="pill {{ 'pill-success' if p.state == 2 else ('pill-danger' if p.state < 0 else 'pill-waiting') }}">{{ p.state_label }}</span></td>
       <td><small><code>{{ p.payme_id or '—' }}</code></small></td>

@@ -80,14 +80,16 @@ async def checkout_url(payment: Payment, lang: str = "uz") -> str:
     return f"{base}/{token}"
 
 
-async def create_order(lead: Lead, plan_id: int) -> tuple[Payment, str]:
+async def create_order(lead: Lead, plan_id: int, amount: int | None = None, promo_id: int | None = None,
+                       original_amount: int | None = None) -> tuple[Payment, str]:
     async with session_scope() as s:
         plan = await s.get(SubscriptionPlan, plan_id)
         if not plan or not plan.is_active or plan.price <= 0:
             raise ValueError("Tarif varianti topilmadi yoki narxi belgilanmagan")
         tariff_name = plan.tariff.name_uz if plan.tariff else "ATKO Premium"
         p = Payment(lead_id=lead.id, tg_id=lead.tg_id, plan_id=plan.id, title=f"{tariff_name} — {plan.title_uz}",
-                    days=plan.days, amount=plan.price, state=0, is_test=await test_mode())
+                    days=plan.days, amount=plan.price if amount is None else amount, state=0, is_test=await test_mode(),
+                    promo_id=promo_id, original_amount=original_amount)
         s.add(p)
         await s.flush()
         await s.refresh(p)
@@ -262,6 +264,14 @@ async def _on_paid(payment_id: int) -> None:
 
     async with session_scope() as s:
         p = await s.get(Payment, payment_id)
+    if p.promo_id:
+        from . import promo as promo_svc
+
+        await promo_svc.mark_used(p.promo_id, p.tg_id, p.id, p.amount, (p.original_amount or p.amount) - p.amount)
+        async with session_scope() as s:
+            lead = (await s.execute(select(Lead).where(Lead.tg_id == p.tg_id))).scalars().first()
+            if lead and lead.promo_id == p.promo_id:
+                lead.promo_id = None
     try:
         await subscriptions.extend(p.tg_id, p.days, kind="payme", payment_id=p.id, note=f"{p.amount} so'm")
         await subscriptions.send_access(p.tg_id, "paid_ok")

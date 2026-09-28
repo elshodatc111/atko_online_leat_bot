@@ -66,6 +66,13 @@ DEFAULTS: dict[str, Any] = {
     "group_kick_unpaid": True,  # to'lovsiz qo'shilganlarni chiqarish
     "group_reminder_days": [3, 1],
     "known_chats": {},
+    # Namuna video (Telegram bulutida saqlanadi — file_id)
+    "sample_video_file_id": "",
+    "sample_video_caption_uz": "🎬 Premium guruhimizdan namuna dars",
+    "sample_video_caption_ru": "🎬 Пример урока из нашей Premium-группы",
+    # Yakunlanmagan to'lov eslatmasi
+    "pay_reminder_enabled": True,
+    "pay_reminder_minutes": 60,
     # Bot matnlari (override) — {key: {"uz": ..., "ru": ...}}
     "texts": {},
 }

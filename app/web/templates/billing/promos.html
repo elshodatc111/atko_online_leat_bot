@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Promokodlar{% endblock %}
+{% block heading %}🎟 Promokodlar{% endblock %}
+{% block content %}
+<div class="flash flash-info">Promokod botdagi obuna oynasida «🎟 Promokod kiritish» tugmasi orqali qo'llanadi. Har bir foydalanuvchi bitta promokoddan <b>bir marta</b> foydalanadi.
+  <b>100%</b> chegirmada obuna Payme'siz darhol faollashadi. Foydalanish soni to'lov muvaffaqiyatli bo'lganda hisoblanadi; to'lov jarayonidagi buyurtmalar joyni 30 daqiqa band qilib turadi.</div>
+<div class="card">
+  <h2>➕ Yangi promokod</h2>
+  <form method="post" action="/promos/add">
+    <div class="form-row">
+      <div><label>Kod</label><input type="text" name="code" required placeholder="ATKO50" style="text-transform:uppercase"></div>
+      <div><label>Chegirma, %</label><input type="number" name="percent" min="1" max="100" value="50" required><div class="hint">100 — to'liq bepul</div></div>
+      <div><label>Nechta foydalanuvchi</label><input type="number" name="max_uses" min="0" value="3"><div class="hint">0 — cheklovsiz</div></div>
+      <div><label>Qaysi muddat uchun</label><select name="plan_id"><option value="">Barcha variantlar</option>
+        {% for p in plans.values() %}<option value="{{ p.id }}">{{ p.title_uz }} ({{ p.days }} kun)</option>{% endfor %}</select></div>
+      <div><label>Amal qilish muddati (ixtiyoriy)</label><input type="date" name="expires"></div>
+      <div><label>Izoh</label><input type="text" name="note" placeholder="Masalan: Instagram bloger"></div>
+    </div>
+    <button class="btn">Yaratish</button>
+  </form>
+</div>
+<div class="card">
+  <h2>Promokodlar</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Kod</th><th class="num">Chegirma</th><th class="num">Ishlatilgan</th><th>Variant</th><th>Muddat</th><th>Holat</th><th>Izoh</th><th></th></tr>
+    {% for p in rows %}
+    {% set left = (p.max_uses - p.used_count) if p.max_uses else none %}
+    <tr {% if not p.is_active %}style="opacity:.55"{% endif %}>
+      <td><code style="font-size:14px">{{ p.code }}</code> <button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText('{{ p.code }}');ATKO.toast('Nusxalandi','success')">📋</button></td>
+      <td class="num"><b>−{{ p.percent }}%</b></td>
+      <td class="num">{{ p.used_count }} / {{ p.max_uses or '∞' }}{% if pending.get(p.id) %}<br><small class="muted">+{{ pending[p.id] }} to'lov jarayonida</small>{% endif %}</td>
+      <td>{{ plans[p.plan_id].title_uz if p.plan_id and p.plan_id in plans else 'Barchasi' }}</td>
+      <td>{{ p.expires_at|dt('%d.%m.%Y') if p.expires_at else '—' }}</td>
+      <td>{% if not p.is_active %}<span class="pill">o'chirilgan</span>{% elif p.expires_at and p.expires_at < now %}<span class="pill pill-danger">muddati tugagan</span>{% elif left is not none and left <= 0 %}<span class="pill pill-danger">limit tugagan</span>{% else %}<span class="pill pill-success">faol</span>{% endif %}</td>
+      <td><small>{{ p.note or '' }}</small></td>
+      <td><div class="btns">
+        <form method="post" action="/promos/{{ p.id }}/toggle"><button class="btn btn-sm btn-ghost">{{ 'Yoqish' if not p.is_active else "O'chirish" }}</button></form>
+        <form method="post" action="/promos/{{ p.id }}/delete" onsubmit="return confirm('Promokodni butunlay o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
+      </div></td>
+    </tr>
+    {% else %}<tr><td colspan="8" class="empty">Promokodlar yo'q</td></tr>{% endfor %}
+  </table></div>
+</div>
+<div class="card">
+  <h2>🕘 Oxirgi foydalanishlar</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Vaqt</th><th>Promokod</th><th>Foydalanuvchi</th><th class="num">To'langan</th><th class="num">Chegirma</th><th>To'lov №</th></tr>
+    {% for u in uses %}{% set l = leads.get(u.tg_id) %}
+    <tr><td><small>{{ u.created_at|dt }}</small></td><td><code>{{ codes.get(u.promo_id, '—') }}</code></td>
+      <td>{% if l %}<a href="/leads/{{ l.id }}">{{ l.display }}</a>{% else %}<code>{{ u.tg_id }}</code>{% endif %}</td>
+      <td class="num">{{ '{:,}'.format(u.amount).replace(',', ' ') }} so'm</td><td class="num">{{ '{:,}'.format(u.discount).replace(',', ' ') }} so'm</td>
+      <td>{{ u.payment_id or '—' }}</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">Hali foydalanilmagan</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

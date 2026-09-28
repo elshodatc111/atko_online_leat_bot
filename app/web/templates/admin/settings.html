@@ -95,6 +95,11 @@
       </select>
       <div class="hint">Ro'yxatda bo'lmasa: botni guruhdan olib, qayta admin qilib qo'shing.</div></div>
     <label class="check"><input type="checkbox" name="group_kick_unpaid" {{ 'checked' if s.group_kick_unpaid }}> Obunasiz qo'shilganlarni avtomatik chiqarish (xodimlar va qo'lda ruxsat berilganlar bundan mustasno)</label>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+      <label class="check"><input type="checkbox" name="pay_reminder_enabled" {{ 'checked' if s.pay_reminder_enabled }}> ⏳ Yarim qolgan to'lov eslatmasi</label>
+      <div class="field"><label>Necha daqiqadan keyin eslatilsin</label><input type="number" min="5" max="600" name="pay_reminder_minutes" value="{{ s.pay_reminder_minutes }}">
+        <div class="hint">To'lov oynasini ochib, to'lamay qolgan foydalanuvchiga bir marta eslatma + «To'lash» tugmasi yuboriladi (12 soat ichidagi buyurtmalar). Matnini <a href="/texts">Bot matnlari</a>da o'zgartirish mumkin.</div></div>
+    </div>
     <p class="hint" style="margin-top:10px">⏰ Obuna tugashidan 3 va 1 kun oldin eslatma yuboriladi. Muddati tugaganlar har 15 daqiqada tekshiriladi va guruhdan chiqariladi. Holatini <a href="/system">Tizim holati</a> bo'limida ko'ring.</p>
   </div>
 </div>
