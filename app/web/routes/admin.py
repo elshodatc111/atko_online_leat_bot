@@ -447,23 +447,39 @@ async def texts_page(request: Request, staff: Staff = Depends(admin_required)):
     items = []
     for key, label in EDITABLE.items():
         cur = overrides.get(key) or {}
-        items.append({"key": key, "label": label, "uz": cur.get("uz") or TEXTS[key]["uz"], "changed": bool(cur.get("uz"))})
+        from ...bot.tghtml import error as html_error
+
+        err = html_error(cur.get("uz") or "") if cur.get("uz") else None
+        items.append({"key": key, "label": label, "uz": cur.get("uz") or TEXTS[key]["uz"], "changed": bool(cur.get("uz")), "error": err})
     return render(request, "admin/texts.html", staff, items=items)
 
 
 @router.post("/texts")
 async def texts_save(request: Request, staff: Staff = Depends(admin_required)):
     form = await request.form()
+    from ...bot.tghtml import error as html_error
+
     overrides: dict = {}
+    bad: list[str] = []
+    old = await settings.get("texts") or {}
     for key in EDITABLE:
         uz = str(form.get(f"{key}_uz", "")).strip()
         if form.get(f"{key}_reset"):
             continue
         if uz and uz != TEXTS[key]["uz"]:
+            err = html_error(uz)
+            if err:
+                bad.append(f"«{EDITABLE[key]}»: {err}")
+                if isinstance(old.get(key), dict) and not html_error(old[key].get("uz") or ""):
+                    overrides[key] = old[key]  # eski to'g'ri matn saqlanib qoladi
+                continue
             overrides[key] = {"uz": uz}
     await settings.set_value("texts", overrides)
     await audit.log(staff.id, "texts_edit", "texts", None, ", ".join(overrides.keys())[:500])
-    flash(request, "Bot matnlari saqlandi")
+    if bad:
+        flash(request, "Quyidagi matnlar saqlanmadi (HTML xato): " + "; ".join(bad), "danger")
+    else:
+        flash(request, "Bot matnlari saqlandi")
     return RedirectResponse("/texts", 303)
 
 

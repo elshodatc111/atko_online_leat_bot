@@ -203,6 +203,11 @@ def t(key: str, lang: str = "uz", **kw: Any) -> str:
     val = None
     if key in overrides and isinstance(overrides[key], dict):
         val = overrides[key].get(lang) or None
+        if val:
+            from .tghtml import error as _html_error
+
+            if _html_error(val):  # paneldan noto'g'ri HTML kiritilgan bo'lsa — standart matn ishlatiladi
+                val = None
     if not val:
         val = TEXTS.get(key, {}).get(lang) or TEXTS.get(key, {}).get("uz") or key
     if kw:
