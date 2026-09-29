@@ -1,18 +1,19 @@
-"""Guruh va kanallar: Premium guruh (qo'shilish so'rovlari, a'zolar nazorati), o'quv guruhlari (a'zolar soni),
-asosiy kanal (postlar, reaksiyalar, obunachilar) va bot qo'shilgan chatlarni aniqlash."""
+"""Premium guruh: qo'shilish so'rovlari, a'zolar nazorati va bot qo'shilgan chatlarni aniqlash (sozlamalarda tanlash uchun)."""
 from __future__ import annotations
 
 import html
 import logging
 
 from aiogram import Router
-from aiogram.types import ChatJoinRequest, ChatMemberUpdated, Message, MessageReactionCountUpdated
+from aiogram.types import ChatJoinRequest, ChatMemberUpdated
 
-from ...services import channel, settings, subscriptions, tgchats
+from ...services import settings, subscriptions
 from ...services.notify import telegram_staff
 
 log = logging.getLogger(__name__)
 router = Router(name="group")
+
+STATUS_UZ = {"administrator": "admin", "member": "a'zo", "left": "chiqarildi", "kicked": "chiqarildi", "restricted": "cheklangan"}
 
 
 @router.chat_join_request()
@@ -29,65 +30,30 @@ async def member_update(upd: ChatMemberUpdated) -> None:
         await subscriptions.handle_member_update(upd)
     except Exception:  # noqa: BLE001
         log.exception("A'zo holatini qayta ishlashda xato")
-    try:
-        await tgchats.on_member_update(upd)
-    except Exception:  # noqa: BLE001
-        log.exception("A'zolar statistikasini yozishda xato")
-
-
-@router.channel_post()
-async def channel_post(msg: Message) -> None:
-    try:
-        await channel.on_post(msg)
-    except Exception:  # noqa: BLE001
-        log.exception("Kanal postini yozishda xato")
-
-
-@router.edited_channel_post()
-async def channel_post_edited(msg: Message) -> None:
-    try:
-        await channel.on_post(msg, edited=True)
-    except Exception:  # noqa: BLE001
-        log.exception("Kanal postini yangilashda xato")
-
-
-@router.message_reaction_count()
-async def reactions(upd: MessageReactionCountUpdated) -> None:
-    try:
-        await channel.on_reactions(upd)
-    except Exception:  # noqa: BLE001
-        log.exception("Reaksiyalarni yozishda xato")
 
 
 @router.my_chat_member()
 async def bot_status(upd: ChatMemberUpdated) -> None:
-    """Bot guruhga qo'shilsa yoki admin qilinsa — guruh ID si panelda tanlash uchun saqlanadi."""
+    """Bot guruhga qo'shilsa yoki admin qilinsa — chat sozlamalarda «Premium guruh» sifatida tanlash uchun saqlanadi."""
     if upd.chat.type not in ("group", "supergroup", "channel"):
         return
     status = upd.new_chat_member.status
     status = status if isinstance(status, str) else status.value
-    try:
-        x = await tgchats.on_bot_status(upd)
-    except Exception:  # noqa: BLE001
-        log.exception("Chatni ro'yxatga yozishda xato")
-        x = None
     known = dict(await settings.get("known_chats") or {})
-    known[str(upd.chat.id)] = {"title": upd.chat.title or "", "status": status, "type": upd.chat.type}
+    if status in ("left", "kicked"):
+        known.pop(str(upd.chat.id), None)
+    else:
+        known[str(upd.chat.id)] = {"title": upd.chat.title or "", "status": status, "type": upd.chat.type}
     await settings.set_value("known_chats", known)
-    from ...models import CHAT_ROLES
-
-    role = x.role if x else "unassigned"
-    note, path = "", "/groups"
-    if role == "study":
-        note = "\n\n👥 O'quv guruhi sifatida qo'shildi: panel → «O'quv guruhlari» (post yuborish, o'quvchilar soni)."
-    elif role == "channel":
-        note, path = "\n\n📈 Asosiy kanal: panel → «Kanal rivoji» (tahlil va kunlik AI g'oyalar).", "/channel"
-    elif role == "premium":
-        path = "/settings#group"
-    elif status == "administrator":
-        note = "\n\n⚙️ Panel → «O'quv guruhlari» → «Boshqa chatlar» bo'limida bu chat vazifasini tanlang."
+    is_premium = str(await settings.get("group_chat_id") or "") == str(upd.chat.id)
+    if is_premium:
+        note = "\n\n💎 Bu — Premium guruh."
+    elif status == "administrator" and upd.chat.type != "channel":
+        note = "\n\n⚙️ Premium guruh sifatida ulash: panel → Sozlamalar → «Premium guruh»."
+    else:
+        note = ""
     await telegram_staff(
         f"🤖 Botning chatdagi holati o'zgardi\n📛 {html.escape(upd.chat.title or '')}\n🆔 <code>{upd.chat.id}</code>\n"
-        f"📌 Holat: <b>{status}</b> · {CHAT_ROLES.get(role, role)}{note}",
-        admins=True, path=path,
+        f"📌 Holat: <b>{STATUS_UZ.get(status, status)}</b>{note}",
+        admins=True, path="/settings#group",
     )

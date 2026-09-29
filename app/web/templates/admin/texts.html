@@ -8,12 +8,9 @@
   <div class="card">
     <div class="card-head"><h2>{{ it.label }} {% if it.changed %}<span class="pill pill-active">o'zgartirilgan</span>{% endif %}</h2>
       {% if it.changed %}<label class="check"><input type="checkbox" name="{{ it.key }}_reset"> Standart matnga qaytarish</label>{% endif %}</div>
-    <div class="grid grid-2">
-      <div><label>🇺🇿 O'zbekcha</label><textarea name="{{ it.key }}_uz" rows="4">{{ it.uz }}</textarea></div>
-      <div><label>🇷🇺 Ruscha</label><textarea name="{{ it.key }}_ru" rows="4">{{ it.ru }}</textarea></div>
-    </div>
+    <textarea name="{{ it.key }}_uz" rows="4">{{ it.uz }}</textarea>
   </div>
   {% endfor %}
-  <div style="position:sticky;bottom:12px"><button class="btn">💾 Saqlash</button></div>
+  <div class="sticky-save"><button class="btn">💾 Saqlash</button></div>
 </form>
 {% endblock %}

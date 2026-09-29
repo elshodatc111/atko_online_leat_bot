@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
 from ...db import session_scope
-from ...models import Chat, Lead, LeadComment, Message, Staff, Template
+from ...models import Chat, Lead, LeadComment, Message, Staff
 from ...services import ai, media, settings, worktime
 from ...services import chats as chat_svc
 from ...services.notify import hub
@@ -202,12 +202,6 @@ async def api_staff(staff: Staff = Depends(current_staff)):
                         "load": load, "max": max_chats, "me": st.id == staff.id})
     return {"items": out}
 
-
-@router.get("/api/templates")
-async def api_templates(staff: Staff = Depends(current_staff)):
-    async with session_scope() as s:
-        rows = (await s.execute(select(Template).order_by(Template.sort, Template.id))).scalars().all()
-    return {"items": [{"id": x.id, "title": x.title, "uz": x.text_uz, "ru": x.text_ru} for x in rows]}
 
 
 @router.post("/api/me/online")

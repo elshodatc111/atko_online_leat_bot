@@ -49,6 +49,13 @@ set_kv PANEL_URL "$SITE_URL"
 set_kv HOST ""
 set_kv PORT ""
 set_kv DATA_DIR ""
+set_default() {  # faqat kalit hali yo'q bo'lsa yozadi (sizning qiymatingizni o'zgartirmaydi)
+  grep -q "^$1=" .env || echo "$1=$2" >> .env
+}
+# bepul tarif (256 MB RAM, 1 GB disk) uchun: kam xotira rejimi va limitlar (pullik tarifda o'zgartiring)
+set_default LOW_MEMORY 1
+set_default MEMORY_LIMIT_MB 256
+set_default DISK_QUOTA_MB 1024
 grep -q "^WEBHOOK_SECRET=..*" .env || set_kv WEBHOOK_SECRET "$(rand 32)"
 if ! grep -q "^SECRET_KEY=..*" .env || grep -q "^SECRET_KEY=bu-yerga" .env; then set_kv SECRET_KEY "$(rand 48)"; fi
 chmod 600 .env
@@ -57,6 +64,11 @@ grep -q "^ADMIN_TG_IDS=[0-9]" .env || echo "    DIQQAT: .env da ADMIN_TG_IDS yo'
 
 echo "==> [5/5] Tekshiruv"
 .venv/bin/python -c "import app.main" >/dev/null 2>&1 && echo "    Kod yuklandi: OK" || { .venv/bin/python -c "import app.main"; exit 1; }
+.venv/bin/python - <<'PY' 2>/dev/null || true
+import resource, app.main
+from app import lowmem
+print("    Xotira (ishga tushishda): ~%d MB · kam xotira rejimi: %s" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024, "ha" if lowmem.is_enabled() else "yo'q"))
+PY
 du -sh "$APP_DIR" 2>/dev/null | awk '{print "    Egallagan joy: "$1}'
 
 cat <<EOF
@@ -75,6 +87,7 @@ cat <<EOF
  2) Advanced → Scheduled tasks → Add:
       Type: Access an URL   URL: ${SITE_URL}/health
       Frequency: har 10 daqiqada  (sayt uxlab qolmasligi uchun)
+    yoki UptimeRobot: HTTP(s), ${SITE_URL}/health, har 5 daqiqada
 
  3) Tekshiring: ${SITE_URL}/health  →  {"ok":true}
     Panel:      ${SITE_URL}

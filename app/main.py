@@ -12,7 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import config
 from .db import init_db
-from .seed import migrate_v2, migrate_v3, migrate_v3b, seed
+from .seed import migrate_v2, migrate_v3, migrate_v3b, migrate_v4, seed
 from .services import scheduler, settings, worktime
 from .web.deps import WEB_DIR, LoginRequired, render
 
@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
     await migrate_v2()
     await migrate_v3()
     await migrate_v3b()
+    await migrate_v4()
     await worktime.reload_holidays()
     await start_bot()
     scheduler.start_all()
@@ -103,12 +104,13 @@ async def payme_endpoint(request: Request):
     return JSONResponse(await payme.handle(body, request.headers.get("authorization")))
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
+    """Monitoring (UptimeRobot HEAD so'rov yuboradi) va saytni uyg'oq ushlab turish uchun."""
     return {"ok": True}
 
 
-from .web.routes import admin, auth, billing, chats, content, dashboard, growth, leads  # noqa: E402
+from .web.routes import admin, auth, billing, chats, content, dashboard, leads  # noqa: E402
 
 app.include_router(auth.router)
 app.include_router(dashboard.router)
@@ -117,4 +119,3 @@ app.include_router(leads.router)
 app.include_router(admin.router)
 app.include_router(content.router)
 app.include_router(billing.router)
-app.include_router(growth.router)

@@ -4,10 +4,10 @@
 {% block content %}
 <div class="flash flash-info">
   Tariflar va narxlar botning «📚 Tariflar va narxlar» bo'limida ko'rinadi, AI-konsultant ham shu ma'lumotga tayanadi.<br>
-  💎 <b>Obuna</b> (yopiq Telegram guruh) — botda <b>Payme</b> orqali sotib olinadi, promokodlar faqat shunga amal qiladi.<br>
-  🎥 <b>Zoom</b> va 👤 <b>Individual</b> — <b>paketlar</b> (12 dars / 20 dars). Mijoz paketni tanlaydi → so'rov admin navbatiga tushadi, to'lov admin orqali.
+  💎 <b>Obuna</b> (yopiq Telegram guruh) — botda <b>Payme</b> orqali sotib olinadi.<br>
+  🎥 <b>Zoom</b> va 👤 <b>Individual</b> — <b>paketlar</b> (12 dars / 20 dars). Mijoz paketni tanlaydi → so'rov menejerlar navbatiga tushadi, to'lov menejer orqali.
   Botda har paket yonida bir dars narxi va eng tejamkor paketga «💰 tejamkor» belgisi chiqadi.
-  Narx <b>0</b> bo'lsa, «Narxni admin bilan aniqlashtiring» deb ko'rsatiladi.
+  Narx <b>0</b> bo'lsa, «menejerimiz aniqlab beradi» deb ko'rsatiladi.
   {% if not payme_ok %}<br>⚠️ Payme hali sozlanmagan — <a href="/settings#payme">Sozlamalar → Payme</a>.{% endif %}
 </div>
 {% macro tariff_form(x=None) %}
@@ -16,26 +16,21 @@
   <div class="form-row">
     <div><label>Turi</label><select name="category">{% for k, v in cats.items() %}<option value="{{ k }}" {{ 'selected' if x and x.category == k }}>{{ v }}</option>{% endfor %}</select></div>
     {% if (not x or not x.is_subscription) and not (x and options|selectattr('tariff_id', 'equalto', x.id)|list) %}
-    <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ x.price if x else 0 }}"><div class="hint">0 — «admin bilan aniqlashtiring»</div></div>
+    <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ x.price if x else 0 }}"><div class="hint">0 — «menejerimiz aniqlab beradi»</div></div>
     <div><label>Davr</label><input type="text" name="price_period" value="{{ x.price_period if x else 'oyiga' }}" placeholder="oyiga / kursga"></div>
     {% endif %}
     <div><label>Tartib raqami</label><input type="number" name="sort" value="{{ x.sort if x else 0 }}"></div>
     <div style="align-self:end"><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not x or x.is_active }}> Faol (botda ko'rinadi)</label></div>
   </div>
-  <div class="grid grid-2">
-    <div><label>🇺🇿 Nomi</label><input type="text" name="name_uz" value="{{ x.name_uz if x else '' }}" required>
-      <label style="margin-top:8px">🇺🇿 Tavsif</label><textarea name="desc_uz" rows="8" required>{{ x.desc_uz if x else '' }}</textarea></div>
-    <div><label>🇷🇺 Nomi</label><input type="text" name="name_ru" value="{{ x.name_ru if x else '' }}" required>
-      <label style="margin-top:8px">🇷🇺 Tavsif</label><textarea name="desc_ru" rows="8" required>{{ x.desc_ru if x else '' }}</textarea></div>
-  </div>
+  <label>Nomi</label><input type="text" name="name_uz" value="{{ x.name_uz if x else '' }}" required>
+  <label style="margin-top:8px">Tavsif</label><textarea name="desc_uz" rows="8" required>{{ x.desc_uz if x else '' }}</textarea>
   <div class="btns" style="margin-top:10px"><button class="btn">💾 Saqlash</button></div>
 </form>
 {% endmacro %}
 {% macro plan_form(tid, p=None) %}
 <form method="post" action="/content/plans/save" class="form-row" style="align-items:end">
   <input type="hidden" name="id" value="{{ p.id if p else '' }}"><input type="hidden" name="tariff_id" value="{{ tid }}">
-  <div><label>Nomi 🇺🇿</label><input type="text" name="title_uz" value="{{ p.title_uz if p else '' }}" placeholder="1 oy" required></div>
-  <div><label>Nomi 🇷🇺</label><input type="text" name="title_ru" value="{{ p.title_ru if p else '' }}" placeholder="1 месяц" required></div>
+  <div><label>Nomi</label><input type="text" name="title_uz" value="{{ p.title_uz if p else '' }}" placeholder="1 oy" required></div>
   <div><label>Kunlar</label><input type="number" name="days" value="{{ p.days if p else 30 }}" min="1"></div>
   <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ p.price if p else 0 }}"></div>
   <div><label>Tartib</label><input type="number" name="sort" value="{{ p.sort if p else 0 }}"></div>
@@ -61,11 +56,11 @@
   <div class="card-head">
     <div><h2 style="margin:0">{{ x.name_uz }} {% if not x.is_active %}<span class="pill pill-danger">nofaol</span>{% endif %}</h2>
       <small class="muted">{{ cats.get(x.category, x.category) }} ·
-        {% if x.is_subscription %}Payme orqali obuna{% else %}{{ ('{:,}'.format(x.price).replace(',', ' ') ~ " so'm" ~ (' / ' ~ x.price_period if x.price_period else '')) if x.price else "narx: admin bilan aniqlashtiriladi" }}{% endif %}</small></div>
+        {% if x.is_subscription %}Payme orqali obuna{% else %}{{ ('{:,}'.format(x.price).replace(',', ' ') ~ " so'm" ~ (' / ' ~ x.price_period if x.price_period else '')) if x.price else "narx: menejer aniqlab beradi" }}{% endif %}</small></div>
     <form method="post" action="/content/tariffs/{{ x.id }}/delete" onsubmit="return confirm('Tarifni o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
   </div>
   {% if x.is_subscription %}
-  <div id="sample" style="background:#fafbfd;border-radius:10px;padding:12px;margin-bottom:12px">
+  <div id="sample" class="subpanel">
     <h3>🎬 Namuna video (obuna oynasida «Namuna darsni ko'rish»)</h3>
     <p class="muted" style="margin-top:-4px">Video bir marta Telegram bulutiga yuklanadi (file_id saqlanadi) — foydalanuvchilarga har safar serverdan emas, Telegramdan yuboriladi.
       50 MB dan katta videoni <b>botga to'g'ridan-to'g'ri yuboring</b> (admin sifatida) — bot uni saqlashni taklif qiladi.</p>
@@ -73,8 +68,7 @@
     <form method="post" action="/content/sample-video" enctype="multipart/form-data">
       <div class="form-row">
         <div><label>Video fayl (mp4, 50 MB gacha)</label><input type="file" name="file" accept="video/mp4,video/*"></div>
-        <div><label>Izoh 🇺🇿</label><input type="text" name="caption_uz" value="{{ sample_cap_uz or '' }}"></div>
-        <div><label>Izoh 🇷🇺</label><input type="text" name="caption_ru" value="{{ sample_cap_ru or '' }}"></div>
+        <div><label>Izoh</label><input type="text" name="caption_uz" value="{{ sample_cap_uz or '' }}"></div>
       </div>
       <div class="btns"><button class="btn btn-sm">💾 Saqlash / yuklash</button></div>
     </form>
@@ -85,21 +79,21 @@
   </div>
   <h3>💳 Obuna variantlari (Payme)</h3>
   {% for p in plans if p.tariff_id == x.id %}
-  <div style="display:flex;gap:8px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px">
-    <div style="flex:1">{{ plan_form(x.id, p) }}</div>
-    <form method="post" action="/content/plans/{{ p.id }}/delete" onsubmit="return confirm('O\'chirasizmi?')" style="margin-bottom:12px"><button class="btn btn-sm btn-ghost">🗑</button></form>
+  <div class="item-row">
+    <div class="grow">{{ plan_form(x.id, p) }}</div>
+    <form method="post" action="/content/plans/{{ p.id }}/delete" onsubmit="return confirm('O\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
   </div>
   {% endfor %}
   <details class="edit"><summary class="btn btn-sm btn-light">➕ Variant qo'shish</summary>{{ plan_form(x.id) }}</details>
   {% else %}
-  <h3>📦 Paketlar <small class="muted">(to'lov admin orqali)</small></h3>
+  <h3>📦 Paketlar <small class="muted">(to'lov menejer orqali)</small></h3>
   {% for o in options if o.tariff_id == x.id %}
-  <div style="display:flex;gap:8px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px">
-    <div style="flex:1">{{ option_form(x.id, o) }}
+  <div class="item-row">
+    <div class="grow">{{ option_form(x.id, o) }}
       {% if o.price %}<small class="muted">Bir dars ≈ {{ '{:,}'.format(per_lesson(o)).replace(',', ' ') }} so'm{% if o.id in best %} · <b>💰 tejamkor{% if best[o.id] >= 2 %} (−{{ best[o.id] }}%){% endif %}</b>{% endif %}</small>{% endif %}</div>
-    <form method="post" action="/content/options/{{ o.id }}/delete" onsubmit="return confirm('Paketni o\'chirasizmi?')" style="margin-bottom:12px"><button class="btn btn-sm btn-ghost">🗑</button></form>
+    <form method="post" action="/content/options/{{ o.id }}/delete" onsubmit="return confirm('Paketni o\'chirasizmi?')"><button class="btn btn-sm btn-ghost">🗑</button></form>
   </div>
-  {% else %}<p class="muted">Paketlar yo'q — botda tarif narxi (yoki «admin bilan aniqlashtiring») ko'rsatiladi.</p>{% endfor %}
+  {% else %}<p class="muted">Paketlar yo'q — botda tarif narxi (yoki «menejerimiz aniqlab beradi») ko'rsatiladi.</p>{% endfor %}
   <details class="edit"><summary class="btn btn-sm btn-light">➕ Paket qo'shish</summary>{{ option_form(x.id) }}</details>
   {% endif %}
   <details class="edit"><summary class="btn btn-sm btn-ghost" style="margin-top:8px">✏️ Tarifni tahrirlash</summary>{{ tariff_form(x) }}</details>

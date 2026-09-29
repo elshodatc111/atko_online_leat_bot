@@ -170,7 +170,7 @@ async def form_comment(lead_id: int, request: Request, text: str = Form(...), st
 async def form_edit(lead_id: int, request: Request, name: str = Form(""), phone: str = Form(""), goal: str = Form(""),
                     study_format: str = Form(""), level: str = Form(""), city: str = Form(""),
                     interested_tariff: str = Form(""), temperature: str = Form(""), source_id: str = Form(""),
-                    lang: str = Form("uz"), staff: Staff = Depends(current_staff)):
+                    staff: Staff = Depends(current_staff)):
     async with session_scope() as s:
         lead = await s.get(Lead, lead_id)
         if not lead:
@@ -183,7 +183,6 @@ async def form_edit(lead_id: int, request: Request, name: str = Form(""), phone:
         lead.city = city.strip() or None
         lead.interested_tariff = interested_tariff.strip() or None
         lead.temperature = temperature or None
-        lead.lang = lang if lang in ("uz", "ru") else "uz"
         if staff.is_admin:
             lead.source_id = int(source_id) if source_id.isdigit() else None
         await audit.log(staff.id, "lead_edit", "lead", lead_id, None, session=s)

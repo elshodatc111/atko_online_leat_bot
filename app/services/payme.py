@@ -72,7 +72,7 @@ async def account_field() -> str:
 async def checkout_url(payment: Payment, lang: str = "uz") -> str:
     base = "https://test.paycom.uz" if await test_mode() else "https://checkout.paycom.uz"
     parts = [f"m={await merchant_id()}", f"ac.{await account_field()}={payment.id}", f"a={payment.amount * 100}",
-             f"l={'ru' if lang == 'ru' else 'uz'}"]
+             "l=uz"]
     ret = (await settings.get("payme_return_url") or "").strip()
     if ret:
         parts.append(f"c={ret}")
@@ -80,16 +80,14 @@ async def checkout_url(payment: Payment, lang: str = "uz") -> str:
     return f"{base}/{token}"
 
 
-async def create_order(lead: Lead, plan_id: int, amount: int | None = None, promo_id: int | None = None,
-                       original_amount: int | None = None) -> tuple[Payment, str]:
+async def create_order(lead: Lead, plan_id: int) -> tuple[Payment, str]:
     async with session_scope() as s:
         plan = await s.get(SubscriptionPlan, plan_id)
         if not plan or not plan.is_active or plan.price <= 0:
             raise ValueError("Tarif varianti topilmadi yoki narxi belgilanmagan")
         tariff_name = plan.tariff.name_uz if plan.tariff else "ATKO Premium"
         p = Payment(lead_id=lead.id, tg_id=lead.tg_id, plan_id=plan.id, title=f"{tariff_name} — {plan.title_uz}",
-                    days=plan.days, amount=plan.price if amount is None else amount, state=0, is_test=await test_mode(),
-                    promo_id=promo_id, original_amount=original_amount)
+                    days=plan.days, amount=plan.price, state=0, is_test=await test_mode())
         s.add(p)
         await s.flush()
         await s.refresh(p)
@@ -166,18 +164,6 @@ async def _receipt(p: Payment) -> dict | None:
     }]}
 
 
-async def _check_promo(p: Payment) -> None:
-    """Promokodli buyurtma: promokod hali amal qilmasa (limit tugagan va h.k.) — buyurtma bekor, to'lov qabul qilinmaydi."""
-    if not p.promo_id or p.state != 0:
-        return
-    from . import promo as promo_svc
-
-    err = await promo_svc.validate_order(p)
-    if err:
-        await promo_svc.cancel_order(p.id, err)
-        raise PaymeError(-31051, "Promokod limiti tugagan — buyurtma bekor qilindi", "Лимит промокода исчерпан — заказ отменён",
-                         "Promo code is no longer valid, order cancelled", await account_field())
-
 
 async def check_perform(params: dict) -> dict:
     p = await _order_from_account(params)
@@ -185,7 +171,6 @@ async def check_perform(params: dict) -> dict:
         raise PaymeError(-31051, "Buyurtma allaqachon to'langan yoki bekor qilingan", "Заказ уже оплачен или отменён",
                          "Order is not available", await account_field())
     _check_amount(p, params)
-    await _check_promo(p)
     res: dict[str, Any] = {"allow": True}
     detail = await _receipt(p)
     if detail:
@@ -241,7 +226,6 @@ async def create_transaction(params: dict) -> dict:
         raise PaymeError(-31051, "Buyurtma allaqachon to'langan yoki bekor qilingan", "Заказ уже оплачен или отменён",
                          "Order is not available", await account_field())
     _check_amount(p, params)
-    await _check_promo(p)
     async with session_scope() as s:
         obj = await s.get(Payment, p.id)
         obj.payme_id = tid
@@ -279,19 +263,6 @@ async def _on_paid(payment_id: int) -> None:
 
     async with session_scope() as s:
         p = await s.get(Payment, payment_id)
-    if p.promo_id:
-        from . import promo as promo_svc
-
-        await promo_svc.mark_used(p.promo_id, p.tg_id, p.id, p.amount, (p.original_amount or p.amount) - p.amount)
-        async with session_scope() as s:
-            lead = (await s.execute(select(Lead).where(Lead.tg_id == p.tg_id))).scalars().first()
-            if lead and lead.promo_id == p.promo_id:
-                lead.promo_id = None
-        # limit to'ldi — shu promokod bilan yaratilgan, hali to'lanmagan buyurtmalar avtomatik bekor bo'ladi
-        if await promo_svc.is_exhausted(p.promo_id):
-            n = await promo_svc.cancel_pending(p.promo_id, "promo_exhausted")
-            if n:
-                log.info("Promokod limiti tugadi: %s ta to'lanmagan buyurtma bekor qilindi", n)
     try:
         await subscriptions.extend(p.tg_id, p.days, kind="payme", payment_id=p.id, note=f"{p.amount} so'm")
         await subscriptions.send_access(p.tg_id, "paid_ok")

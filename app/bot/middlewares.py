@@ -15,7 +15,7 @@ from aiogram.types import CallbackQuery, Message as TgMessage, TelegramObject
 from sqlalchemy import select
 
 from ..db import session_scope
-from ..models import Lead, Staff
+from ..models import Lead
 from ..services import chats as chat_svc
 
 log = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ def _fallback_label(data: str) -> str:
 
     key, _, val = data.partition(":")
     fixed = {
-        "lang": {"uz": "🇺🇿 O'zbekcha", "ru": "🇷🇺 Русский"},
+        "lang": {"uz": "🇺🇿 O'zbekcha"},
         "goal": {k: v["uz"] for k, v in GOALS.items()} | {"skip": "⏭ O'tkazib yuborish"},
         "fmt": {k: v["uz"] for k, v in FORMATS.items()} | {"skip": "⏭ O'tkazib yuborish"},
         "cta": {"operator": "👨‍💼 Operator bilan bog'lanish"},

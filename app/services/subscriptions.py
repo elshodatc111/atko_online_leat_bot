@@ -44,7 +44,7 @@ async def premium_tariff_name(lang: str = "uz") -> str:
         tr = (await s.execute(select(Tariff).where(Tariff.is_subscription.is_(True)).order_by(Tariff.sort))).scalars().first()
     if not tr:
         return "ATKO Premium"
-    return tr.name_ru if lang == "ru" else tr.name_uz
+    return tr.name_uz
 
 
 async def get(tg_id: int) -> Subscription | None:
@@ -225,7 +225,7 @@ async def send_access(tg_id: int, text_key: str = "paid_ok", staff_id: int | Non
     except Exception as e:  # noqa: BLE001
         return False, None, f"Havola yaratib bo'lmadi (bot guruhda admin emasmi?): {e}"
     if not link:
-        return False, None, "Guruh ID si sozlanmagan (Sozlamalar → Yopiq guruh)"
+        return False, None, "Guruh ID si sozlanmagan (Sozlamalar → Premium guruh)"
     until = "∞" if sub.whitelisted else fmt_date(sub.expires_at)
     mid = await sender.send_text(tg_id, t(text_key, lang, until=until), reply_markup=_join_kb(link, lang))
     if mid is None:

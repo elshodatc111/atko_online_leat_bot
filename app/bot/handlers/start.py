@@ -1,7 +1,6 @@
-"""/start, til tanlash, ro'yxatdan o'tish (ism → telefon → maqsad → format), xodim login/taklif."""
+"""/start, ro'yxatdan o'tish (ism → telefon → maqsad → format), xodim login/taklif."""
 from __future__ import annotations
 
-import html
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandObject, CommandStart
@@ -16,7 +15,7 @@ from ...services import audit
 from ...services.notify import hub
 from ..actions import run_pending_after_phone
 from ..common import esc, get_lead, get_or_create_lead, normalize_phone, send_menu, update_lead
-from ..keyboards import contact_kb, format_kb, goal_kb, ib, lang_kb
+from ..keyboards import contact_kb, format_kb, goal_kb, ib
 from ..texts import t
 
 router = Router(name="start")
@@ -166,9 +165,11 @@ async def start(msg: TgMessage, command: CommandObject) -> None:
         await _handle_invite(msg, payload[4:])
         return
     lead, created = await get_or_create_lead(msg.from_user, payload or None)
-    if created or lead.onboarding_step == "lang":
-        await update_lead(lead.id, onboarding_step="lang")
-        await msg.answer(t("choose_lang", lead.lang), reply_markup=lang_kb())
+    if created or lead.onboarding_step in ("lang", "name"):
+        # bot faqat o'zbek tilida — til tanlanmaydi, darhol ism so'raladi
+        await update_lead(lead.id, onboarding_step="name", lang="uz")
+        await msg.answer(t("welcome", "uz"))
+        await msg.answer(t("ask_name", "uz"), reply_markup=ReplyKeyboardRemove())
         return
     if not lead.phone:
         await update_lead(lead.id, onboarding_step="phone" if lead.onboarding_step in (None, "phone") else lead.onboarding_step)
@@ -180,22 +181,20 @@ async def start(msg: TgMessage, command: CommandObject) -> None:
 
 @router.callback_query(F.data.startswith("lang:"))
 async def choose_lang(cb: CallbackQuery) -> None:
-    lang = cb.data.split(":", 1)[1]
+    """Eski xabarlardagi til tugmalari — bot faqat o'zbek tilida."""
+    await cb.answer()
     lead = await get_lead(cb.from_user.id)
     if not lead:
         lead, _ = await get_or_create_lead(cb.from_user)
-    onboarding = lead.onboarding_step == "lang"
-    lead = await update_lead(lead.id, lang=lang, onboarding_step="name" if onboarding else lead.onboarding_step)
-    await cb.answer()
     try:
         await cb.message.delete()
     except Exception:  # noqa: BLE001
         pass
-    if onboarding:
-        await cb.message.answer(t("welcome", lang))
-        await cb.message.answer(t("ask_name", lang), reply_markup=ReplyKeyboardRemove())
+    if lead.onboarding_step in ("lang", "name"):
+        await update_lead(lead.id, onboarding_step="name", lang="uz")
+        await cb.message.answer(t("ask_name", "uz"), reply_markup=ReplyKeyboardRemove())
     else:
-        await send_menu(cb.from_user.id, lead, t("lang_changed", lang))
+        await send_menu(cb.from_user.id, lead)
 
 
 async def ask_phone(lead) -> None:
@@ -279,10 +278,7 @@ async def handle_onboarding_text(msg: TgMessage, lead) -> bool:
     """Ro'yxatdan o'tish bosqichidagi matnli javoblar. True — xabar qayta ishlangan."""
     step = lead.onboarding_step
     text = (msg.text or "").strip()
-    if step == "lang":
-        await msg.answer(t("choose_lang", lead.lang), reply_markup=lang_kb())
-        return True
-    if step == "name":
+    if step in ("lang", "name"):
         if not text or text.startswith("/"):
             await msg.answer(t("ask_name", lead.lang))
             return True

@@ -55,6 +55,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
 .content { padding: 22px; }
 .content.full { padding: 0; }
 .only-mobile { display: none; }
+.panel-close { display: none; }
+@media (max-width: 1200px) { .panel-close { display: inline-flex; } }
 
 /* ---------- components ---------- */
 .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 18px; }
@@ -238,6 +240,24 @@ details.edit[open] { background: #fafbfd; border-radius: 10px; padding: 12px; ma
 .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: grid; place-items: center; z-index: 120; cursor: zoom-out; }
 .lightbox img { max-width: 94vw; max-height: 94vh; }
 
+/* ---------- umumiy yordamchilar ---------- */
+.subpanel { background: #fafbfd; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.item-row { display: flex; gap: 8px; align-items: flex-end; border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 6px; }
+.item-row .grow { flex: 1; min-width: 0; }
+.item-row > form:last-child { margin-bottom: 12px; }
+.sticky-save { position: sticky; bottom: 12px; z-index: 5; margin-bottom: 18px; }
+.sticky-save .btn { box-shadow: 0 6px 20px rgba(41, 82, 204, .35); }
+.backdrop { position: fixed; inset: 0; background: rgba(15, 20, 35, .5); z-index: 45; }
+.bottom-nav { display: none; }
+.only-mobile-block, .only-mobile-flex { display: none !important; }
+.nav-me { padding: 4px 10px 8px; color: #fff; line-height: 1.3; }
+.nav-me small { display: block; color: var(--sidebar-text); font-size: 11.5px; }
+.tabs.scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.tabs.scroll::-webkit-scrollbar { display: none; }
+.tabs.scroll a { white-space: nowrap; }
+.tab-panel:not(.show) { display: none; }
+.map-preview { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+
 /* ---------- responsive ---------- */
 @media (max-width: 1200px) {
   .chat-layout { grid-template-columns: 280px minmax(0, 1fr); }
@@ -245,14 +265,101 @@ details.edit[open] { background: #fafbfd; border-radius: 10px; padding: 12px; ma
   .lead-panel.show { display: block; position: fixed; right: 0; top: 60px; bottom: 0; width: 340px; z-index: 30; box-shadow: -10px 0 30px rgba(0,0,0,.1); }
 }
 @media (max-width: 900px) {
+  :root { --bottom-nav: 60px; }
+  body { padding-bottom: calc(var(--bottom-nav) + env(safe-area-inset-bottom)); }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .sidebar { position: fixed; left: -260px; z-index: 50; transition: .2s; }
-  .sidebar.open { left: 0; }
+  .sidebar { position: fixed; left: -280px; width: 272px; z-index: 50; transition: left .2s; height: 100dvh; }
+  .sidebar.open { left: 0; box-shadow: 10px 0 40px rgba(0,0,0,.3); }
+  body.menu-open { overflow: hidden; }
   .only-mobile { display: inline-block; }
+  .only-mobile-block { display: block !important; }
+  .only-mobile-flex { display: flex !important; }
+  .hide-mobile { display: none !important; }
   .me { display: none; }
-  .chat-layout { grid-template-columns: 1fr; }
+  .topbar { height: 54px; padding: 0 12px; gap: 8px; }
+  .topbar h1 { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-right { gap: 8px; }
+  .switch-label { display: none; }
+  .content { padding: 12px; }
+  .card { padding: 14px; margin-bottom: 12px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .kpi { padding: 12px; }
+  .kpi .value { font-size: 21px; }
+  .chart-box { height: 230px; }
+  .filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .filters > div { min-width: 0; flex: none !important; }
+  .filters > div:first-child, .filters > .btns { grid-column: 1 / -1; }
+  .filters > .btns { margin-left: 0 !important; }
+  .filters > .btns .btn { flex: 1 1 auto; white-space: normal; }
+  /* tizim holati jadvali: belgi + nom, ostida tafsilot va tuzatish tugmalari */
+  table.stack, table.stack tbody { display: block; }
+  table.stack tr { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 2px 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  table.stack td { display: block; padding: 0; border: 0; width: auto !important; white-space: normal !important; overflow-wrap: anywhere; }
+  table.stack td.st-icon { grid-row: span 2; font-size: 18px !important; }
+  table.stack td.st-fix { grid-column: 2; }
+  table.stack td.st-fix:empty, table.stack td.st-fix .btns:empty { display: none; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a { white-space: nowrap; padding: 10px 12px; }
+  #toasts { left: 12px; right: 12px; bottom: calc(var(--bottom-nav) + 12px); max-width: none; }
+  .sticky-save { bottom: calc(var(--bottom-nav) + 10px); }
+  .sticky-save .btn { width: 100%; }
+  .modal-back { place-items: end center; padding: 0; }
+  .modal { border-radius: 16px 16px 0 0; max-width: none; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+
+  /* pastki menyu */
+  .bottom-nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    height: calc(var(--bottom-nav) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
+    background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -4px 20px rgba(20, 27, 45, .06); }
+  .bottom-nav a, .bottom-nav button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    color: var(--muted); font: inherit; font-size: 10.5px; font-weight: 600; background: none; border: 0; cursor: pointer; min-width: 0; }
+  .bottom-nav i { font-style: normal; font-size: 20px; line-height: 1; }
+  .bottom-nav span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bottom-nav a.active { color: var(--primary); }
+  .bottom-nav a:hover { text-decoration: none; }
+  .bottom-nav .badge { position: absolute; top: 5px; left: 55%; font-size: 10px; padding: 0 5px; min-width: 17px; }
+
+  /* chat: to'liq ekran */
+  .chat-layout { grid-template-columns: 1fr; height: calc(100dvh - 54px - var(--bottom-nav) - env(safe-area-inset-bottom)); }
   .chat-layout.has-chat .chat-list { display: none; }
   .chat-layout:not(.has-chat) .conv { display: none; }
-  .content { padding: 14px; }
+  body:has(.chat-layout.has-chat) { padding-bottom: 0; }
+  body:has(.chat-layout.has-chat) .bottom-nav { display: none; }
+  .chat-layout.has-chat { height: calc(100dvh - 54px); }
+  .lead-panel.show { top: 54px; width: 100%; }
+  .msgs { padding: 12px 10px; }
   .msg { max-width: 88%; }
+  .conv-head { padding: 8px 10px; gap: 8px; }
+  .conv-head .title { min-width: 0; }
+  .conv-head .btns { width: 100%; }
+  .composer { padding: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .composer .send-row textarea { min-height: 44px; }
+  .composer #send-btn { min-width: 48px; min-height: 44px; }
+
+  /* jadvallar → kartochkalar */
+  .table-wrap { overflow: visible; }
+  table.cards, table.cards tbody { display: block; }
+  table.cards tr.head { display: none; }
+  table.cards tr { display: block; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; margin-bottom: 10px; }
+  table.cards tr:hover td { background: none; }
+  table.cards td { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #edf0f6; text-align: right; }
+  table.cards td:last-child { border-bottom: 0; }
+  table.cards td::before { content: attr(data-label); color: var(--muted); font-size: 12px; font-weight: 600; text-align: left; flex-shrink: 0; max-width: 45%; }
+  table.cards td:not([data-label])::before, table.cards td[data-label=""]::before { content: none; }
+  table.cards td:empty { display: none; }
+  table.cards td.span { display: block; text-align: center; }
+  table.cards td.span::before { content: none; }
+  table.cards td > * { max-width: 100%; }
+  table.cards td > .cv { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+  table.cards td form, table.cards td .btns { justify-content: flex-end; }
+}
+/* sensorli ekranlar: bosish uchun qulay o'lchamlar */
+@media (pointer: coarse) {
+  .btn { min-height: 42px; padding: 9px 16px; }
+  .btn-sm { min-height: 38px; padding: 7px 12px; }
+  input[type=text], input[type=number], input[type=date], input[type=time], input[type=password], input[type=search], select, textarea { font-size: 16px; min-height: 44px; }
+  .check input { width: 20px; height: 20px; }
+  .sidebar nav a { padding: 11px 12px; }
+  .chat-tabs button { padding: 13px 2px; }
+  .pagination a, .pagination span { padding: 8px 13px; }
 }

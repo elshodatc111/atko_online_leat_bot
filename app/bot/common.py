@@ -52,8 +52,7 @@ async def get_or_create_lead(user: TgUser, source_code: str | None = None) -> tu
                         await s.flush()
                     source_id = src.id
             lead = Lead(tg_id=user.id, tg_username=user.username, tg_name=user.full_name,
-                        lang="ru" if (user.language_code or "").startswith("ru") else "uz",
-                        source_id=source_id, onboarding_step="lang")
+                        lang="uz", source_id=source_id, onboarding_step="name")
             s.add(lead)
             await s.flush()
             created = True

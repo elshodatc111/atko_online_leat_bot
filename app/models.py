@@ -41,16 +41,16 @@ REJECT_REASONS: list[str] = [
 ]
 
 GOALS: dict[str, dict[str, str]] = {
-    "topik": {"uz": "🎯 TOPIK", "ru": "🎯 TOPIK"},
-    "eps": {"uz": "💼 EPS-TOPIK (ish)", "ru": "💼 EPS-TOPIK (работа)"},
-    "speaking": {"uz": "🗣 Noldan so'zlashuv", "ru": "🗣 Разговорный с нуля"},
-    "other": {"uz": "✨ Boshqa", "ru": "✨ Другое"},
+    "topik": {"uz": "🎯 TOPIK"},
+    "eps": {"uz": "💼 EPS-TOPIK (ish)"},
+    "speaking": {"uz": "🗣 Noldan so'zlashuv"},
+    "other": {"uz": "✨ Boshqa"},
 }
 
 FORMATS: dict[str, dict[str, str]] = {
-    "online": {"uz": "💻 Online", "ru": "💻 Онлайн"},
-    "offline": {"uz": "🏫 Offline", "ru": "🏫 Офлайн"},
-    "hybrid": {"uz": "🔄 Gibrid", "ru": "🔄 Гибрид"},
+    "online": {"uz": "💻 Online"},
+    "offline": {"uz": "🏫 Offline"},
+    "hybrid": {"uz": "🔄 Gibrid"},
 }
 
 TEMPERATURES = {"hot": "🔥 Issiq", "warm": "🌤 Iliq", "cold": "❄️ Sovuq"}
@@ -133,7 +133,6 @@ class Lead(Base):
     pending_input: Mapped[str | None] = mapped_column(String(32))  # rating_comment va h.k.
     pending_ref: Mapped[int | None] = mapped_column(Integer)
     quiz_state: Mapped[dict | None] = mapped_column(JSON)
-    promo_id: Mapped[int | None] = mapped_column(Integer)  # qo'llangan (hali ishlatilmagan) promokod
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
     last_activity: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
@@ -250,96 +249,11 @@ class Tariff(Base):
     price_period: Mapped[str] = mapped_column(String(32), default="oyiga")
     is_subscription: Mapped[bool] = mapped_column(Boolean, default=False)  # Payme orqali obuna (yopiq guruh)
     name_uz: Mapped[str] = mapped_column(String(128))
-    name_ru: Mapped[str] = mapped_column(String(128))
+    name_ru: Mapped[str] = mapped_column(String(128), default="")  # eski ustun (bot faqat o'zbekcha)
     desc_uz: Mapped[str] = mapped_column(Text)
-    desc_ru: Mapped[str] = mapped_column(Text)
+    desc_ru: Mapped[str] = mapped_column(Text, default="")  # eski ustun (bot faqat o'zbekcha)
     sort: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-
-class InfoPage(Base):
-    """Markaz haqida, manzil, bepul imkoniyatlar va h.k. — bot menyusida ko'rinadi va AI uchun bilim manbai."""
-
-    __tablename__ = "info_pages"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    key: Mapped[str] = mapped_column(String(32), unique=True)
-    title_uz: Mapped[str] = mapped_column(String(128))
-    title_ru: Mapped[str] = mapped_column(String(128))
-    body_uz: Mapped[str] = mapped_column(Text)
-    body_ru: Mapped[str] = mapped_column(Text)
-    show_in_menu: Mapped[bool] = mapped_column(Boolean, default=True)
-    sort: Mapped[int] = mapped_column(Integer, default=0)
-
-
-class Faq(Base):
-    __tablename__ = "faq"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    q_uz: Mapped[str] = mapped_column(Text)
-    q_ru: Mapped[str] = mapped_column(Text)
-    a_uz: Mapped[str] = mapped_column(Text)
-    a_ru: Mapped[str] = mapped_column(Text)
-    origin: Mapped[str] = mapped_column(String(16), default="manual")  # manual / ai
-    asked_count: Mapped[int] = mapped_column(Integer, default=0)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    sort: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-
-
-class FaqSuggestion(Base):
-    __tablename__ = "faq_suggestions"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    question: Mapped[str] = mapped_column(Text)
-    variants: Mapped[list] = mapped_column(JSON, default=list)
-    count: Mapped[int] = mapped_column(Integer, default=0)
-    q_uz: Mapped[str | None] = mapped_column(Text)
-    q_ru: Mapped[str | None] = mapped_column(Text)
-    a_uz: Mapped[str | None] = mapped_column(Text)
-    a_ru: Mapped[str | None] = mapped_column(Text)
-    unanswered: Mapped[bool] = mapped_column(Boolean, default=False)
-    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)  # pending/approved/rejected
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
-
-
-class UserQuestion(Base):
-    __tablename__ = "user_questions"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    lead_id: Mapped[int | None] = mapped_column(ForeignKey("leads.id", ondelete="SET NULL"), index=True)
-    text: Mapped[str] = mapped_column(Text)
-    lang: Mapped[str] = mapped_column(String(4), default="uz")
-    mode: Mapped[str] = mapped_column(String(16), default="consultant")
-    answered: Mapped[bool] = mapped_column(Boolean, default=True)
-    processed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
-
-    lead: Mapped[Lead | None] = relationship(lazy="joined")
-
-
-class Material(Base):
-    __tablename__ = "materials"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(255))
-    description: Mapped[str | None] = mapped_column(Text)
-    file_path: Mapped[str] = mapped_column(String(512))
-    file_name: Mapped[str] = mapped_column(String(255))
-    file_size: Mapped[int] = mapped_column(Integer, default=0)
-    tg_file_id: Mapped[str | None] = mapped_column(String(255))
-    is_free: Mapped[bool] = mapped_column(Boolean, default=True)  # leadlarga bepul material
-    for_tutor: Mapped[bool] = mapped_column(Boolean, default=True)  # tutor AI bilim manbai
-    index_status: Mapped[str] = mapped_column(String(16), default="none")  # none/pending/done/error
-    index_error: Mapped[str | None] = mapped_column(Text)
-    chunks_count: Mapped[int] = mapped_column(Integer, default=0)
-    downloads: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-
-
-class MaterialChunk(Base):
-    __tablename__ = "material_chunks"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    material_id: Mapped[int] = mapped_column(ForeignKey("materials.id", ondelete="CASCADE"), index=True)
-    page: Mapped[int | None] = mapped_column(Integer)
-    text: Mapped[str] = mapped_column(Text)
-    embedding: Mapped[list | None] = mapped_column(JSON)
 
 
 class ReminderStep(Base):
@@ -347,11 +261,8 @@ class ReminderStep(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     day_offset: Mapped[int] = mapped_column(Integer)
     text_uz: Mapped[str] = mapped_column(Text)
-    text_ru: Mapped[str] = mapped_column(Text)
-    material_id: Mapped[int | None] = mapped_column(ForeignKey("materials.id", ondelete="SET NULL"))
+    text_ru: Mapped[str] = mapped_column(Text, default="")  # eski ustun (bot faqat o'zbekcha)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-    material: Mapped[Material | None] = relationship(lazy="joined")
 
 
 class ReminderLog(Base):
@@ -362,17 +273,6 @@ class ReminderLog(Base):
     step_id: Mapped[int] = mapped_column(ForeignKey("reminder_steps.id", ondelete="CASCADE"))
     ok: Mapped[bool] = mapped_column(Boolean, default=True)
     sent_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-
-
-class Template(Base):
-    """Operatorlar uchun tayyor javob shablonlari."""
-
-    __tablename__ = "templates"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(128))
-    text_uz: Mapped[str] = mapped_column(Text)
-    text_ru: Mapped[str] = mapped_column(Text)
-    sort: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class Broadcast(Base):
@@ -412,7 +312,7 @@ class SubscriptionPlan(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tariff_id: Mapped[int] = mapped_column(ForeignKey("tariffs.id", ondelete="CASCADE"), index=True)
     title_uz: Mapped[str] = mapped_column(String(64))
-    title_ru: Mapped[str] = mapped_column(String(64))
+    title_ru: Mapped[str] = mapped_column(String(64), default="")  # eski ustun (bot faqat o'zbekcha)
     days: Mapped[int] = mapped_column(Integer, default=30)
     price: Mapped[int] = mapped_column(Integer, default=0)  # so'm
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -444,8 +344,6 @@ class Payment(Base):
     reason: Mapped[int | None] = mapped_column(Integer)
     fiscal: Mapped[dict | None] = mapped_column(JSON)
     is_test: Mapped[bool] = mapped_column(Boolean, default=False)
-    promo_id: Mapped[int | None] = mapped_column(Integer, index=True)
-    original_amount: Mapped[int | None] = mapped_column(Integer)  # chegirmagacha summa
     reminded: Mapped[bool] = mapped_column(Boolean, default=False)  # "to'lov yakunlanmadi" eslatmasi
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
@@ -518,37 +416,6 @@ class LoginCode(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
-class PromoCode(Base):
-    """Promokod: foiz chegirma (1–100%), foydalanish soni va muddati cheklovi bilan."""
-
-    __tablename__ = "promo_codes"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
-    percent: Mapped[int] = mapped_column(Integer)  # 1..100
-    max_uses: Mapped[int] = mapped_column(Integer, default=0)  # 0 — cheklovsiz
-    used_count: Mapped[int] = mapped_column(Integer, default=0)
-    plan_id: Mapped[int | None] = mapped_column(Integer)  # faqat shu variant uchun (bo'sh — hammasi)
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    closed_reason: Mapped[str | None] = mapped_column(String(20))  # "expired" — muddati tugab avtomatik o'chirilgan
-    closed_at: Mapped[datetime | None] = mapped_column(DateTime)
-    note: Mapped[str | None] = mapped_column(String(255))
-    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-
-
-class PromoUse(Base):
-    __tablename__ = "promo_uses"
-    __table_args__ = (UniqueConstraint("promo_id", "tg_id"),)
-    id: Mapped[int] = mapped_column(primary_key=True)
-    promo_id: Mapped[int] = mapped_column(ForeignKey("promo_codes.id", ondelete="CASCADE"), index=True)
-    tg_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    payment_id: Mapped[int | None] = mapped_column(Integer)
-    amount: Mapped[int] = mapped_column(Integer, default=0)
-    discount: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-
-
 # ================================================================ v3: kurs paketlari, kanal, o'quv guruhlari
 
 
@@ -566,162 +433,3 @@ class TariffOption(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     tariff: Mapped[Tariff] = relationship(lazy="joined")
-
-
-CHAT_ROLES: dict[str, str] = {
-    "study": "👥 O'quv guruhi",
-    "channel": "📢 Asosiy kanal",
-    "premium": "💎 Premium guruh",
-    "unassigned": "❔ Belgilanmagan",
-}
-
-
-class TgChat(Base):
-    """Bot qo'shilgan Telegram guruh va kanallar."""
-
-    __tablename__ = "tg_chats"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
-    type: Mapped[str] = mapped_column(String(16))  # group / supergroup / channel
-    title: Mapped[str] = mapped_column(String(255), default="")
-    username: Mapped[str | None] = mapped_column(String(64))
-    role: Mapped[str] = mapped_column(String(16), default="unassigned", index=True)
-    bot_status: Mapped[str] = mapped_column(String(20), default="member")
-    can_post: Mapped[bool] = mapped_column(Boolean, default=False)
-    can_invite: Mapped[bool] = mapped_column(Boolean, default=False)
-    can_pin: Mapped[bool] = mapped_column(Boolean, default=False)
-    can_delete: Mapped[bool] = mapped_column(Boolean, default=False)
-    members: Mapped[int] = mapped_column(Integer, default=0)  # jami a'zolar (Telegram hisobi)
-    admins: Mapped[int] = mapped_column(Integer, default=0)  # adminlar (bot ham)
-    members_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)  # bot hali chatda
-    added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    left_at: Mapped[datetime | None] = mapped_column(DateTime)
-    removed_at: Mapped[datetime | None] = mapped_column(DateTime)  # admin paneldan o'chirgan
-
-    @property
-    def students(self) -> int:
-        """O'quvchilar = a'zolar − adminlar (bot ham admin sifatida ayriladi)."""
-        return max(0, (self.members or 0) - (self.admins or 0))
-
-    @property
-    def is_channel(self) -> bool:
-        return self.type == "channel"
-
-
-class ChatStat(Base):
-    """Kunlik a'zolar soni va qo'shilgan/chiqib ketganlar."""
-
-    __tablename__ = "chat_stats"
-    __table_args__ = (UniqueConstraint("chat_id", "day"),)
-    id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    day: Mapped[date] = mapped_column(Date, index=True)
-    members: Mapped[int] = mapped_column(Integer, default=0)
-    joined: Mapped[int] = mapped_column(Integer, default=0)
-    left: Mapped[int] = mapped_column(Integer, default=0)
-
-
-class ChannelPost(Base):
-    """Kanal postlari (jonli yoki Telegram Desktop eksportidan) va reaksiyalar."""
-
-    __tablename__ = "channel_posts"
-    __table_args__ = (UniqueConstraint("chat_id", "message_id"),)
-    id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    message_id: Mapped[int] = mapped_column(Integer)
-    posted_at: Mapped[datetime] = mapped_column(DateTime, index=True)
-    kind: Mapped[str] = mapped_column(String(16), default="text")
-    text: Mapped[str] = mapped_column(Text, default="")
-    duration: Mapped[int | None] = mapped_column(Integer)  # video/audio soniyalarda
-    reactions: Mapped[int] = mapped_column(Integer, default=0)
-    reactions_detail: Mapped[dict | None] = mapped_column(JSON)
-    views: Mapped[int | None] = mapped_column(Integer)  # Bot API bermaydi; eksportda bo'lsa
-    subscribers_at_post: Mapped[int | None] = mapped_column(Integer)
-    source: Mapped[str] = mapped_column(String(8), default="live")  # live / import
-    edited: Mapped[bool] = mapped_column(Boolean, default=False)
-    media_group_id: Mapped[str | None] = mapped_column(String(64))
-
-
-class ChannelInvite(Base):
-    """Kanal uchun nomlangan taklif havolalari — qaysi manbadan nechta obunachi kelganini o'lchash."""
-
-    __tablename__ = "channel_invites"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    name: Mapped[str] = mapped_column(String(32))
-    link: Mapped[str] = mapped_column(String(255), unique=True)
-    joins: Mapped[int] = mapped_column(Integer, default=0)
-    leaves: Mapped[int] = mapped_column(Integer, default=0)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-
-
-class ChannelInsight(Base):
-    """AI kontent tahlili va g'oyalari (kunlik)."""
-
-    __tablename__ = "channel_insights"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    day: Mapped[date] = mapped_column(Date, index=True)
-    trigger: Mapped[str] = mapped_column(String(8), default="auto")  # auto / manual
-    data: Mapped[dict | None] = mapped_column(JSON)
-    error: Mapped[str | None] = mapped_column(Text)
-    model: Mapped[str | None] = mapped_column(String(64))
-    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-
-
-POST_STATUSES: dict[str, str] = {
-    "draft": "📝 Qoralama (sinovdan o'tkazildi)",
-    "scheduled": "🕒 Rejalashtirilgan",
-    "sending": "⏳ Yuborilmoqda",
-    "sent": "✅ Yuborildi",
-    "partial": "⚠️ Qisman yuborildi",
-    "failed": "❌ Yuborilmadi",
-    "cancelled": "✖️ Bekor qilindi",
-    "deleted": "🗑 Guruhlardan o'chirildi",
-}
-
-
-class GroupPost(Base):
-    """O'quv guruhlariga yoki asosiy kanalga yuboriladigan post (matn / matn+rasm / matn+video), rejalashtirish bilan."""
-
-    __tablename__ = "group_posts"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    kind: Mapped[str] = mapped_column(String(8), default="text")  # text / photo / video
-    dest: Mapped[str] = mapped_column(String(8), default="groups", index=True)  # groups — o'quv guruhlari / channel — asosiy kanal
-    note: Mapped[str | None] = mapped_column(String(255))  # masalan: «AI g'oyasi: ...»
-    text: Mapped[str] = mapped_column(Text, default="")
-    file_id: Mapped[str | None] = mapped_column(String(255))
-    file_path: Mapped[str | None] = mapped_column(String(512))
-    file_name: Mapped[str | None] = mapped_column(String(255))
-    targets: Mapped[list] = mapped_column(JSON, default=list)  # chat_id lar
-    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
-    pin: Mapped[bool] = mapped_column(Boolean, default=False)
-    silent: Mapped[bool] = mapped_column(Boolean, default=False)
-    status: Mapped[str] = mapped_column(String(16), default="scheduled", index=True)
-    error: Mapped[str | None] = mapped_column(Text)
-    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
-    sent_at: Mapped[datetime | None] = mapped_column(DateTime)
-
-    deliveries: Mapped[list["GroupPostDelivery"]] = relationship(lazy="selectin", cascade="all, delete-orphan")
-
-    @property
-    def status_label(self) -> str:
-        return POST_STATUSES.get(self.status, self.status)
-
-
-class GroupPostDelivery(Base):
-    __tablename__ = "group_post_deliveries"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    post_id: Mapped[int] = mapped_column(ForeignKey("group_posts.id", ondelete="CASCADE"), index=True)
-    chat_id: Mapped[int] = mapped_column(BigInteger)
-    title: Mapped[str] = mapped_column(String(255), default="")
-    message_id: Mapped[int | None] = mapped_column(Integer)
-    ok: Mapped[bool] = mapped_column(Boolean, default=False)
-    error: Mapped[str | None] = mapped_column(String(500))
-    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
-    sent_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

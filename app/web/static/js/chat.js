@@ -9,7 +9,7 @@
   };
   const REJECT = ["Narx qimmat", "Vaqt to'g'ri kelmadi", "Boshqa markazni tanladi", "Qiziqmay qoldi", "Aloqaga chiqmadi", "Boshqa"];
 
-  let tab = "queue", current = null, data = null, templates = [], pendingFile = null, recorder = null, recChunks = [];
+  let tab = "queue", current = null, data = null, pendingFile = null, recorder = null, recChunks = [];
 
   // ------------------------------------------------ ro'yxat
   document.querySelectorAll("#chat-tabs button").forEach((b) => (b.onclick = () => {
@@ -122,11 +122,10 @@
     const opts = Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${k === l.status ? "selected" : ""}>${v}</option>`).join("");
     const rej = REJECT.map((r) => `<option ${r === l.reject_reason ? "selected" : ""}>${r}</option>`).join("");
     $("lead-panel").innerHTML = `
-      <div class="card-head" style="margin-bottom:6px"><h3 style="margin:0">👤 ${esc(l.name)}</h3><a class="btn btn-sm btn-ghost" href="/leads/${l.id}" target="_blank">Karta ↗</a></div>
+      <div class="card-head" style="margin-bottom:6px"><h3 style="margin:0">👤 ${esc(l.name)}</h3><div class="btns"><a class="btn btn-sm btn-ghost" href="/leads/${l.id}" target="_blank">Karta ↗</a><button class="btn btn-sm btn-ghost panel-close" onclick="document.getElementById('lead-panel').classList.remove('show')" title="Yopish">✕</button></div></div>
       <dl class="kv">
         <dt>Telefon</dt><dd>${l.phone ? `<a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : "—"}</dd>
         <dt>Telegram</dt><dd>${l.username ? "@" + esc(l.username) : l.tg_id}</dd>
-        <dt>Til</dt><dd>${l.lang === "ru" ? "🇷🇺 Rus" : "🇺🇿 O'zbek"}</dd>
         <dt>Maqsad</dt><dd>${esc(l.goal || "—")}</dd>
         <dt>Format</dt><dd>${esc(l.format || "—")}</dd>
         <dt>Daraja</dt><dd>${esc(l.level || "—")}</dd>
@@ -234,17 +233,6 @@
     } catch (e) { ATKO.toast("Mikrofonga ruxsat berilmadi", "danger"); }
   };
 
-  async function loadTemplates() {
-    try {
-      templates = (await ATKO.api("/api/templates")).items;
-      $("tpl-select").innerHTML = '<option value="">🧩 Shablonlar</option>' + templates.map((t) => `<option value="${t.id}">${esc(t.title)}</option>`).join("");
-    } catch (e) {}
-  }
-  $("tpl-select").onchange = () => {
-    const t = templates.find((x) => String(x.id) === $("tpl-select").value);
-    if (t) { $("msg-input").value = data && data.lead.lang === "ru" ? t.ru : t.uz; $("msg-input").focus(); }
-    $("tpl-select").value = "";
-  };
   $("ai-btn").onclick = async () => {
     $("ai-btn").disabled = true; $("ai-btn").textContent = "⏳ AI...";
     try { const j = await ATKO.api(`/api/chats/${current}/suggest`, {}); $("msg-input").value = j.text; $("msg-input").focus(); }
@@ -281,7 +269,6 @@
 
   ATKO.on("poll", () => { loadList(); if (current) openChat(current, true); });
 
-  loadTemplates();
   loadList();
   setInterval(loadList, 60000);
   if (layout.dataset.open) openChat(Number(layout.dataset.open));

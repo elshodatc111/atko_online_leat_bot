@@ -12,20 +12,12 @@ def fmt_money(amount: int) -> str:
 
 
 def option_title(o: TariffOption, lang: str = "uz") -> str:
-    """«12 dars» / «12 уроков»"""
-    if lang == "ru":
-        n = o.lessons
-        word = "урок" if n % 10 == 1 and n % 100 != 11 else ("урока" if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14 else "уроков")
-        return f"{n} {word}"
+    """«12 dars»"""
     return f"{o.lessons} dars"
 
 
 def option_details(o: TariffOption, lang: str = "uz") -> str:
     """«haftasiga 3 ta · 1 oy»"""
-    if lang == "ru":
-        m = o.months
-        mw = "месяц" if m == 1 else ("месяца" if 2 <= m <= 4 else "месяцев")
-        return f"{o.per_week} раза в неделю · {m} {mw}" if o.per_week else f"{m} {mw}"
     return f"haftasiga {o.per_week} ta · {o.months} oy" if o.per_week else f"{o.months} oy"
 
 

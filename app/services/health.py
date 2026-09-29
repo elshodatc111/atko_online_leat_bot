@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import collections
 import logging
+import os
 import shutil
 import time
 from pathlib import Path
@@ -124,8 +125,8 @@ async def check_group() -> dict:
 
     gid = await subscriptions.group_id()
     if not gid:
-        return _c("group", "👥 Yopiq Premium guruh", "warn", "Guruh tanlanmagan",
-                  hint="Botni guruhga admin qilib qo'shing, so'ng Sozlamalar → «Yopiq guruh» bo'limida guruhni tanlang")
+        return _c("group", "💎 Premium guruh", "warn", "Guruh tanlanmagan",
+                  hint="Botni guruhga admin qilib qo'shing, so'ng Sozlamalar → «Premium guruh» bo'limida guruhni tanlang")
     try:
         bot = get_bot()
         chat = await bot.get_chat(gid)
@@ -134,7 +135,7 @@ async def check_group() -> dict:
         status = m.status if isinstance(m.status, str) else m.status.value
         count = await bot.get_chat_member_count(gid)
         if status != "administrator":
-            return _c("group", "👥 Yopiq Premium guruh", "fail", f"«{chat.title}»: bot admin emas (holat: {status})",
+            return _c("group", "💎 Premium guruh", "fail", f"«{chat.title}»: bot admin emas (holat: {status})",
                       [("check_group", "Qayta tekshirish")], "Guruh sozlamalarida botni admin qiling")
         missing = []
         if not getattr(m, "can_invite_users", False):
@@ -142,31 +143,14 @@ async def check_group() -> dict:
         if not getattr(m, "can_restrict_members", False):
             missing.append("«Foydalanuvchilarni bloklash»")
         if missing:
-            return _c("group", "👥 Yopiq Premium guruh", "fail", f"«{chat.title}»: botda {', '.join(missing)} huquqi yo'q",
+            return _c("group", "💎 Premium guruh", "fail", f"«{chat.title}»: botda {', '.join(missing)} huquqi yo'q",
                       [("check_group", "Qayta tekshirish")], "Guruh → Adminlar → bot → shu huquqlarni yoqing")
-        return _c("group", "👥 Yopiq Premium guruh", "ok", f"«{chat.title}» · a'zolar: {count} · bot huquqlari to'liq",
+        return _c("group", "💎 Premium guruh", "ok", f"«{chat.title}» · a'zolar: {count} · bot huquqlari to'liq",
                   [("sync_group", "A'zolarni sinxronlash"), ("run_sub_check", "Obunalarni hozir tekshirish")])
     except Exception as e:  # noqa: BLE001
-        return _c("group", "👥 Yopiq Premium guruh", "fail", f"Guruhga ulanib bo'lmadi: {e}", [("check_group", "Qayta tekshirish")],
+        return _c("group", "💎 Premium guruh", "fail", f"Guruhga ulanib bo'lmadi: {e}", [("check_group", "Qayta tekshirish")],
                   "Guruh ID to'g'riligini va bot guruhda ekanini tekshiring")
 
-
-async def check_channel() -> dict:
-    """Asosiy kanal va o'quv guruhlari (DB bo'yicha, tez)."""
-    from . import channel, tgchats
-
-    ch = await tgchats.main_channel()
-    study = await tgchats.list_chats("study")
-    g = f" · o'quv guruhlari: {len(study)} ({sum(c.students for c in study)} o'quvchi)"
-    if not ch:
-        return _c("channel", "📢 Asosiy kanal va o'quv guruhlari", "warn", "Asosiy kanal ulanmagan" + g,
-                  hint="Botni kanalga admin qilib qo'shing va «Kanal rivoji» bo'limida ulang")
-    if not ch.is_active or ch.bot_status != "administrator":
-        return _c("channel", "📢 Asosiy kanal va o'quv guruhlari", "fail", f"«{ch.title}»: bot admin emas ({ch.bot_status})" + g,
-                  hint="Kanal sozlamalarida botni admin qiling")
-    last = await channel.latest(ch.chat_id)
-    ai = f" · oxirgi AI tahlil: {last.created_at:%d.%m %H:%M}" if last else " · AI tahlil hali yo'q"
-    return _c("channel", "📢 Asosiy kanal va o'quv guruhlari", "ok", f"«{ch.title}» · obunachilar: {ch.members}{ai}{g}")
 
 
 async def check_ai(deep: bool = False) -> list[dict]:
@@ -252,11 +236,54 @@ def check_disk() -> dict:
     try:
         total, used, free = shutil.disk_usage(config.DATA_DIR)
         media = sum(f.stat().st_size for f in Path(config.media_dir()).rglob("*") if f.is_file()) / 1024 / 1024
+        data = sum(f.stat().st_size for f in Path(config.DATA_DIR).rglob("*") if f.is_file()) / 1024 / 1024
         free_gb = free / 1024**3
-        return _c("disk", "💾 Disk", "ok" if free_gb > 1 else ("warn" if free_gb > 0.2 else "fail"),
-                  f"Bo'sh joy: {free_gb:.1f} GB · media fayllar: {media:.1f} MB")
+        # hostingdagi kvota (masalan, alwaysdata bepul tarif — 1 GB) .env dagi DISK_QUOTA_MB orqali
+        quota = int(os.getenv("DISK_QUOTA_MB") or 0)
+        if quota:
+            left = quota - 150 - data  # ~150 MB — kod va kutubxonalar
+            status = "ok" if left > 200 else ("warn" if left > 50 else "fail")
+            details = f"Ma'lumotlar: {data:.0f} MB (media: {media:.0f} MB) · kvota {quota} MB, taxminan {max(0, left):.0f} MB bo'sh"
+        else:
+            status = "ok" if free_gb > 1 else ("warn" if free_gb > 0.2 else "fail")
+            details = f"Bo'sh joy: {free_gb:.1f} GB · ma'lumotlar: {data:.0f} MB (media: {media:.0f} MB)"
+        return _c("disk", "💾 Disk", status, details)
     except Exception as e:  # noqa: BLE001
         return _c("disk", "💾 Disk", "warn", str(e))
+
+
+def memory_mb() -> tuple[int, int] | None:
+    """(joriy, eng yuqori) RSS MB da — Linux'da /proc orqali."""
+    try:
+        vals = {}
+        for line in Path("/proc/self/status").read_text().splitlines():
+            if line.startswith(("VmRSS:", "VmHWM:")):
+                k, v = line.split(":", 1)
+                vals[k] = int(v.split()[0]) // 1024
+        return vals.get("VmRSS", 0), vals.get("VmHWM", 0)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def check_memory() -> dict:
+    from .. import lowmem
+
+    mode = "kam xotira rejimi yoqilgan" if lowmem.is_enabled() else "oddiy rejim"
+    m = memory_mb()
+    if not m:
+        return _c("memory", "🧠 Xotira (RAM)", "ok", f"O'lchab bo'lmadi (Windows) · {mode}")
+    limit = int(os.getenv("MEMORY_LIMIT_MB") or 0)
+    cur, peak = m
+    details = f"Hozir: {cur} MB · eng yuqori: {peak} MB · {mode}"
+    if limit:
+        details += f" · limit {limit} MB"
+        status = "ok" if peak < limit * 0.8 else ("warn" if peak < limit * 0.95 else "fail")
+    else:
+        status = "ok"
+    hint = None
+    if status != "ok" and not lowmem.is_enabled():
+        hint = ".env ga LOW_MEMORY=1 qo'shing va saytni qayta ishga tushiring"
+    return _c("memory", "🧠 Xotira (RAM)", status, details, hint=hint)
 
 
 def check_loops() -> dict:
@@ -289,10 +316,10 @@ async def all_checks(deep: bool = False) -> list[dict]:
     items += await check_bot()
     items.append(await check_group())
     items += await check_ai(deep)
-    items.append(await check_channel())
     items.append(await check_payme())
     items.append(await check_db())
     items.append(check_disk())
+    items.append(check_memory())
     items.append(check_loops())
     items.append(await check_queue())
     items.append(_c("ffmpeg", "🎙 ffmpeg (ixtiyoriy)", "ok" if ffmpeg_available() else "warn",

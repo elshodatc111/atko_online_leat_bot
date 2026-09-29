@@ -6,28 +6,32 @@ from datetime import date
 from pathlib import Path
 
 from aiogram.types import FSInputFile
-from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
 from sqlalchemy import select
 
 from ..config import config
 from ..db import session_scope
-from ..models import FORMATS, GOALS, TEMPERATURES, AuditLog, Chat, Lead, Payment, Subscription, UserQuestion
+from ..models import FORMATS, GOALS, TEMPERATURES, AuditLog, Chat, Lead, Payment, Subscription
 from . import audit as audit_svc
 from . import stats, worktime
 
-HEADER_FILL = PatternFill("solid", fgColor="1F4E79")
-HEADER_FONT = Font(color="FFFFFF", bold=True)
+def Workbook():  # noqa: N802 — openpyxl faqat eksport paytida yuklanadi (xotirani tejash uchun)
+    from openpyxl import Workbook as _Workbook
+
+    return _Workbook()
 
 
-def _sheet(wb: Workbook, title: str, headers: list[str], rows: list[list], first: bool = False):
+def _sheet(wb, title: str, headers: list[str], rows: list[list], first: bool = False):
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    header_fill = PatternFill("solid", fgColor="1F4E79")
+    header_font = Font(color="FFFFFF", bold=True)
     ws = wb.active if first else wb.create_sheet()
     ws.title = title[:31]
     ws.append(headers)
     for c in ws[1]:
-        c.fill = HEADER_FILL
-        c.font = HEADER_FONT
+        c.fill = header_fill
+        c.font = header_font
         c.alignment = Alignment(vertical="center", wrap_text=True)
     for r in rows:
         ws.append(["" if v is None else v for v in r])
@@ -132,19 +136,6 @@ async def audit_xlsx(start: date, end: date) -> Path:
     wb.save(p)
     return p
 
-
-async def questions_xlsx(start: date, end: date) -> Path:
-    s0, s1 = stats.range_utc(start, end)
-    async with session_scope() as s:
-        rows_db = (await s.execute(select(UserQuestion).where(UserQuestion.created_at >= s0, UserQuestion.created_at < s1)
-                                   .order_by(UserQuestion.id.desc()))).scalars().all()
-    rows = [[q.id, worktime.fmt(q.created_at), q.lead.display if q.lead else "", q.lang, q.mode, q.text,
-             "Ha" if q.answered else "Yo'q"] for q in rows_db]
-    wb = Workbook()
-    _sheet(wb, "Savollar", ["ID", "Vaqt", "Lead", "Til", "Rejim", "Savol", "AI javob topdi"], rows, first=True)
-    p = _out_path("savollar")
-    wb.save(p)
-    return p
 
 
 async def payments_xlsx(start: date, end: date) -> Path:

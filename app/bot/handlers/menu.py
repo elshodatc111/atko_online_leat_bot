@@ -10,21 +10,16 @@ from aiogram.types import Message as TgMessage
 from sqlalchemy import select
 
 from ...db import session_scope
-from ...models import Chat, InfoPage, SubscriptionPlan, Tariff
+from ...models import Chat, SubscriptionPlan, Tariff
 from ...services import ai, settings, subscriptions, worktime
-from ...services.knowledge import CATEGORY_LABELS
 from ...services.notify import hub, telegram_staff
 from ..actions import enroll_request, last_payments, operator_request, require_phone, send_sample, show_buy, start_payment
 from ..common import esc, get_lead, get_or_create_lead, send_menu, strip_placeholders, update_lead
-from ..keyboards import cta_kb, ib, lang_kb, quiz_level_kb, skip_comment_kb
+from ..keyboards import cta_kb, ib, quiz_level_kb, skip_comment_kb
 from ..texts import all_button_texts, money, t
 
 router = Router(name="menu")
 router.message.filter(F.chat.type == "private")  # guruh/kanallarda menyu ishlamaydi
-
-CAT_RU = {"group": "Групповые тарифы", "individual": "Индивидуальные тарифы (1-на-1)", "hybrid": "Гибридное обучение",
-          "subscription": "Подписка"}
-
 
 async def _lead(event) -> object:
     lead = await get_lead(event.from_user.id)
@@ -39,7 +34,7 @@ async def _lead(event) -> object:
 async def _courses_kb(lang: str) -> InlineKeyboardMarkup:
     async with session_scope() as s:
         items = (await s.execute(select(Tariff).where(Tariff.is_active.is_(True)).order_by(Tariff.sort, Tariff.id))).scalars().all()
-    return InlineKeyboardMarkup(inline_keyboard=[[ib(x.name_ru if lang == "ru" else x.name_uz, f"tariff:{x.id}")] for x in items])
+    return InlineKeyboardMarkup(inline_keyboard=[[ib(x.name_uz, f"tariff:{x.id}")] for x in items])
 
 
 @router.message(F.text.in_(all_button_texts("btn_courses")))
@@ -61,11 +56,11 @@ async def tariff_price_text(tr: Tariff, lang: str) -> str:
             plans = (await s.execute(select(SubscriptionPlan).where(SubscriptionPlan.tariff_id == tr.id, SubscriptionPlan.is_active.is_(True))
                                      .order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
         if not plans:
-            return f"{t('price_label', lang)}: {t('price_ask_admin', lang)}"
+            return f"{t('price_label', lang)}: {t('price_by_manager', lang)}"
         lines = [f"{t('price_label', lang)}:"]
         for p in plans:
-            title = p.title_ru if lang == "ru" else p.title_uz
-            lines.append(f"• {esc(title)} — <b>{money(p.price, lang)}</b>" if p.price > 0 else f"• {esc(title)} — {t('price_ask_admin', lang)}")
+            title = p.title_uz
+            lines.append(f"• {esc(title)} — <b>{money(p.price, lang)}</b>" if p.price > 0 else f"• {esc(title)} — {t('price_by_manager', lang)}")
         return "\n".join(lines)
     from ...services import tariffs as tariff_svc
 
@@ -76,7 +71,7 @@ async def tariff_price_text(tr: Tariff, lang: str) -> str:
         for o in options:
             head = f"• <b>{tariff_svc.option_title(o, lang)}</b> ({tariff_svc.option_details(o, lang)})"
             if o.price <= 0:
-                lines.append(f"{head} — {t('price_ask_admin', lang)}")
+                lines.append(f"{head} — {t('price_by_manager', lang)}")
                 continue
             badge = ""
             if o.id == best_id:
@@ -86,7 +81,7 @@ async def tariff_price_text(tr: Tariff, lang: str) -> str:
     if tr.price > 0:
         period = f" / {esc(tr.price_period)}" if tr.price_period else ""
         return f"{t('price_label', lang)}: <b>{money(tr.price, lang)}</b>{period}"
-    return f"{t('price_label', lang)}: {t('price_ask_admin', lang)}"
+    return f"{t('price_label', lang)}: {t('price_by_manager', lang)}"
 
 
 @router.callback_query(F.data.startswith("tariff:"))
@@ -97,8 +92,8 @@ async def tariff_detail(cb: CallbackQuery) -> None:
     if not x:
         await cb.answer()
         return
-    name = x.name_ru if lead.lang == "ru" else x.name_uz
-    desc = x.desc_ru if lead.lang == "ru" else x.desc_uz
+    name = x.name_uz
+    desc = x.desc_uz
     await update_lead(lead.id, interested_tariff=x.name_uz)
     rows = []
     if x.is_subscription:
@@ -117,7 +112,6 @@ async def tariff_detail(cb: CallbackQuery) -> None:
             rows.append([ib("📝 " + label, f"opt:{o.id}")])
         if options:
             extra = "\n\n" + t("choose_package", lead.lang)
-    rows.append([ib(t("admin_btn_inline", lead.lang), f"enroll:{x.id}")])
     rows.append([ib(t("back", lead.lang), "courses")])
     text = (f"<b>{esc(name)}</b>\n\n{esc(strip_placeholders(desc))}\n\n{await tariff_price_text(x, lead.lang)}\n\n"
             f"{t('price_note', lead.lang)}{extra}")
@@ -127,7 +121,7 @@ async def tariff_detail(cb: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("opt:"))
 async def enroll_option(cb: CallbackQuery) -> None:
-    """Zoom / Individual paketini tanlash → admin navbatiga so'rov (to'lov admin orqali)."""
+    """Zoom / Individual paketini tanlash → menejerlar navbatiga yozilish so'rovi."""
     lead = await _lead(cb)
     await cb.answer()
     await enroll_request(lead, None, option_id=int(cb.data.split(":")[1]))
@@ -135,9 +129,10 @@ async def enroll_option(cb: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("enroll:"))
 async def enroll(cb: CallbackQuery) -> None:
-    lead = await _lead(cb)
+    """Eski xabarlardagi «Admin bilan bog'lanish» tugmasi — endi tariflar ro'yxatini ochadi."""
     await cb.answer()
-    await enroll_request(lead, int(cb.data.split(":")[1]))
+    lead = await _lead(cb)
+    await cb.message.answer(t("courses_title", lead.lang), reply_markup=await _courses_kb(lead.lang))
 
 
 # ------------------------------------------------------------------ obuna sotib olish
@@ -151,26 +146,7 @@ async def buy(msg: TgMessage) -> None:
 @router.callback_query(F.data == "buy")
 async def buy_cb(cb: CallbackQuery) -> None:
     await cb.answer()
-    lead = await _lead(cb)
-    if lead.pending_input == "promo":
-        lead = await update_lead(lead.id, pending_input=None)
-    await show_buy(lead)
-
-
-@router.callback_query(F.data == "promo")
-async def promo_cb(cb: CallbackQuery) -> None:
-    await cb.answer()
-    lead = await _lead(cb)
-    await update_lead(lead.id, pending_input="promo")
-    kb = InlineKeyboardMarkup(inline_keyboard=[[ib(t("back", lead.lang), "buy")]])
-    await cb.message.answer(t("promo_ask", lead.lang), reply_markup=kb)
-
-
-@router.callback_query(F.data == "promo_off")
-async def promo_off(cb: CallbackQuery) -> None:
-    await cb.answer(t("promo_removed", "uz"))
-    lead = await update_lead((await _lead(cb)).id, promo_id=None, pending_input=None)
-    await show_buy(lead)
+    await show_buy(await _lead(cb))
 
 
 @router.callback_query(F.data == "sample")
@@ -246,35 +222,30 @@ async def sublink(cb: CallbackQuery) -> None:
 # ------------------------------------------------------------------ markaz haqida
 
 
+async def send_center_info(chat_id: int) -> None:
+    """Markaz haqida: bitta matn va uning ostidan xaritada joylashuv (Sozlamalar → Markaz haqida)."""
+    from ..instance import get_bot
+
+    text = str(await settings.get("center_text") or "").strip() or t("center_default", "uz")
+    await get_bot().send_message(chat_id, esc(text), disable_web_page_preview=True)
+    try:
+        lat, lon = float(await settings.get("center_lat") or 0), float(await settings.get("center_lon") or 0)
+    except (TypeError, ValueError):
+        lat = lon = 0
+    if lat and lon:
+        await get_bot().send_location(chat_id, latitude=lat, longitude=lon)
+
+
 @router.message(F.text.in_(all_button_texts("btn_info")))
 async def info(msg: TgMessage) -> None:
-    lead = await _lead(msg)
-    async with session_scope() as s:
-        pages = (await s.execute(select(InfoPage).where(InfoPage.show_in_menu.is_(True)).order_by(InfoPage.sort))).scalars().all()
-    kb = InlineKeyboardMarkup(inline_keyboard=[[ib(p.title_ru if lead.lang == "ru" else p.title_uz, f"info:{p.id}")] for p in pages])
-    await msg.answer(t("info_title", lead.lang), reply_markup=kb)
+    await send_center_info(msg.chat.id)
 
 
 @router.callback_query(F.data.startswith("info:"))
 async def info_detail(cb: CallbackQuery) -> None:
-    lead = await _lead(cb)
-    async with session_scope() as s:
-        p = await s.get(InfoPage, int(cb.data.split(":")[1]))
-    if not p:
-        await cb.answer()
-        return
-    title, body = (p.title_ru, p.body_ru) if lead.lang == "ru" else (p.title_uz, p.body_uz)
-    body = strip_placeholders(body) or ("Подробности уточнит менеджер." if lead.lang == "ru" else "Batafsil ma'lumotni menejerimiz beradi.")
-    await cb.message.answer(f"<b>{esc(title)}</b>\n\n{esc(body)}", reply_markup=cta_kb(lead.lang))
+    """Eski xabarlardagi tugmalar uchun."""
     await cb.answer()
-
-
-# ------------------------------------------------------------------ til / operator
-
-
-@router.message(F.text.in_(all_button_texts("btn_lang")))
-async def change_lang(msg: TgMessage) -> None:
-    await msg.answer(t("choose_lang", "uz"), reply_markup=lang_kb())
+    await send_center_info(cb.from_user.id)
 
 
 @router.message(F.text.in_(all_button_texts("btn_operator")))

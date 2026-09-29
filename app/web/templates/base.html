@@ -2,10 +2,16 @@
 <html lang="uz">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#141b2d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ATKO">
   <title>{% block title %}ATKO Panel{% endblock %} · ATKO</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇰🇷</text></svg>">
-  <link rel="stylesheet" href="/static/css/app.css?v=1">
+  <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="stylesheet" href="/static/css/app.css?v=4">
   <script src="/static/vendor/htmx.min.js"></script>
   {% block head %}{% endblock %}
 </head>
@@ -20,7 +26,7 @@
     <nav>
       <div class="nav-title">Asosiy</div>
       <a href="/" class="{{ 'active' if path == '/' }}">📊 <span>Bosh sahifa</span></a>
-      <a href="/chats" class="{{ 'active' if path.startswith('/chats') }}">💬 <span>Chatlar</span> <em class="badge" id="nav-waiting" hidden>0</em></a>
+      <a href="/chats" class="{{ 'active' if path.startswith('/chats') }}">💬 <span>Chatlar</span> <em class="badge nav-waiting" hidden>0</em></a>
       <a href="/leads" class="{{ 'active' if path.startswith('/leads') }}">👥 <span>Leadlar</span></a>
       <a href="/stats" class="{{ 'active' if path.startswith('/stats') }}">📈 <span>Statistika</span></a>
       {% if me.is_admin %}
@@ -28,19 +34,12 @@
       <a href="/operators" class="{{ 'active' if path.startswith('/operators') }}">👨‍💼 <span>Operatorlar</span></a>
       <a href="/sources" class="{{ 'active' if path.startswith('/sources') }}">🔗 <span>Manba havolalari</span></a>
       <a href="/broadcasts" class="{{ 'active' if path.startswith('/broadcasts') }}">📣 <span>Ommaviy xabar</span></a>
+      <div class="nav-title">Obuna va to'lovlar</div>
       <a href="/subscriptions" class="{{ 'active' if path.startswith('/subscriptions') }}">💎 <span>Obunachilar</span></a>
       <a href="/payments" class="{{ 'active' if path.startswith('/payments') }}">💳 <span>To'lovlar</span></a>
-      <a href="/promos" class="{{ 'active' if path.startswith('/promos') }}">🎟 <span>Promokodlar</span></a>
-      <a href="/faq" class="{{ 'active' if path.startswith('/faq') }}">💡 <span>Savollar tahlili</span></a>
-      <div class="nav-title">Telegram</div>
-      <a href="/channel" class="{{ 'active' if path.startswith('/channel') }}">📈 <span>Kanal rivoji</span></a>
-      <a href="/groups" class="{{ 'active' if path == '/groups' or path.startswith('/groups/') and not path.startswith('/groups/posts') }}">👥 <span>O'quv guruhlari</span></a>
-      <a href="/groups/posts" class="{{ 'active' if path.startswith('/groups/posts') }}">📨 <span>Guruhlarga post</span></a>
       <div class="nav-title">Kontent</div>
       <a href="/content/tariffs" class="{{ 'active' if path.startswith('/content/tariffs') }}">📚 <span>Tariflar va narxlar</span></a>
-      <a href="/content/info" class="{{ 'active' if path.startswith('/content/info') }}">ℹ️ <span>Markaz ma'lumotlari</span></a>
       <a href="/content/reminders" class="{{ 'active' if path.startswith('/content/reminders') }}">⏰ <span>Avto-eslatmalar</span></a>
-      <a href="/content/templates" class="{{ 'active' if path.startswith('/content/templates') }}">🧩 <span>Javob shablonlari</span></a>
       <a href="/texts" class="{{ 'active' if path.startswith('/texts') }}">✏️ <span>Bot matnlari</span></a>
       <div class="nav-title">Tizim</div>
       <a href="/exports" class="{{ 'active' if path.startswith('/exports') }}">📑 <span>Excel eksport</span></a>
@@ -48,14 +47,18 @@
       <a href="/system" class="{{ 'active' if path.startswith('/system') }}">🩺 <span>Tizim holati</span> <em class="badge" id="nav-health" hidden>!</em></a>
       <a href="/settings" class="{{ 'active' if path.startswith('/settings') }}">⚙️ <span>Sozlamalar</span></a>
       {% endif %}
+      <div class="nav-title only-mobile-block">Hisob</div>
+      <div class="nav-me only-mobile-block"><b>{{ me.full_name }}</b><small>{{ 'Admin' if me.is_admin else 'Operator' }} · {{ me.display_name }}</small></div>
+      <a href="/logout" class="only-mobile-flex">⎋ <span>Chiqish</span></a>
     </nav>
   </aside>
+  <div class="backdrop" id="backdrop" hidden></div>
   <div class="main">
     <header class="topbar">
-      <button class="icon-btn only-mobile" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <button class="icon-btn only-mobile" id="menu-btn" aria-label="Menyu">☰</button>
       <h1>{% block heading %}{% endblock %}</h1>
       <div class="topbar-right">
-        <button id="notif-btn" class="btn btn-sm btn-ghost" hidden title="Brauzer bildirishnomalarini yoqish">🔔 Bildirishnomalarni yoqish</button>
+        <button id="notif-btn" class="btn btn-sm btn-ghost" hidden title="Brauzer bildirishnomalarini yoqish">🔔 <span class="hide-mobile">Bildirishnomalarni yoqish</span></button>
         <label class="switch" title="Onlayn bo'lsangiz yangi murojaatlar haqida Telegramga ham xabar keladi">
           <input type="checkbox" id="online-toggle" {{ 'checked' if me.is_online }}>
           <span class="slider"></span><span class="switch-label" id="online-label">{{ 'Onlayn' if me.is_online else 'Oflayn' }}</span>
@@ -64,7 +67,7 @@
           <b>{{ me.full_name }}</b>
           <small>{{ 'Admin' if me.is_admin else 'Operator' }} · {{ me.display_name }}</small>
         </div>
-        <a href="/logout" class="btn btn-sm btn-ghost" title="Chiqish">⎋</a>
+        <a href="/logout" class="btn btn-sm btn-ghost hide-mobile" title="Chiqish">⎋</a>
       </div>
     </header>
     <div class="content {% block content_class %}{% endblock %}">
@@ -73,8 +76,16 @@
     </div>
   </div>
 </div>
+<nav class="bottom-nav" aria-label="Asosiy bo'limlar">
+  <a href="/" class="{{ 'active' if path == '/' }}"><i>📊</i><span>Bosh sahifa</span></a>
+  <a href="/chats" class="{{ 'active' if path.startswith('/chats') }}"><i>💬</i><span>Chatlar</span><em class="badge nav-waiting" hidden>0</em></a>
+  <a href="/leads" class="{{ 'active' if path.startswith('/leads') }}"><i>👥</i><span>Leadlar</span></a>
+  {% if me.is_admin %}<a href="/subscriptions" class="{{ 'active' if path.startswith('/subscriptions') }}"><i>💎</i><span>Obunachilar</span></a>
+  {% else %}<a href="/stats" class="{{ 'active' if path.startswith('/stats') }}"><i>📈</i><span>Statistika</span></a>{% endif %}
+  <button type="button" id="menu-btn2"><i>☰</i><span>Menyu</span></button>
+</nav>
 <div id="toasts"></div>
-<script src="/static/js/app.js?v=1"></script>
+<script src="/static/js/app.js?v=4"></script>
 {% else %}
 {% block public %}{% endblock %}
 {% endif %}

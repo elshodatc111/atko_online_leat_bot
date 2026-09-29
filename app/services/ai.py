@@ -1,4 +1,4 @@
-"""OpenAI integratsiyasi: konsultant, tutor, transkripsiya, xulosa, javob taklifi, FAQ tahlili, testlar."""
+"""OpenAI integratsiyasi: konsultant, tutor (darsliklar — vector store), transkripsiya, xulosa, javob taklifi, testlar."""
 from __future__ import annotations
 
 import base64
@@ -15,7 +15,7 @@ from sqlalchemy import select
 
 from ..config import config
 from ..db import session_scope
-from ..models import GOALS, AiUsage, Chat, FaqSuggestion, Lead, Message, UserQuestion, Faq
+from ..models import GOALS, AiUsage, Chat, Lead, Message
 from . import knowledge, settings, worktime
 
 log = logging.getLogger(__name__)
@@ -139,15 +139,6 @@ async def complete(messages: list[dict], *, tools: list[dict] | None = None, max
     raise AIUnavailable()
 
 
-async def embed(texts: list[str]) -> list[list[float]]:
-    client = await get_client()
-    if client is None:
-        raise AIUnavailable()
-    model = await settings.get("ai_embedding_model")
-    resp = await client.embeddings.create(model=model, input=[t[:8000] for t in texts])
-    u = getattr(resp, "usage", None)
-    await _record(getattr(u, "prompt_tokens", 0) or 0, 0)
-    return [d.embedding for d in resp.data]
 
 
 async def transcribe(path: str | Path, lang: str | None = None) -> str | None:
@@ -197,8 +188,7 @@ def to_telegram_html(text: str) -> str:
 
 
 def _lang_rule(lang: str) -> str:
-    return ("Javobni RUS tilida yozing." if lang == "ru"
-            else "Javobni O'ZBEK tilida (lotin yozuvida) yozing. Agar foydalanuvchi kirill yozuvida yozsa, kirillda javob bering.")
+    return "Javobni O'ZBEK tilida (lotin yozuvida) yozing. Agar foydalanuvchi kirill yozuvida yozsa, kirillda javob bering."
 
 
 FORMAT_RULE = (
@@ -324,9 +314,9 @@ def _consultant_prompt(kb: str, lead: Lead, extra: str) -> str:
 MAQSAD: mijoz ehtiyojini tushunish (maqsad, daraja, vaqt, format), 1-2 ta mos tarifni sababi bilan tavsiya qilish va kursga yozilishga yo'naltirish.
 
 TARIFLAR VA TO'LOV:
-- 1-tarif (Premium video darslar, yopiq Telegram guruh) — botda «📚 Tariflar va narxlar» → 1-tarif → «💳 Sotib olish» (yoki «👤 Mening obunam» → «Uzaytirish») orqali Payme bilan onlayn sotib olinadi (1/3/12 oy). To'lovdan so'ng guruh havolasi avtomatik keladi. Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.
-- 2, 3, 4-tariflar (Zoom guruh, Zoom intensiv, Individual) — oldindan to'lov, to'lov admin bilan bog'lanib amalga oshiriladi: foydalanuvchiga tarif sahifasidagi «👨‍💼 Admin bilan bog'lanish» tugmasini bosishni tavsiya qiling.
-- Narxlarni BILIMLAR BAZASIdagidek aniq ayting. Narx belgilanmagan bo'lsa — admin bilan aniqlashtirishni ayting. Har doim narxlar o'zgarishi mumkinligini va aniq narx/chegirmalarni admin bilan aniqlashtirib olish tavsiya etilishini qisqa eslating. Chegirma yoki narxni o'ylab topmang.
+- Premium obuna (video darslar, yopiq Telegram guruh) — botda «📚 Tariflar va narxlar» → Premium → «💳 Sotib olish» (yoki «👤 Mening obunam» → «Uzaytirish») orqali Payme bilan onlayn sotib olinadi. To'lovdan so'ng guruh havolasi avtomatik keladi. Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.
+- Zoom guruh darslari va Individual darslar (hammasi Zoom orqali, har bir dars 120 daqiqa; 12 dars — haftasiga 3 ta, 20 dars — haftasiga 5 ta, 1 oy) — oldindan to'lov menejer orqali: foydalanuvchi tarif oynasida paketni tanlaydi, menejer bog'lanib to'lov va jadvalni kelishadi. Yoki «👨‍💼 Operator bilan bog'lanish» tugmasi.
+- Narxlarni BILIMLAR BAZASIdagidek aniq ayting. Narx ko'rsatilmagan bo'lsa — "narxni menejerimiz aniqlab beradi" deng. Chegirma, promokod yoki narxni o'ylab topmang.
 - BEPUL DARS YO'Q. Bepul dars, bepul material yoki sinov darsi va'da qilmang.
 
 QOIDALAR:
@@ -334,7 +324,7 @@ QOIDALAR:
 2. Telefon raqam allaqachon tasdiqlangan — uni so'ramang.
 3. Kafolat bermang: imtihondan o'tish, ball, viza yoki Koreyada ish kafolatlanmaydi. EPS-TOPIK ro'yxatdan o'tish va ishga yuborish faqat rasmiy davlat idoralari orqali. ATKO faqat imtihonga TAYYORLAYDI.
 4. Foydalanuvchi o'zi haqida ma'lumot aytsa (ism, maqsad, daraja, shahar, format, qiziqqan tarif) — save_lead_info ni chaqiring. Qiziqish darajasini ham baholang (temperature).
-5. Foydalanuvchi operator/odam bilan gaplashmoqchi bo'lsa, shikoyat, to'lov muammosi, jahl yoki 2–4-tariflarga yozilishga tayyor bo'lsa — escalate_to_operator ni chaqiring va qisqa javob bering.
+5. Foydalanuvchi operator/odam bilan gaplashmoqchi bo'lsa, shikoyat, to'lov muammosi, jahl yoki Zoom/Individual darslarga yozilishga tayyor bo'lsa — escalate_to_operator ni chaqiring va qisqa javob bering.
 6. Raqobatchilar haqida salbiy gapirmang; siyosat va din mavzulariga kirmang.
 7. Koreys tili bo'yicha savol bersa — qisqa, misollar bilan (koreyscha + tarjima) javob bering va batafsil yordam uchun «🎓 AI mentor» bo'limini tavsiya qiling.
 8. Faqat birinchi xabarda salomlashing. Javob oxirida suhbatni davom ettiruvchi BITTA savol yoki taklif (Call-to-Action) bering.
@@ -504,7 +494,7 @@ async def quiz_question(level: str, lang: str, avoid: list[str] | None = None) -
                   "intermediate": "o'rta (TOPIK II, 3-4 daraja)", "eps": "EPS-TOPIK uslubida"}.get(level, level)
     avoid_txt = "\n".join(f"- {a}" for a in (avoid or [])[-10:])
     prompt = f"""Koreys tili bo'yicha {level_desc} darajadagi BITTA test savoli tuzing (grammatika, lug'at yoki o'qish).
-Savol va izoh {"rus" if lang == "ru" else "o'zbek (lotin)"} tilida, koreyscha qismlar hangulda.
+Savol va izoh o'zbek (lotin) tilida, koreyscha qismlar hangulda.
 4 ta javob varianti, faqat bittasi to'g'ri. Variantlar qisqa bo'lsin (60 belgidan oshmasin).
 {("Quyidagi savollarni takrorlamang:" + chr(10) + avoid_txt) if avoid_txt else ""}
 Faqat JSON qaytaring: {{"question": "...", "options": ["...","...","...","..."], "correct": 0, "explanation": "qisqa izoh"}}"""
@@ -591,91 +581,4 @@ BILIMLAR BAZASI:
 SUHBAT:
 {dialog}"""
     msg = await complete([{"role": "user", "content": prompt}], max_tokens=1500)
-    return (msg.content or "").strip()
-
-
-# ------------------------------------------------------------------ FAQ tahlili
-
-
-async def analyze_questions() -> dict[str, int]:
-    """Yangi savollarni guruhlab, FAQ takliflarini yaratadi/yangilaydi. Admin tasdiqlagandan keyin FAQ ga qo'shiladi."""
-    if not await is_available():
-        raise AIUnavailable()
-    async with session_scope() as s:
-        qs = (await s.execute(select(UserQuestion).where(UserQuestion.processed.is_(False))
-                              .order_by(UserQuestion.id).limit(400))).scalars().all()
-        pending = (await s.execute(select(FaqSuggestion).where(FaqSuggestion.status == "pending"))).scalars().all()
-        faqs = (await s.execute(select(Faq).where(Faq.is_active.is_(True)))).scalars().all()
-    if not qs:
-        return {"processed": 0, "created": 0, "updated": 0}
-    kb = await knowledge.course_knowledge("uz")
-    q_lines = "\n".join(f"{q.id}. {q.text[:300]}{' [JAVOBSIZ]' if not q.answered else ''}" for q in qs)
-    p_lines = "\n".join(f"S{p.id}: {p.question}" for p in pending) or "yo'q"
-    f_lines = "\n".join(f"F{f.id}: {f.q_uz}" for f in faqs) or "yo'q"
-    prompt = f"""Siz ATKO o'quv markazi botiga foydalanuvchilar yozgan savollarni tahlil qilasiz.
-Vazifa: MA'NOSI bir xil savollarni guruhlang (turli til va yozuvdagi variantlar ham bitta guruh). Salomlashish, "rahmat", bir so'zli yoki ma'nosiz xabarlarni, shaxsiy ma'lumotlarni e'tiborsiz qoldiring. Koreys tili grammatikasi bo'yicha shaxsiy o'quv savollarini ham e'tiborsiz qoldiring — faqat markaz, kurslar, imtihonlar, tashkiliy masalalar bo'yicha savollar kerak.
-Agar guruh mavjud taklif (S...) yoki mavjud FAQ (F...) bilan bir xil bo'lsa, uning id sini ko'rsating.
-Har bir guruh uchun bilimlar bazasi asosida o'zbek va rus tilida qisqa, aniq javob loyihasini yozing. Bazada javob bo'lmasa, javobga "[Admin to'ldirsin]" deb yozing va "unanswered": true qiling. Narxni hech qachon yozmang.
-
-JSON qaytaring:
-{{"groups": [{{"question_ids": [1,5], "suggestion_id": null, "faq_id": null, "question": "umumlashtirilgan savol (o'zbekcha)", "q_uz": "...", "q_ru": "...", "a_uz": "...", "a_ru": "...", "unanswered": false}}]}}
-
-MAVJUD TAKLIFLAR:
-{p_lines}
-
-MAVJUD FAQ:
-{f_lines}
-
-BILIMLAR BAZASI:
-{kb}
-
-YANGI SAVOLLAR:
-{q_lines}"""
-    msg = await complete([{"role": "user", "content": prompt}], json_mode=True, max_tokens=8000)
-    try:
-        data = json.loads(_strip_json(msg.content or "{}"))
-    except ValueError:
-        data = {"groups": []}
-    by_id = {q.id: q for q in qs}
-    created = updated = 0
-    async with session_scope() as s:
-        for g in data.get("groups", []) or []:
-            ids = [i for i in g.get("question_ids", []) if isinstance(i, int) and i in by_id]
-            if not ids:
-                continue
-            variants = [by_id[i].text[:200] for i in ids]
-            faq_id = g.get("faq_id")
-            if isinstance(faq_id, str) and faq_id.upper().startswith("F"):
-                faq_id = int(faq_id[1:]) if faq_id[1:].isdigit() else None
-            if faq_id:
-                f = await s.get(Faq, int(faq_id))
-                if f:
-                    f.asked_count = (f.asked_count or 0) + len(ids)
-                    continue
-            sid = g.get("suggestion_id")
-            if isinstance(sid, str) and sid.upper().startswith("S"):
-                sid = int(sid[1:]) if sid[1:].isdigit() else None
-            sug = await s.get(FaqSuggestion, int(sid)) if sid else None
-            if sug and sug.status == "pending":
-                sug.count = (sug.count or 0) + len(ids)
-                sug.variants = (list(sug.variants or []) + variants)[-30:]
-                updated += 1
-            else:
-                s.add(FaqSuggestion(
-                    question=str(g.get("question") or variants[0])[:500], variants=variants[:30], count=len(ids),
-                    q_uz=g.get("q_uz"), q_ru=g.get("q_ru"), a_uz=g.get("a_uz"), a_ru=g.get("a_ru"),
-                    unanswered=bool(g.get("unanswered")),
-                ))
-                created += 1
-        for q in qs:
-            obj = await s.get(UserQuestion, q.id)
-            if obj:
-                obj.processed = True
-    await settings.set_value("faq_last_run", worktime.now_local().isoformat(timespec="minutes"))
-    return {"processed": len(qs), "created": created, "updated": updated}
-
-
-async def translate(text: str, target: str) -> str:
-    lang = "rus" if target == "ru" else "o'zbek (lotin)"
-    msg = await complete([{"role": "user", "content": f"Quyidagi matnni {lang} tiliga tarjima qiling. Faqat tarjimani qaytaring, HTML teglarini saqlang:\n\n{text}"}], max_tokens=2000)
     return (msg.content or "").strip()

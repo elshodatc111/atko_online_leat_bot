@@ -35,7 +35,6 @@
         <div class="form-row">
           <div><label>Ism</label><input type="text" name="name" value="{{ lead.name or '' }}"></div>
           <div><label>Telefon</label><input type="text" name="phone" value="{{ lead.phone or '' }}"></div>
-          <div><label>Til</label><select name="lang"><option value="uz">O'zbek</option><option value="ru" {{ 'selected' if lead.lang == 'ru' }}>Rus</option></select></div>
         </div>
         <div class="form-row">
           <div><label>Maqsad</label><select name="goal"><option value="">—</option>{% for k, v in GOALS.items() %}<option value="{{ k }}" {{ 'selected' if lead.goal == k }}>{{ v.uz }}</option>{% endfor %}</select></div>

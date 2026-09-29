@@ -2,8 +2,16 @@
 {% block title %}Sozlamalar{% endblock %}
 {% block heading %}⚙️ Sozlamalar{% endblock %}
 {% block content %}
-<form method="post" action="/settings">
-<div class="grid grid-2">
+<nav class="tabs scroll" id="set-tabs">
+  <a href="#general" data-tab="general">🕗 Umumiy</a>
+  <a href="#center" data-tab="center">ℹ️ Markaz haqida</a>
+  <a href="#group" data-tab="group">💎 Premium guruh</a>
+  <a href="#payme" data-tab="payme">💳 Payme</a>
+  <a href="#ai" data-tab="ai">🤖 AI</a>
+  <a href="#holidays" data-tab="holidays">🎉 Bayram kunlari</a>
+</nav>
+<form method="post" action="/settings" id="settings-form">
+<section class="tab-panel" data-tab="general"><div class="grid grid-2">
   <div class="card">
     <h2>🕗 Ish vaqti</h2>
     <div class="form-row">
@@ -48,20 +56,57 @@
       <div><label>Yuborish vaqti: dan</label><input type="time" name="reminder_hours_from" value="{{ s.reminder_hours_from }}"></div>
       <div><label>gacha</label><input type="time" name="reminder_hours_to" value="{{ s.reminder_hours_to }}"></div>
     </div>
-    <hr>
-    <label class="check"><input type="checkbox" name="faq_auto_enabled" {{ 'checked' if s.faq_auto_enabled }}> FAQ savollarini har kuni avtomatik tahlil qilish</label>
-    <div class="form-row" style="margin-top:8px">
-      <div><label>Tahlil soati (0–23)</label><input type="number" min="0" max="23" name="faq_auto_hour" value="{{ s.faq_auto_hour }}"></div>
-      <div><label>Taklif uchun min. savollar soni</label><input type="number" min="1" name="faq_min_count" value="{{ s.faq_min_count }}"></div>
+  </div>
+</div></section>
+
+<section class="tab-panel" data-tab="center">
+  <div class="card">
+    <h2>ℹ️ Markaz haqida</h2>
+    <p class="muted" style="margin-top:-6px">Botdagi «ℹ️ Markaz haqida» tugmasi bosilganda shu matn, so'ng xaritadagi joylashuv yuboriladi. AI-konsultant ham shu matndan foydalanadi.</p>
+    <div class="field"><label>Matn</label><textarea name="center_text" rows="9" maxlength="3500" placeholder="ATKO — koreys tili, TOPIK va EPS-TOPIK imtihonlariga tayyorlovchi o'quv markazi.&#10;📍 Manzil: ...&#10;🗺 Mo'ljal: ...&#10;📞 Telefon: ...&#10;🕗 Ish vaqti: ...">{{ s.center_text }}</textarea>
+      <div class="hint">Oddiy matn (HTML shart emas). Bo'sh bo'lsa standart qisqa matn yuboriladi.</div></div>
+    <h3>📍 Xaritadagi joylashuv</h3>
+    <div class="field"><label>Xarita havolasi (ixtiyoriy)</label><input type="text" name="center_map_link" placeholder="https://www.google.com/maps/place/...  yoki  https://yandex.uz/maps/?ll=...">
+      <div class="hint">Google yoki Yandex xaritadan to'liq havolani qo'ying — koordinatalar avtomatik aniqlanadi. Qisqa havola (maps.app.goo.gl) ishlamasa: Google xaritada joyni sichqonchaning o'ng tugmasi bilan bosing → birinchi qatordagi koordinatalarni nusxalab shu yerga qo'ying.</div></div>
+    <div class="form-row">
+      <div><label>Kenglik (latitude)</label><input type="text" name="center_lat" inputmode="decimal" value="{{ s.center_lat }}" placeholder="41.311151"></div>
+      <div><label>Uzunlik (longitude)</label><input type="text" name="center_lon" inputmode="decimal" value="{{ s.center_lon }}" placeholder="69.279737"></div>
+    </div>
+    <div class="map-preview">
+      {% if s.center_lat and s.center_lon %}<span class="pill pill-success">✅ Joylashuv kiritilgan</span>
+        <a class="btn btn-sm btn-ghost" href="https://www.google.com/maps?q={{ s.center_lat }},{{ s.center_lon }}" target="_blank" rel="noopener">🗺 Xaritada ko'rish</a>
+      {% else %}<span class="pill pill-waiting">joylashuv kiritilmagan — faqat matn yuboriladi</span>{% endif %}
+      <button class="btn btn-sm btn-light" formaction="/settings/center/test">📨 Saqlash va Telegramda ko'rish</button>
     </div>
   </div>
-</div>
+</section>
 
-<div class="grid grid-2">
-  <div class="card" id="payme">
+<section class="tab-panel" data-tab="group">
+  <div class="card">
+    <h2>💎 Premium guruh (yopiq Telegram guruh)</h2>
+    <p class="muted" style="margin-top:-6px">Botni guruhga <b>admin</b> qilib qo'shing: «Havola orqali taklif qilish» va «Foydalanuvchilarni bloklash» huquqlari bilan. Qo'shilgach guruh shu ro'yxatda paydo bo'ladi.</p>
+    <div class="field"><label>Guruh</label>
+      <select name="group_chat_id">
+        <option value="">— tanlanmagan —</option>
+        {% for cid, info in known_chats.items() if info.type != 'channel' %}<option value="{{ cid }}" {{ 'selected' if s.group_chat_id|string == cid }}>{{ info.title }} ({{ cid }}) — {{ info.status }}</option>{% endfor %}
+        {% if s.group_chat_id and s.group_chat_id|string not in known_chats %}<option value="{{ s.group_chat_id }}" selected>{{ s.group_chat_id }}</option>{% endif %}
+      </select>
+      <div class="hint">Ro'yxatda bo'lmasa: botni guruhdan olib, qayta admin qilib qo'shing.</div></div>
+    <div class="btns" style="margin-bottom:10px"><button class="btn btn-sm btn-light" formaction="/settings/group/check">🔎 Saqlash va bot huquqlarini tekshirish</button></div>
+    <label class="check"><input type="checkbox" name="group_kick_unpaid" {{ 'checked' if s.group_kick_unpaid }}> Obunasiz qo'shilganlarni avtomatik chiqarish (xodimlar va qo'lda ruxsat berilganlar bundan mustasno)</label>
+    <hr>
+      <label class="check"><input type="checkbox" name="pay_reminder_enabled" {{ 'checked' if s.pay_reminder_enabled }}> ⏳ Yarim qolgan to'lov eslatmasi</label>
+      <div class="field"><label>Necha daqiqadan keyin eslatilsin</label><input type="number" min="5" max="600" name="pay_reminder_minutes" value="{{ s.pay_reminder_minutes }}">
+        <div class="hint">To'lov oynasini ochib, to'lamay qolgan foydalanuvchiga bir marta eslatma + «To'lash» tugmasi yuboriladi (12 soat ichidagi buyurtmalar). Matnini <a href="/texts">Bot matnlari</a>da o'zgartirish mumkin.</div></div>
+    <p class="hint" style="margin-top:10px">⏰ Obuna tugashidan 3 va 1 kun oldin eslatma yuboriladi. Muddati tugaganlar har 15 daqiqada tekshiriladi va guruhdan chiqariladi. Holatini <a href="/system">Tizim holati</a> bo'limida ko'ring.</p>
+  </div>
+</section>
+
+<section class="tab-panel" data-tab="payme">
+  <div class="card">
     <h2>💳 Payme (Merchant API)</h2>
-    <div class="flash flash-info" style="font-size:12.5px">Payme kabinetida (business.payme.uz → Kassa → Sozlamalar) <b>Endpoint URL</b>: <code>{{ payme_endpoint }}</code><br>
-      Hisob maydoni (account) nomi: <code>{{ s.payme_account_field or 'order_id' }}</code>. Localhost bilan sinash — README dagi «ngrok» bo'limiga qarang.</div>
+    <div class="flash flash-info">Payme kabinetida (business.payme.uz → Kassa → Sozlamalar) <b>Endpoint URL</b>: <code>{{ payme_endpoint }}</code><br>
+      Hisob maydoni (account) nomi: <code>{{ s.payme_account_field or 'order_id' }}</code>. </div>
     <label class="check"><input type="checkbox" name="payme_test_mode" {{ 'checked' if s.payme_test_mode }}> 🧪 Test rejimi (test.paycom.uz + test kaliti)</label>
     <div class="form-row" style="margin-top:8px">
       <div><label>Merchant (kassa) ID</label><input type="text" name="payme_merchant_id" value="{{ s.payme_merchant_id }}" placeholder="{{ payme_mid or '64f…' }}"></div>
@@ -84,27 +129,10 @@
     <div class="field" style="margin-top:10px"><label>To'lovdan keyin qaytish havolasi (ixtiyoriy)</label><input type="text" name="payme_return_url" value="{{ s.payme_return_url }}" placeholder="https://t.me/sizning_bot"></div>
   </div>
 
-  <div class="card" id="group">
-    <h2>👥 Yopiq Premium guruh</h2>
-    <p class="muted" style="margin-top:-6px">Botni guruhga <b>admin</b> qilib qo'shing: «Havola orqali taklif qilish» va «Foydalanuvchilarni bloklash» huquqlari bilan. Qo'shilgach guruh shu ro'yxatda paydo bo'ladi.</p>
-    <div class="field"><label>Guruh</label>
-      <select name="group_chat_id">
-        <option value="">— tanlanmagan —</option>
-        {% for cid, info in known_chats.items() %}<option value="{{ cid }}" {{ 'selected' if s.group_chat_id|string == cid }}>{{ info.title }} ({{ cid }}) — {{ info.status }}</option>{% endfor %}
-        {% if s.group_chat_id and s.group_chat_id|string not in known_chats %}<option value="{{ s.group_chat_id }}" selected>{{ s.group_chat_id }}</option>{% endif %}
-      </select>
-      <div class="hint">Ro'yxatda bo'lmasa: botni guruhdan olib, qayta admin qilib qo'shing.</div></div>
-    <label class="check"><input type="checkbox" name="group_kick_unpaid" {{ 'checked' if s.group_kick_unpaid }}> Obunasiz qo'shilganlarni avtomatik chiqarish (xodimlar va qo'lda ruxsat berilganlar bundan mustasno)</label>
-    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
-      <label class="check"><input type="checkbox" name="pay_reminder_enabled" {{ 'checked' if s.pay_reminder_enabled }}> ⏳ Yarim qolgan to'lov eslatmasi</label>
-      <div class="field"><label>Necha daqiqadan keyin eslatilsin</label><input type="number" min="5" max="600" name="pay_reminder_minutes" value="{{ s.pay_reminder_minutes }}">
-        <div class="hint">To'lov oynasini ochib, to'lamay qolgan foydalanuvchiga bir marta eslatma + «To'lash» tugmasi yuboriladi (12 soat ichidagi buyurtmalar). Matnini <a href="/texts">Bot matnlari</a>da o'zgartirish mumkin.</div></div>
-    </div>
-    <p class="hint" style="margin-top:10px">⏰ Obuna tugashidan 3 va 1 kun oldin eslatma yuboriladi. Muddati tugaganlar har 15 daqiqada tekshiriladi va guruhdan chiqariladi. Holatini <a href="/system">Tizim holati</a> bo'limida ko'ring.</p>
-  </div>
-</div>
+</section>
 
-<div class="card" id="ai">
+<section class="tab-panel" data-tab="ai">
+<div class="card">
   <div class="card-head"><h2>🤖 OpenAI sozlamalari</h2></div>
   <div class="grid grid-2">
     <div>
@@ -121,7 +149,6 @@
       </div>
       <div class="form-row">
         <div><label>Ovozni matnga o'girish modeli</label><input type="text" name="ai_transcribe_model" value="{{ s.ai_transcribe_model }}"></div>
-        <div><label>Embedding modeli (tutor darsliklari)</label><input type="text" name="ai_embedding_model" value="{{ s.ai_embedding_model }}"></div>
       </div>
     </div>
     <div>
@@ -146,10 +173,11 @@
     <div class="kpi"><div class="label">Bugun xatolar</div><div class="value">{{ today_usage.errors }}</div></div>
   </div>
 </div>
-<div style="position:sticky;bottom:12px;z-index:5;margin-bottom:18px"><button class="btn" style="box-shadow:0 6px 20px rgba(41,82,204,.35)">💾 Sozlamalarni saqlash</button></div>
+</section>
+<div class="sticky-save" id="save-bar"><button class="btn">💾 Sozlamalarni saqlash</button></div>
 </form>
 
-<div class="grid grid-2">
+<section class="tab-panel" data-tab="ai">
   <div class="card">
     <div class="card-head"><h2>🧪 AI ni tekshirish</h2>
       <form method="post" action="/settings/ai-test"><button class="btn btn-ghost">AI ga sinov so'rovi yuborish</button></form></div>
@@ -160,6 +188,9 @@
       {% else %}<tr><td colspan="6" class="empty">Hali so'rov yo'q</td></tr>{% endfor %}
     </table></div>
   </div>
+</section>
+
+<section class="tab-panel" data-tab="holidays">
   <div class="card" id="holidays">
     <h2>🎉 Bayram kunlari</h2>
     <form method="post" action="/settings/holidays/add" class="form-row">
@@ -173,5 +204,22 @@
       {% else %}<tr><td class="empty">Bayram kunlari kiritilmagan</td></tr>{% endfor %}
     </table>
   </div>
-</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const tabs = [...document.querySelectorAll("#set-tabs a")];
+  const names = tabs.map((a) => a.dataset.tab);
+  function show(name) {
+    if (!names.includes(name)) name = "general";
+    tabs.forEach((a) => a.classList.toggle("active", a.dataset.tab === name));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.toggle("show", p.dataset.tab === name));
+    document.getElementById("save-bar").hidden = name === "holidays";
+    document.getElementById("settings-form").action = "/settings?tab=" + name;
+  }
+  tabs.forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); history.replaceState(null, "", "#" + a.dataset.tab); show(a.dataset.tab); }));
+  show(location.hash.slice(1));
+})();
+</script>
 {% endblock %}

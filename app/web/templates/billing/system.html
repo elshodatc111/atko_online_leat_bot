@@ -10,13 +10,13 @@
 </div>
 <div class="card">
   <div class="card-head"><h2>Qismlar holati</h2><a class="btn btn-sm btn-ghost" href="/system">↻ Yangilash</a></div>
-  <div class="table-wrap"><table>
+  <div class="table-wrap"><table class="stack">
     {% for it in items %}
     <tr>
-      <td style="width:34px;font-size:20px">{{ '🟢' if it.status == 'ok' else ('🟡' if it.status == 'warn' else '🔴') }}</td>
-      <td style="width:260px"><b>{{ it.title }}</b></td>
+      <td class="st-icon" style="width:34px;font-size:20px">{{ '🟢' if it.status == 'ok' else ('🟡' if it.status == 'warn' else '🔴') }}</td>
+      <td class="st-title" style="width:260px"><b>{{ it.title }}</b></td>
       <td>{{ it.details }}{% if it.hint %}<div class="hint">💡 {{ it.hint }}</div>{% endif %}</td>
-      <td style="width:1%;white-space:nowrap"><div class="btns">
+      <td class="st-fix" style="width:1%;white-space:nowrap"><div class="btns">
         {% for action, label in it.fixes %}
         <form method="post" action="/system/fix/{{ action }}"><button class="btn btn-sm {{ 'btn-danger' if it.status == 'fail' else 'btn-ghost' }}">🛠 {{ label }}</button></form>
         {% endfor %}</div></td>

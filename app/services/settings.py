@@ -29,7 +29,6 @@ DEFAULTS: dict[str, Any] = {
     "openai_api_key": "",  # bo'sh bo'lsa .env dagi OPENAI_API_KEY ishlatiladi
     "ai_model": "gpt-5.4-mini",
     "ai_transcribe_model": "gpt-4o-mini-transcribe",
-    "ai_embedding_model": "text-embedding-3-small",
     "ai_reasoning_effort": "low",
     "ai_daily_token_limit": 1_000_000,
     "ai_price_input_per_1m": 0.0,
@@ -41,11 +40,6 @@ DEFAULTS: dict[str, Any] = {
     # Tutor
     "tutor_enabled": True,
     "tutor_trial_daily": 3,  # obunasi yo'q foydalanuvchilar uchun AI mentorga kunlik savollar
-    # FAQ tahlili
-    "faq_auto_enabled": True,
-    "faq_auto_hour": 3,
-    "faq_min_count": 3,
-    "faq_last_run": None,
     # Eslatmalar
     "reminders_enabled": True,
     "reminder_hours_from": "10:00",
@@ -61,26 +55,22 @@ DEFAULTS: dict[str, Any] = {
     "payme_package_code": "",  # o'lchov birligi (qadoq) kodi
     "payme_vat_percent": 0,
     "payme_return_url": "",
-    # Yopiq Telegram guruh (1-tarif)
+    # Premium guruh (yopiq Telegram guruh)
     "group_chat_id": "",
     "group_kick_unpaid": True,  # to'lovsiz qo'shilganlarni chiqarish
     "group_reminder_days": [3, 1],
     "known_chats": {},
-    # v3: asosiy kanal va o'quv guruhlari
-    "channel_username": "atko_teams",
-    "channel_chat_id": None,
-    "channel_ai_enabled": True,
-    "channel_ai_hour": 8,
-    "channel_ai_last_day": "",
-    "tgchats_bootstrapped": False,
+    # Markaz haqida (bot «ℹ️ Markaz haqida» — matn va xaritadagi joylashuv; AI ham shu matndan foydalanadi)
+    "center_text": "",
+    "center_lat": "",
+    "center_lon": "",
     # Namuna video (Telegram bulutida saqlanadi — file_id)
     "sample_video_file_id": "",
     "sample_video_caption_uz": "🎬 Premium guruhimizdan namuna dars",
-    "sample_video_caption_ru": "🎬 Пример урока из нашей Premium-группы",
     # Yakunlanmagan to'lov eslatmasi
     "pay_reminder_enabled": True,
     "pay_reminder_minutes": 60,
-    # Bot matnlari (override) — {key: {"uz": ..., "ru": ...}}
+    # Bot matnlari (override) — {key: {"uz": ...}}
     "texts": {},
 }
 
@@ -102,6 +92,11 @@ async def all_settings() -> dict[str, Any]:
     if _cache is None:
         return await load()
     return _cache
+
+
+OBSOLETE_KEYS = ("faq_auto_enabled", "faq_auto_hour", "faq_min_count", "faq_last_run", "channel_username", "channel_chat_id",
+                 "channel_ai_enabled", "channel_ai_hour", "channel_ai_last_day", "tgchats_bootstrapped", "sample_video_caption_ru",
+                 "ai_embedding_model")
 
 
 async def get(key: str, default: Any = None) -> Any:

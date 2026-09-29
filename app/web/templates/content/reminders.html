@@ -14,10 +14,7 @@
     <div><label>Nechanchi kuni</label><input type="number" min="0" name="day_offset" value="{{ x.day_offset if x else 1 }}" required></div>
     <div style="align-self:end"><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not x or x.is_active }}> Faol</label></div>
   </div>
-  <div class="grid grid-2">
-    <div><label>🇺🇿 Matn</label><textarea name="text_uz" rows="5" required>{{ x.text_uz if x else '' }}</textarea></div>
-    <div><label>🇷🇺 Matn</label><textarea name="text_ru" rows="5" required>{{ x.text_ru if x else '' }}</textarea></div>
-  </div>
+  <label>Matn</label><textarea name="text_uz" rows="5" required>{{ x.text_uz if x else '' }}</textarea>
   <button class="btn" style="margin-top:10px">💾 Saqlash</button>
 </form>
 {% endmacro %}

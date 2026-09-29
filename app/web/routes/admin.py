@@ -1,7 +1,6 @@
 """Admin bo'limlari: operatorlar, manbalar, ommaviy xabar, sozlamalar, jurnal, eksport."""
 from __future__ import annotations
 
-import asyncio
 import io
 import math
 import secrets
@@ -17,7 +16,7 @@ from ...config import config
 from ...db import session_scope, utcnow
 from ...models import AiUsage, AuditLog, Broadcast, Holiday, Lead, Source, Staff
 from ...services import ai, audit, broadcast, excel, media, settings, stats, worktime
-from ..deps import admin_required, current_staff, flash, parse_range, render
+from ..deps import admin_required, flash, parse_range, render
 
 router = APIRouter()
 
@@ -237,13 +236,13 @@ async def broadcast_cancel(bid: int, request: Request, staff: Staff = Depends(ad
 
 INT_KEYS = ["max_chats_per_operator", "sla_wait_minutes", "idle_reply_minutes", "max_photo_mb", "max_audio_mb",
             "max_video_mb", "max_document_mb", "ai_daily_token_limit", "ai_history_messages", "tutor_trial_daily",
-            "faq_auto_hour", "faq_min_count", "payme_vat_percent", "pay_reminder_minutes"]
+            "payme_vat_percent", "pay_reminder_minutes"]
 FLOAT_KEYS = ["ai_price_input_per_1m", "ai_price_output_per_1m"]
 BOOL_KEYS = ["sla_notify_lead", "ai_enabled", "ai_transcribe_voice", "ai_auto_escalate", "tutor_enabled",
-             "faq_auto_enabled", "reminders_enabled", "payme_test_mode", "group_kick_unpaid", "pay_reminder_enabled"]
-STR_KEYS = ["work_start", "work_end", "ai_model", "ai_transcribe_model", "ai_embedding_model", "ai_reasoning_effort",
+             "reminders_enabled", "payme_test_mode", "group_kick_unpaid", "pay_reminder_enabled"]
+STR_KEYS = ["work_start", "work_end", "ai_model", "ai_transcribe_model", "ai_reasoning_effort",
             "ai_extra_instructions", "reminder_hours_from", "reminder_hours_to", "ai_vector_store_ids",
-            "payme_merchant_id", "payme_account_field", "payme_ikpu", "payme_package_code", "payme_return_url", "group_chat_id"]
+            "payme_merchant_id", "payme_account_field", "payme_ikpu", "payme_package_code", "payme_return_url", "group_chat_id", "center_text"]
 SECRET_KEYS = ["payme_key", "payme_test_key"]
 
 
@@ -272,8 +271,55 @@ async def settings_page(request: Request, staff: Staff = Depends(admin_required)
                   today_cost=cost, ffmpeg=media.ffmpeg_available(), weekdays=worktime.WEEKDAYS_UZ)
 
 
-@router.post("/settings")
-async def settings_save(request: Request, staff: Staff = Depends(admin_required)):
+def parse_coords(text: str) -> tuple[float, float] | None:
+    """Google / Yandex xarita havolasidan yoki «41.31, 69.24» matnidan (kenglik, uzunlik) ajratadi."""
+    import re
+    from urllib.parse import unquote
+
+    t = unquote(str(text or "")).strip()
+    if not t:
+        return None
+    n = r"(-?\d{1,3}\.\d+)"
+    if "yandex." in t:  # Yandex: ll= / pt= / whatshere[point]= — tartib: uzunlik,kenglik
+        patterns = [(rf"[?&](?:pt|whatshere\[point\])={n},{n}", True), (rf"[?&]ll={n},{n}", True)]
+    else:  # Google: !3d..!4d.. (joy belgisi), @lat,lon, ?q=lat,lon
+        patterns = [(rf"!3d{n}!4d{n}", False), (rf"[?&](?:q|query|ll|destination|daddr|center)={n},\s*{n}", False),
+                    (rf"@{n},{n}", False)]
+    patterns.append((rf"^{n}\s*[,; ]\s*{n}$", False))  # oddiy koordinatalar
+    for pat, lon_first in patterns:
+        m = re.search(pat, t)
+        if m:
+            a, b = float(m.group(1)), float(m.group(2))
+            lat, lon = (b, a) if lon_first else (a, b)
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                return lat, lon
+    return None
+
+
+def _center_coords(form) -> dict:
+    """«Markaz haqida»: havola berilsa undan, aks holda kenglik/uzunlik maydonlaridan."""
+    out: dict = {}
+    link = str(form.get("center_map_link", "")).strip()
+    if link:
+        c = parse_coords(link)
+        if c:
+            return {"center_lat": f"{c[0]:.6f}", "center_lon": f"{c[1]:.6f}"}
+    for k, lim in (("center_lat", 90), ("center_lon", 180)):
+        if k in form:
+            raw = str(form[k]).strip().replace(",", ".")
+            if not raw:
+                out[k] = ""
+                continue
+            try:
+                v = float(raw)
+            except ValueError:
+                continue
+            if -lim <= v <= lim:
+                out[k] = f"{v:.6f}"
+    return out
+
+
+async def _save_settings_form(request: Request, staff: Staff) -> dict:
     form = await request.form()
     values: dict = {}
     for k in INT_KEYS:
@@ -304,22 +350,54 @@ async def settings_save(request: Request, staff: Staff = Depends(admin_required)
         values["openai_api_key"] = new_key
     if form.get("clear_api_key"):
         values["openai_api_key"] = ""
-    old_gid = await settings.get("group_chat_id")
+    values.update(_center_coords(form))
+    link = str(form.get("center_map_link", "")).strip()
     await settings.set_many(values)
-    new_gid = values.get("group_chat_id")
-    if new_gid and str(new_gid) != str(old_gid or ""):
-        # Premium guruh o'zgardi — chatlar ro'yxatida ham belgilaymiz
-        from ...models import TgChat
-        from ...services import tgchats
-
-        async with session_scope() as s:
-            for x in (await s.execute(select(TgChat).where(TgChat.role == "premium"))).scalars().all():
-                x.role = "unassigned"
-        if await tgchats.get(int(new_gid)):
-            await tgchats.set_role(int(new_gid), "premium")
     await audit.log(staff.id, "settings_edit", "settings", None, ", ".join(sorted(values.keys()))[:500])
+    if link and parse_coords(link) is None:
+        flash(request, "Xarita havolasidan koordinata topilmadi — kenglik va uzunlikni qo'lda kiriting", "warning")
+    return values
+
+
+def _tab(request: Request, default: str = "") -> str:
+    tab = str(request.query_params.get("tab") or default)
+    return f"#{tab}" if tab.isidentifier() else ""
+
+
+@router.post("/settings")
+async def settings_save(request: Request, staff: Staff = Depends(admin_required)):
+    await _save_settings_form(request, staff)
     flash(request, "Sozlamalar saqlandi")
-    return RedirectResponse("/settings", 303)
+    return RedirectResponse("/settings" + _tab(request), 303)
+
+
+@router.post("/settings/center/test")
+async def center_test(request: Request, staff: Staff = Depends(admin_required)):
+    """Saqlab, «ℹ️ Markaz haqida» xabarini adminning o'z Telegramiga yuboradi (foydalanuvchi ko'radigandek)."""
+    await _save_settings_form(request, staff)
+    if not staff.tg_id:
+        flash(request, "Telegram akkauntingiz biriktirilmagan", "danger")
+        return RedirectResponse("/settings#center", 303)
+    from ...bot.handlers.menu import send_center_info
+
+    try:
+        await send_center_info(staff.tg_id)
+        flash(request, "Saqlandi ✅ «ℹ️ Markaz haqida» xabari Telegramingizga yuborildi")
+    except Exception as e:  # noqa: BLE001
+        flash(request, f"Saqlandi, lekin yuborib bo'lmadi: {e}", "danger")
+    return RedirectResponse("/settings#center", 303)
+
+
+@router.post("/settings/group/check")
+async def group_check(request: Request, staff: Staff = Depends(admin_required)):
+    """Saqlab, Premium guruhda bot huquqlarini tekshiradi."""
+    await _save_settings_form(request, staff)
+    from ...services import health
+
+    res = await health.check_group()
+    level = {"ok": "success", "warn": "warning"}.get(res["status"], "danger")
+    flash(request, ("✅ " if res["status"] == "ok" else "⚠️ ") + res["details"] + (f" — {res['hint']}" if res.get("hint") else ""), level)
+    return RedirectResponse("/settings#group", 303)
 
 
 @router.post("/settings/holidays/add")
@@ -369,8 +447,7 @@ async def texts_page(request: Request, staff: Staff = Depends(admin_required)):
     items = []
     for key, label in EDITABLE.items():
         cur = overrides.get(key) or {}
-        items.append({"key": key, "label": label, "uz": cur.get("uz") or TEXTS[key]["uz"], "ru": cur.get("ru") or TEXTS[key]["ru"],
-                      "changed": bool(cur)})
+        items.append({"key": key, "label": label, "uz": cur.get("uz") or TEXTS[key]["uz"], "changed": bool(cur.get("uz"))})
     return render(request, "admin/texts.html", staff, items=items)
 
 
@@ -380,16 +457,10 @@ async def texts_save(request: Request, staff: Staff = Depends(admin_required)):
     overrides: dict = {}
     for key in EDITABLE:
         uz = str(form.get(f"{key}_uz", "")).strip()
-        ru = str(form.get(f"{key}_ru", "")).strip()
         if form.get(f"{key}_reset"):
             continue
-        entry = {}
         if uz and uz != TEXTS[key]["uz"]:
-            entry["uz"] = uz
-        if ru and ru != TEXTS[key]["ru"]:
-            entry["ru"] = ru
-        if entry:
-            overrides[key] = entry
+            overrides[key] = {"uz": uz}
     await settings.set_value("texts", overrides)
     await audit.log(staff.id, "texts_edit", "texts", None, ", ".join(overrides.keys())[:500])
     flash(request, "Bot matnlari saqlandi")
@@ -432,7 +503,6 @@ EXPORTS = {
     "chats": ("Chatlar", excel.chats_xlsx),
     "operators": ("Operatorlar statistikasi", excel.operators_xlsx),
     "audit": ("Harakatlar jurnali", excel.audit_xlsx),
-    "questions": ("Foydalanuvchi savollari", excel.questions_xlsx),
     "payments": ("To'lovlar", excel.payments_xlsx),
     "subscriptions": ("Obunachilar", excel.subscriptions_xlsx),
 }

@@ -1,4 +1,4 @@
-"""Fon vazifalari: kechikish nazorati, ish vaqti ochilishi, eslatmalar, FAQ tahlili."""
+"""Fon vazifalari: kechikish nazorati, ish vaqti ochilishi, obunalar, eslatmalar, to'lov eslatmalari, tozalash."""
 from __future__ import annotations
 
 import asyncio
@@ -6,13 +6,12 @@ import html
 import logging
 from datetime import timedelta
 
-from aiogram.types import FSInputFile
 from aiogram.exceptions import TelegramForbiddenError
 from sqlalchemy import delete, select
 
 from ..db import session_scope, utcnow
 from ..models import Chat, Lead, LoginToken, ReminderLog, ReminderStep
-from . import ai, settings, worktime
+from . import settings, worktime
 from .notify import hub, telegram_staff
 
 log = logging.getLogger(__name__)
@@ -24,13 +23,8 @@ LOOP_TITLES = {
     "chats": "Chat kechikish nazorati",
     "subs": "Obuna va guruh nazorati",
     "reminders": "Avto-eslatmalar",
-    "faq": "Savollar tahlili",
     "cleanup": "Tozalash",
     "payments": "To'lov eslatmalari",
-    "promos": "Promokod muddati va limiti nazorati",
-    "tgchats": "Guruh va kanal a'zolari hisobi",
-    "channel_ai": "Kanal uchun kunlik AI g'oyalar",
-    "group_posts": "Guruhlarga rejalashtirilgan postlar",
     "monitor": "Tizim monitoringi",
 }
 _named: dict[str, asyncio.Task] = {}
@@ -161,16 +155,10 @@ async def send_reminders() -> None:
                 async with session_scope() as s:
                     s.add(ReminderLog(lead_id=lead.id, step_id=step.id, ok=False))
                 continue
-            text = step.text_ru if lead.lang == "ru" else step.text_uz
+            text = step.text_uz
             ok = True
             try:
-                if step.material and step.material.file_path:
-                    from ..bot.instance import get_bot
-
-                    doc = step.material.tg_file_id or FSInputFile(step.material.file_path, filename=step.material.file_name)
-                    await get_bot().send_document(lead.tg_id, doc, caption=text[:1024])
-                else:
-                    ok = (await sender.send_text(lead.tg_id, text)) is not None
+                ok = (await sender.send_text(lead.tg_id, text)) is not None
             except TelegramForbiddenError:
                 ok = False
                 async with session_scope() as s:
@@ -192,27 +180,6 @@ async def send_reminders() -> None:
         log.info("Eslatmalar yuborildi: %s", count)
 
 
-# ------------------------------------------------------------------ FAQ
-
-
-async def auto_faq() -> None:
-    if not await settings.get("faq_auto_enabled"):
-        return
-    now = worktime.now_local()
-    if now.hour != int(await settings.get("faq_auto_hour") or 3):
-        return
-    last = await settings.get("faq_last_run")
-    if last and str(last)[:10] == now.date().isoformat():
-        return
-    if not await ai.is_available():
-        return
-    res = await ai.analyze_questions()
-    log.info("FAQ avto tahlil: %s", res)
-    if res.get("created"):
-        await telegram_staff(f"💡 FAQ tahlili: {res['created']} ta yangi taklif tasdiqlashingizni kutmoqda.",
-                             admins=True, path="/faq")
-
-
 # ------------------------------------------------------------------ yarim qolgan to'lov
 
 
@@ -225,10 +192,6 @@ async def pay_reminders() -> None:
     from .chats import add_message
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-    from . import promo as promo_svc
-
-    # promokodi endi amal qilmaydigan (limit tugagan, muddati o'tgan, o'chirilgan) to'lanmagan buyurtmalar — bekor
-    await promo_svc.sweep()
     if not await settings.get("pay_reminder_enabled"):
         return
     minutes = max(5, int(await settings.get("pay_reminder_minutes") or 60))
@@ -254,8 +217,6 @@ async def pay_reminders() -> None:
         if paid_after.get(p.id) or p.tg_id in seen:
             continue
         seen.add(p.tg_id)
-        if p.promo_id and await promo_svc.validate_order(p):
-            continue  # promokod joyini boshqalar egallagan — to'lashga undamaymiz
         lead = leads.get(p.id)
         if lead and lead.is_blocked:
             continue
@@ -276,50 +237,33 @@ async def pay_reminders() -> None:
         await asyncio.sleep(0.1)
 
 
-async def promo_check() -> None:
-    from . import promo as promo_svc
-
-    await promo_svc.sweep()
-
-
-async def tgchats_job() -> None:
-    from . import tgchats
-
-    await tgchats.bootstrap()
-    await tgchats.snapshot_all()
-
-
-async def channel_ai_job() -> None:
-    from . import channel
-
-    await channel.daily_job()
-
-
-async def group_posts_job() -> None:
-    from . import group_posts
-
-    await group_posts.due_job()
-
-
 async def cleanup() -> None:
     from ..models import LoginCode
 
     async with session_scope() as s:
         await s.execute(delete(LoginToken).where(LoginToken.created_at < utcnow() - timedelta(hours=1)))
         await s.execute(delete(LoginCode).where(LoginCode.created_at < utcnow() - timedelta(hours=1)))
+    # media/tmp — yuklash paytidagi vaqtinchalik fayllar (1 kundan eskisi o'chiriladi, diskni tejash uchun)
+    import time
+    from pathlib import Path
+
+    from ..config import config
+
+    cutoff = time.time() - 86400
+    for f in (Path(config.media_dir()) / "tmp").rglob("*"):
+        try:
+            if f.is_file() and f.stat().st_mtime < cutoff:
+                f.unlink()
+        except OSError:
+            pass
 
 
 SPECS = {
     "chats": (30, check_chats),
     "subs": (900, subs_check),
     "reminders": (300, send_reminders),
-    "faq": (600, auto_faq),
     "cleanup": (3600, cleanup),
     "payments": (300, pay_reminders),
-    "promos": (60, promo_check),
-    "tgchats": (3600, tgchats_job),
-    "channel_ai": (600, channel_ai_job),
-    "group_posts": (30, group_posts_job),
     "monitor": (300, monitor_check),
 }
 

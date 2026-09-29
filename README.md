@@ -1,8 +1,9 @@
-# ATKO Lead platforma v2 — Telegram bot + Payme + yopiq guruh + operator/admin paneli
+# ATKO Lead platforma v4 — Telegram bot + Payme + Premium guruh + operator/admin paneli
 
 ATKO Koreys Tili O'quv Markazi uchun **Telegram bot** va operatorlar ishlaydigan **veb-panel**. Bot va panel bitta dasturda ishlaydi.
 
-- **Bot:** o'zbek va rus tillarida, OpenAI bilan ishlaydi.
+- **Bot:** faqat o'zbek tilida, OpenAI bilan ishlaydi.
+- **Panel:** barcha rollar (admin, operator) uchun bitta; kompyuter, planshet va telefonga moslashgan (telefonda pastki menyu, jadvallar kartochka ko'rinishida, «Bosh ekranga qo'shish» — PWA).
 - **To'lov:** Payme orqali qabul qilinadi.
 - **Yopiq Premium guruh:** a'zolikni tizim o'zi boshqaradi.
 
@@ -21,15 +22,15 @@ ATKO Koreys Tili O'quv Markazi uchun **Telegram bot** va operatorlar ishlaydigan
 ### Telegram bot
 | Bo'lim | Tavsif |
 |---|---|
-| Ro'yxatdan o'tish | Til → ism → **«📱 Raqamni yuborish»** (majburiy) → maqsad → format. Raqam tasdiqlanmaguncha botning boshqa bo'limlari yopiq. Raqam faqat shu tugma orqali qabul qilinadi |
-| 📚 Tariflar va narxlar | 💎 Premium obuna (Payme) + 🎥 Zoom va 👤 Individual **paketlar** (12 dars — haftasiga 3 ta, 20 dars — haftasiga 5 ta, 1 oy, dars 120 daqiqa). Har paketda bir dars narxi va «💰 tejamkor» belgisi; paketni tanlasa — so'rov admin navbatiga (to'lov admin orqali) |
-| 💳 Obuna sotib olish | 1-tarif (yopiq Telegram guruh, 1/3/12 oy) — **Payme** orqali. Asosiy menyuda tugma yo'q; «Tariflar», «Mening obunam» va AI mentor limiti xabarlaridan ochiladi. Oynada: batafsil ma'lumot, 🎟 promokod, 🎬 namuna dars. To'lovdan keyin guruh havolasi avtomatik keladi |
-| 🎟 Promokod | Foizli chegirma (1–100%). «Birinchi N ta foydalanuvchi», muddat va obuna varianti bo'yicha cheklash mumkin. **100%** bo'lsa — Payme'siz darhol bepul faollashadi |
+| Ro'yxatdan o'tish | Ism → **«📱 Raqamni yuborish»** (majburiy) → maqsad → format. Raqam tasdiqlanmaguncha botning boshqa bo'limlari yopiq. Raqam faqat shu tugma orqali qabul qilinadi |
+| 📚 Tariflar va narxlar | 💎 Premium obuna (Payme) + 🎥 Zoom va 👤 Individual **paketlar** (12 dars — haftasiga 3 ta, 20 dars — haftasiga 5 ta, 1 oy, dars 120 daqiqa). Har paketda bir dars narxi va «💰 tejamkor» belgisi; paketni tanlasa — so'rov menejerlar navbatiga (to'lov menejer orqali). Narx kiritilmagan bo'lsa — «menejerimiz aniqlab beradi» |
+| 💳 Obuna sotib olish | 1-tarif (yopiq Telegram guruh, 1/3/12 oy) — **Payme** orqali. Asosiy menyuda tugma yo'q; «Tariflar», «Mening obunam» va AI mentor limiti xabarlaridan ochiladi. Oynada: batafsil ma'lumot, narxi kiritilgan variantlar, 🎬 namuna dars. To'lovdan keyin guruh havolasi avtomatik keladi |
 | ⏳ To'lov eslatmasi | To'lov oynasini ochib, to'lamay qolganlarga 60 daqiqadan keyin (sozlanadi) **bir marta** «To'lash» tugmali eslatma |
 | 👤 Mening obunam | Holat, tugash sanasi, qolgan kunlar, progress, to'lovlar tarixi, «Guruh havolasi» va «Uzaytirish» tugmalari |
 | 🎓 AI mentor | Koreys tili yordamchisi: grammatika, uyga vazifani tekshirish (matn, rasm, ovoz), mini-testlar. OpenAI'ga yuklangan darsliklardan foydalanadi. **Premium obunachilarga cheksiz**, qolganlarga kuniga 3 ta savol |
-| 👨‍💼 Operator bilan bog'lanish | Ish vaqtida «2–10 daqiqada ulanadi», ish vaqtidan tashqari navbatga qo'yadi (ungacha AI javob beradi). 2–4-tariflar uchun «Admin bilan bog'lanish» |
-| 🤖 AI-konsultant | Tariflar va narxlar haqida javob beradi, lead ma'lumotlarini to'ldiradi, kerak bo'lsa operatorga ulaydi |
+| 👨‍💼 Operator bilan bog'lanish | Ish vaqtida «2–10 daqiqada ulanadi», ish vaqtidan tashqari navbatga qo'yadi (ungacha AI javob beradi) |
+| ℹ️ Markaz haqida | Sozlamalardagi matn, so'ng xaritadagi joylashuv (lokatsiya) yuboriladi |
+| 🤖 AI-konsultant | Faqat tariflar va «Markaz haqida» matniga tayanadi, lead ma'lumotlarini to'ldiradi, kerak bo'lsa operatorga ulaydi |
 | ⭐ Baho | Chat yopilgach bitta qatorda ixcham `1⭐ … 5⭐` tugmalari, keyin ixtiyoriy izoh |
 
 **Operator javoblari** leadga shunday sarlavha bilan boradi:
@@ -39,47 +40,35 @@ ATKO Koreys Tili O'quv Markazi uchun **Telegram bot** va operatorlar ishlaydigan
 Assalomu alaykum! ...
 ```
 
-### Yopiq Premium guruh (1-tarif)
+### Premium guruh (yopiq Telegram guruh)
 - Guruhga faqat **«qo'shilish so'rovi»** orqali kiriladi. Bot faqat obunasi faol bo'lganlarning so'rovini tasdiqlaydi, shuning uchun havola boshqaga berib yuborilsa ham to'lovsiz kirib bo'lmaydi.
 - Obuna tugashidan **3 va 1 kun oldin** foydalanuvchiga «Uzaytiring» eslatmasi boradi.
 - Muddati tugaganlar guruhdan **avtomatik chiqariladi**. Qayta to'lov qilsa, yana qo'shila oladi.
 - Guruhga obunasiz qo'shilganlar ham avtomatik chiqariladi. Xodimlar va «muddatsiz» ruxsat berilganlar bundan mustasno.
 - **Payme'da to'lov bekor qilinsa (pul qaytarilsa)**, obuna shu to'lov kunlariga qisqaradi va kerak bo'lsa foydalanuvchi guruhdan chiqariladi.
 
-### Telegram kanal va o'quv guruhlari (faqat admin)
-- **📈 Kanal rivoji** (@atko_teams): obunachilar grafigi, qo'shilgan/chiqib ketganlar, postlar va reaksiyalar, post turlari va soatlar bo'yicha faollik,
-  nomlangan **taklif havolalari** (qaysi manbadan nechta obunachi), kanal → bot → kurs zanjiri, Telegram Desktop **JSON eksportini import** qilish
-  va **har kuni AI tahlil**: 5 ta post g'oyasi (tayyor matn bilan), 3 ta video g'oyasi (ilmoq + ssenariy), eng yaxshi vaqtlar, haftalik reja.
-  Natijalar faqat panelda ko'rinadi. ⚠️ Telegram botlarga ko'rishlar sonini bermaydi — faollik reaksiyalar orqali o'lchanadi.
-- **🗓 Kanal uchun postlar**: AI g'oyasini (yoki o'z postingizni) tahrirlab, rasm/video qo'shib, avval o'zingizga sinab ko'rasiz →
-  «✅ Tasdiqlash» → post **belgilangan vaqtda kanalga avtomatik joylanadi** (botga «Xabarlar joylash» huquqi kerak). Joylangan postlar tahlilga ham qo'shiladi.
-- **👥 O'quv guruhlari**: bot admin qilingan guruhlar ro'yxati, o'quvchilar soni (a'zolar − adminlar), 7 kunlik o'zgarish, 30 kunlik grafik,
-  guruhni o'chirish (bot guruhdan chiqadi), chat vazifasini o'zgartirish.
-- **📨 Guruhlarga post**: matn / matn+rasm / matn+video, bir nechta guruhga birdan, avval o'zingizga sinov, rejalashtirish, qadash (pin),
-  ovozsiz yuborish, yuborilganni guruhlardan o'chirish.
-
 ### Veb-panel
 - **Kirish:** Telegram ID kiritiladi, bot shu akkauntga **6 xonali kod** yuboradi. Kod 5 daqiqa amal qiladi va 5 marta urinish mumkin.
 - **💬 Chatlar:**
   - navbat, «Menga ochdim», o'tkazish, yopish;
   - matn, rasm, audio, video va fayl almashish;
-  - javob shablonlari, «🤖 AI taklif» tugmasi;
+  - «🤖 AI taklif» tugmasi;
   - leadning har bir harakati (yozgan xabarlari va bosgan tugmalari) chat tarixida ko'rinadi.
 - **💎 Obunachilar:**
   - Telegram ID va kunlar soni bo'yicha **qo'lda obuna berish**;
   - muddatni ± uzaytirish yoki aniq sana qo'yish, muddatsiz ruxsat, bekor qilish;
   - guruh havolasini qayta yuborish, guruhni sinxronlash, hodisalar tarixi.
-- **💳 To'lovlar:** Payme buyurtmalari (chegirma bo'lsa asl narx ham), kunlik va oylik tushum grafiklari, Excel.
-- **🎟 Promokodlar:** yaratish, limit (birinchi N ta), muddat, variant, yoqish/o'chirish; kim ishlatgani va to'lov jarayonidagilar.
+- **💳 To'lovlar:** Payme buyurtmalari, kunlik va oylik tushum grafiklari, Excel.
 - **🎬 Namuna video:** «Tariflar va narxlar» → 1-tarif kartasi. Video bir marta Telegram bulutiga yuklanadi (`file_id`), foydalanuvchilarga serverdan emas, Telegramdan yuboriladi.
-- **📚 Tariflar va narxlar:** 4 ta tarif, narx va davr, 1-tarifning 1/3/12 oylik variantlari (narxi va kunlar soni).
+- **📚 Tariflar va narxlar:** Premium obuna (1/3/12 oylik variantlar), Zoom va Individual paketlari.
+- **⚙️ Sozlamalar** (bo'limlarga ajratilgan): Umumiy · **ℹ️ Markaz haqida** (matn + xarita havolasi yoki koordinatalar, «Telegramda ko'rish») · **💎 Premium guruh** (tanlash va bot huquqlarini tekshirish) · Payme · AI · Bayram kunlari.
 - **🩺 Tizim holati:**
   - tekshiriladi: bot, webhook/polling, guruh va bot huquqlari, OpenAI, vector store, Payme, baza, disk, fon vazifalari, operatorlar;
   - oxirgi xatolar ro'yxati;
   - «🛠 tuzatish» tugmalari;
   - avtomatik tuzatish: to'xtab qolgan bot va fon vazifalari qayta ishga tushiriladi;
   - biror qism ishdan chiqsa yoki tiklansa, adminga Telegramda xabar boradi.
-- Leadlar, statistika, operatorlar, manba havolalari, ommaviy xabar, savollar tahlili, avto-eslatmalar, bot matnlari, Excel eksport (bot orqali Telegramga), harakatlar jurnali, sozlamalar.
+- Leadlar, statistika, operatorlar, manba havolalari, ommaviy xabar, avto-eslatmalar, bot matnlari, Excel eksport (bot orqali Telegramga), harakatlar jurnali, sozlamalar.
 
 ---
 
@@ -94,20 +83,13 @@ Assalomu alaykum! ...
 
 ---
 
-## 3a. Kanal va o'quv guruhlarini ulash
-1. **Kanal:** Telegram'da @atko_teams → Boshqaruv → Administratorlar → botni qo'shing (huquqlar: «Xabarlar joylash», «Xabarlarni o'chirish», «Taklif havolalari orqali qo'shish»).
-   Panel → «📈 Kanal rivoji» — kanal avtomatik ulanadi (yoki «Ulash» tugmasi).
-2. **O'quv guruhlari:** har bir guruhga botni **admin** qiling (post yuborish uchun; qadash uchun «Xabarlarni qadash» huquqi).
-   Guruh «👥 O'quv guruhlari» ro'yxatida o'zi paydo bo'ladi.
-3. **Eski kanal postlari:** Telegram Desktop → kanal → ⋮ → Export chat history → media belgilarisiz, format «JSON» → `result.json` ni «Kanal rivoji»da import qiling.
-
-## 3. Yopiq Premium guruhni sozlash
+## 3. Premium guruhni sozlash
 
 1. Telegramda guruhni oching → **Adminlar → Admin qo'shish** → botingizni tanlang.
 2. Botga ikkita huquq bering: **«Foydalanuvchilarni bloklash»** (ban) va **«Havola orqali taklif qilish»** (invite).
 3. Bot adminga «Botning guruhdagi holati o'zgardi…» xabarini yuboradi.
-4. Panel → **Sozlamalar → 👥 Yopiq Premium guruh** → guruhni tanlang → **Saqlash**.
-5. Panel → **🩺 Tizim holati** → «Yopiq Premium guruh» qatori 🟢 bo'lishi kerak.
+4. Panel → **Sozlamalar → 💎 Premium guruh** → guruhni tanlang → **«Saqlash va bot huquqlarini tekshirish»**.
+5. Panel → **🩺 Tizim holati** → «Premium guruh» qatori 🟢 bo'lishi kerak.
 6. Guruhda allaqachon bor a'zolar uchun: **💎 Obunachilar → Qo'lda obuna berish**. Telegram ID va kunlar sonini kiriting. O'qituvchi va mentorlar uchun «Muddatsiz» belgisini qo'ying.
    - A'zoning ID sini bilish uchun u botga `/myid` yozadi.
    - Telegram bot foydalanuvchini guruhga to'g'ridan-to'g'ri qo'sha olmaydi. Shuning uchun bot unga shaxsiy «qo'shilish» havolasini yuboradi, buning uchun foydalanuvchi botga oldin `/start` bosgan bo'lishi kerak. Aks holda panel havolani ko'rsatadi va uni o'zingiz yuborasiz.
@@ -164,7 +146,9 @@ Model nomi **Sozlamalar → Asosiy model** maydonida o'zgartiriladi (masalan, `g
 ---
 
 ## 6. alwaysdata.com serveriga joylash
-> ⚠️ Bepul tarifda RAM 256 MB — ilova ~235 MB ishlatadi, yuklama oshganda qayta ishga tushishi mumkin. Barqaror ishlash uchun pullik tarif tavsiya etiladi.
+> Bepul tarif (256 MB RAM, ¼ CPU, 1 GB disk) uchun **kam xotira rejimi** (`LOW_MEMORY=1`, `setup.sh` o'zi yoqadi): Telegram turlari
+> faqat kerak bo'lganda yuklanadi — ilova ~240 MB o'rniga **~120–160 MB** ishlatadi va 2 barobar tez ishga tushadi.
+> «🩺 Tizim holati»da 🧠 Xotira va 💾 Disk (kvota bo'yicha) qatorlari kuzatib boriladi. Saytni uyg'oq ushlash uchun UptimeRobot (har 5 daqiqa) yoki Scheduled task.
 
 **Kod GitHub'dan olinadi:** `https://github.com/elshodatc111/atko_online_leat_bot` (`.env` va `data/` repozitoriyga yuklanmaydi).
 
@@ -205,6 +189,15 @@ Skript Python 3.14 muhitini yaratadi, kutubxonalarni o'rnatadi, `.env` ni server
 | AI javob bermayapti | 🩺 Tizim holati → «AI ni sinash». Kalit, model nomi va kunlik limitni tekshiring |
 
 ## 8. O'zgarishlar tarixi
+- **v4.0 (soddalashtirish, bepul hosting uchun):**
+  - olib tashlandi: Kanal rivoji, O'quv guruhlari, Guruhlarga post, Promokodlar, Savollar tahlili (FAQ), Javob shablonlari, Markaz ma'lumotlari sahifalari, PDF materiallar; «Admin bilan bog'lanish» hech qayerda yo'q;
+  - bot faqat o'zbek tilida (til tanlash yo'q); ruscha matnlar va maydonlar olib tashlandi;
+  - «ℹ️ Markaz haqida» — Sozlamalarda bitta matn + xaritadagi joylashuv (Google/Yandex havolasi yoki koordinatalar);
+  - Premium guruh Sozlamalarga ko'chirildi (bot huquqlarini tekshirish tugmasi bilan);
+  - AI-konsultant faqat tariflar va markaz matniga tayanadi; AI mentor — OpenAI platformasidagi darsliklar (vector store);
+  - eski bo'limlarning ma'lumotlari va jadvallari avtomatik o'chiriladi (leadlar, chatlar, obunalar, to'lovlar saqlanadi);
+  - panel barcha qurilmalarga moslashdi: telefonda pastki menyu, yon menyu, jadvallar kartochka ko'rinishida, to'liq ekran chat, PWA (bosh ekranga qo'shish).
+- **v3.3:** kam xotira rejimi (LOW_MEMORY) — bepul hostingda ~120–160 MB RAM; Tizim holatida xotira va disk kvotasi; /health HEAD so'rovini qabul qiladi; media/tmp avtomatik tozalanadi.
 - **v3.2:** alwaysdata uchun avtomatik o'rnatish skripti (`deploy/alwaysdata/setup.sh`), GitHub orqali o'rnatish va yangilash.
 - **v3.1:** Individual darslar ham Zoom orqali (120 daqiqa); AI g'oyasidan tayyorlangan postni tasdiqlab, kanalga belgilangan vaqtda avtomatik joylash.
 - **v3.0:**

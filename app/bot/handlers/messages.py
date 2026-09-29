@@ -11,13 +11,13 @@ from aiogram.enums import ChatAction
 from aiogram.types import Message as TgMessage
 
 from ...db import session_scope
-from ...models import FORMATS, GOALS, Chat, UserQuestion
+from ...models import FORMATS, GOALS, Chat
 from ...services import ai, settings
 from ...services import chats as chat_svc
 from ...services.notify import hub, telegram_staff
 from ..actions import operator_request, run_pending_after_phone
 from ..common import get_lead, get_or_create_lead, normalize_phone, save_incoming, send_menu, update_lead
-from ..keyboards import cta_kb, contact_kb
+from ..keyboards import cta_kb
 from ..middlewares import mark_stored
 from ..texts import t
 from .menu import tutor_allowed, tutor_consume
@@ -63,17 +63,6 @@ async def any_message(msg: TgMessage) -> None:
             lead = await update_lead(lead.id, phone=phone)
             await run_pending_after_phone(lead)
             return
-
-    # 2b) Promokod kiritish
-    if lead.pending_input == "promo" and msg.text:
-        lead = await update_lead(lead.id, pending_input=None)
-        code = msg.text.strip()
-        if code and len(code) <= 32 and " " not in code and not code.startswith("/"):
-            from ..actions import apply_promo_code
-
-            await apply_promo_code(lead, code)
-            return
-        # promokod emas, oddiy savol — davom etamiz
 
     # 3) Baho izohi
     if lead.pending_input == "rating_comment" and msg.text:
@@ -172,13 +161,6 @@ async def _send_ai(msg: TgMessage, lead, text: str, reply_markup=None) -> None:
 
 
 async def _consultant(msg: TgMessage, lead, text: str | None, image: str | None, stored_id: int, chat_id: int | None) -> None:
-    uq_id = None
-    if text and len(text.strip()) >= 4 and not chat_id:
-        async with session_scope() as s:
-            uq = UserQuestion(lead_id=lead.id, text=text.strip()[:1000], lang=lead.lang, mode="consultant")
-            s.add(uq)
-            await s.flush()
-            uq_id = uq.id
     if not await ai.is_available():
         if text and PRICE_RE.search(text):
             from .menu import _courses_kb
@@ -212,11 +194,6 @@ async def _consultant(msg: TgMessage, lead, text: str | None, image: str | None,
     if upd:
         lead = await update_lead(lead.id, **upd)
         await hub.emit("lead_updated", {"lead_id": lead.id})
-    if res.unanswered and uq_id:
-        async with session_scope() as s:
-            uq = await s.get(UserQuestion, uq_id)
-            uq.answered = False
-
     kb = None
     escalate = res.escalate and await settings.get("ai_auto_escalate") and not chat_id
     if res.unanswered and not escalate:

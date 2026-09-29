@@ -20,6 +20,46 @@
     if (!r.ok || j.ok === false) throw new Error(j.error || "Xatolik yuz berdi");
     return j;
   };
+  ATKO.setWaiting = (n) => document.querySelectorAll(".nav-waiting").forEach((b) => { b.hidden = !n; b.textContent = n; });
+
+  // ---------------- mobil menyu (yon panel) va jadvallarni kartochkaga aylantirish
+  const sidebar = document.getElementById("sidebar"), backdrop = document.getElementById("backdrop");
+  function menu(open) {
+    if (!sidebar) return;
+    sidebar.classList.toggle("open", open);
+    if (backdrop) backdrop.hidden = !open;
+    document.body.classList.toggle("menu-open", open);
+  }
+  ["menu-btn", "menu-btn2"].forEach((id) => { const b = document.getElementById(id); if (b) b.onclick = () => menu(!sidebar.classList.contains("open")); });
+  if (backdrop) backdrop.onclick = () => menu(false);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") menu(false); });
+  if (sidebar) sidebar.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => menu(false)));
+  ATKO.cardify = function (root) {
+    // telefonda jadval qatorlari kartochka bo'lib ko'rinadi: har katakka ustun nomi yoziladi (CSS: data-label)
+    (root || document).querySelectorAll(".table-wrap > table:not(.no-cards)").forEach((t) => {
+      const head = t.querySelector("tr");
+      if (!head || !head.querySelector("th")) return;
+      const labels = [...head.children].map((th) => th.textContent.trim());
+      if (labels.length < 3) return;
+      t.classList.add("cards");
+      t.querySelectorAll("tr").forEach((tr) => {
+        if (tr === head) { tr.classList.add("head"); return; }
+        let i = 0;
+        [...tr.children].forEach((td) => {
+          if (!td.hasAttribute("data-label") && labels[i]) td.setAttribute("data-label", labels[i]);
+          if (td.childNodes.length > 1 && !td.querySelector(":scope > .cv")) {
+            const w = document.createElement("div"); w.className = "cv";
+            while (td.firstChild) w.appendChild(td.firstChild);
+            td.appendChild(w);
+          }
+          if (td.colSpan > 1) td.classList.add("span");
+          i += td.colSpan || 1;
+        });
+      });
+    });
+  };
+  ATKO.cardify();
+  document.body.addEventListener("htmx:afterSwap", (e) => ATKO.cardify(e.target));
   ATKO.esc = (s) => (s == null ? "" : String(s)).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   // ---------------- toastlar
@@ -83,8 +123,7 @@
   async function refreshCounters() {
     try {
       const c = await ATKO.api("/api/me/counters");
-      const b = document.getElementById("nav-waiting");
-      if (b) { b.hidden = !c.waiting; b.textContent = c.waiting; }
+      ATKO.setWaiting(c.waiting);
       document.title = (c.waiting ? `(${c.waiting}) ` : "") + document.title.replace(/^\(\d+\)\s*/, "");
     } catch (e) {}
   }
@@ -149,8 +188,7 @@
       const c = await ATKO.api("/api/me/counters");
       if (lastWaiting !== null && c.waiting > lastWaiting) ATKO.notify("🔔 Yangi murojaat", "Navbatda " + c.waiting + " ta murojaat", "/chats", "new");
       lastWaiting = c.waiting;
-      const b = document.getElementById("nav-waiting");
-      if (b) { b.hidden = !c.waiting; b.textContent = c.waiting; }
+      ATKO.setWaiting(c.waiting);
       ATKO.emit("poll", c);
     } catch (e) {}
   }, 20000);
