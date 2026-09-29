@@ -12,7 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import config
 from .db import init_db
-from .seed import migrate_v2, migrate_v3, migrate_v3b, migrate_v4, seed
+from .seed import migrate_content_v5, migrate_texts_v5, migrate_v2, migrate_v3, migrate_v3b, migrate_v4, seed
 from .services import scheduler, settings, worktime
 from .web.deps import WEB_DIR, LoginRequired, render
 
@@ -39,6 +39,8 @@ async def lifespan(app: FastAPI):
     await migrate_v3()
     await migrate_v3b()
     await migrate_v4()
+    await migrate_texts_v5()
+    await migrate_content_v5()
     await worktime.reload_holidays()
     await start_bot()
     scheduler.start_all()

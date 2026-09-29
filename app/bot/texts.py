@@ -8,65 +8,65 @@ from ..services import settings as st
 TEXTS: dict[str, dict[str, str]] = {
     # ================================================================ tahrirlanadigan matnlar
     "welcome": {
-        "uz": "Assalomu alaykum! 👋\n<b>ATKO Koreys Tili O'quv Markazi</b>ga xush kelibsiz!\n\nBiz koreys tili, TOPIK va EPS-TOPIK imtihonlariga tayyorlaymiz: yopiq Telegram guruhda video darslar, Zoom orqali jonli guruh darslari va individual mashg'ulotlar. 🇰🇷",
+        "uz": "Assalomu alaykum! 👋\n<b>ATKO Koreys Tili O'quv Markazi</b>ga xush kelibsiz! 🇰🇷\n\nBiz sizni koreys tili, <b>TOPIK</b> va <b>EPS-TOPIK</b> imtihonlariga noldan natijagacha tayyorlaymiz:\n🎬 yopiq Telegram guruhda video darslar\n🎥 Zoom orqali ustoz bilan jonli guruh darslari\n👤 individual (yakkama-yakka) mashg'ulotlar\n🎓 24/7 AI mentor — grammatika, uyga vazifa va mini-testlar\n\n💬 <b>Savollaringiz bormi?</b> Shunchaki yozing — tez va aniq javob beraman! Qaysi kurs sizga mos, narxlar, dars jadvali yoki imtihonlar haqida istalgan savolni bering. 😊",
     },
     "ask_name": {
-        "uz": "Tanishib olaylik 😊 Ismingiz nima?",
+        "uz": "Keling, tanishib olaylik! 😊\n\n✍️ <b>Ismingizni yozing</b> — sizga ism bilan murojaat qilamiz.",
     },
     "ask_phone": {
-        "uz": "Rahmat, {name}! 😊\n\n📱 <b>Telefon raqamingizni tasdiqlang</b>\n\nBotning barcha imkoniyatlaridan — tariflarni ko'rish va sotib olish, 🎓 AI mentor hamda menejer bilan aloqadan — foydalanish uchun telefon raqamingizni yuboring.\nMenejerlarimiz sizga kurslar haqida batafsil ma'lumot berib, sizga mos tarifni tanlashda yordam beradi.\n\n👇 Pastdagi <b>«📱 Raqamni yuborish»</b> tugmasini bosing.",
+        "uz": "Tanishganimdan xursandman, <b>{name}</b>! 🤝\n\n📱 <b>Oxirgi qadam — telefon raqamingiz</b>\n\nRaqamingizni yuborganingizdan so'ng sizga ochiladi:\n📚 tariflar va narxlar\n🎓 AI mentor va 📝 mini-testlar\n👨‍💼 menejer bilan to'g'ridan-to'g'ri aloqa\n\n🔒 Raqamingiz faqat siz bilan bog'lanish uchun ishlatiladi va hech kimga berilmaydi.\n\n👇 Pastdagi <b>«📱 Raqamni yuborish»</b> tugmasini bosing.",
     },
     "phone_required": {
-        "uz": "📱 <b>Telefon raqamingizni tasdiqlang</b>\n\nBotning barcha imkoniyatlaridan foydalanish uchun avval telefon raqamingizni yuboring.\nMenejerlarimiz sizga kurslar haqida batafsil ma'lumot berib, sizga mos tarifni tanlashda yordam beradi.\n\n👇 Pastdagi <b>«📱 Raqamni yuborish»</b> tugmasini bosing.",
+        "uz": "📱 <b>Avval telefon raqamingizni tasdiqlang</b>\n\nBu bo'lim raqam tasdiqlangandan keyin ochiladi. Bu bir soniya vaqt oladi 😊\n\n🔒 Raqamingiz faqat siz bilan bog'lanish uchun ishlatiladi.\n\n👇 Pastdagi <b>«📱 Raqamni yuborish»</b> tugmasini bosing.",
     },
     "ask_goal": {
-        "uz": "Koreys tilini qaysi maqsadda o'rganmoqchisiz?",
+        "uz": "🎯 <b>Koreys tilini qaysi maqsadda o'rganmoqchisiz?</b>\n\nShunga qarab sizga eng mos kursni tavsiya qilamiz 👇",
     },
     "ask_format": {
-        "uz": "Qaysi ta'lim formati sizga qulay?",
+        "uz": "🗓 <b>Qaysi ta'lim formati sizga qulay?</b>\n\nTanlovingiz bo'yicha mos variantni taklif qilamiz 👇",
     },
     "onboarding_done": {
-        "uz": "Ajoyib! ✅ Endi botning barcha imkoniyatlari siz uchun ochiq.\nPastdagi menyudan kerakli bo'limni tanlang yoki savolingizni shunchaki yozing — men darhol javob beraman. 🤖",
+        "uz": "🎉 <b>Tabriklaymiz, ro'yxatdan o'tdingiz!</b>\n\nEndi botning barcha imkoniyatlari siz uchun ochiq:\n📚 <b>Tariflar va narxlar</b> — kurslar va paketlar\n🎓 <b>AI mentor</b> — koreys tili bo'yicha 24/7 yordamchi\n📝 <b>Mini-test</b> — darajangizni sinab ko'ring\n👨‍💼 <b>Operator</b> — menejer bilan jonli suhbat\n\n💬 Savolingiz bo'lsa, shunchaki yozing — tez va aniq javob beraman! Masalan: <i>«Qaysi kurs menga mos?»</i>",
     },
     "operator_wait": {
-        "uz": "✅ So'rovingiz qabul qilindi!\n👨‍💼 Operatorimiz <b>2–10 daqiqa</b> ichida chatga ulanadi. Savolingizni hozirdan yozib qoldirishingiz mumkin.",
+        "uz": "✅ <b>So'rovingiz qabul qilindi!</b>\n\n👨‍💼 Menejerimiz tez orada chatga ulanadi.\n✍️ Vaqtni tejash uchun savolingizni hozirdan yozib qoldiring — menejer ulanishi bilan javob beradi.",
     },
     "operator_off_hours": {
-        "uz": "🌙 Hozir ish vaqtidan tashqari (operatorlar ish vaqti: <b>{hours}</b>, yakshanba va bayram kunlari dam olish).\n\n✅ So'rovingiz navbatga qo'yildi — operator <b>{next_open}</b> dan keyin siz bilan bog'lanadi.\n🤖 Ungacha savollaringizga AI-yordamchimiz javob beradi.",
+        "uz": "🌙 <b>Hozir ish vaqtidan tashqari</b>\nMenejerlarimiz ish vaqti: <b>{hours}</b>\n\n✅ So'rovingiz navbatga qo'yildi — menejer <b>{next_open}</b> dan keyin siz bilan bog'lanadi.\n\n🤖 Ungacha savollaringizga AI-yordamchimiz darhol javob beradi — bemalol yozing!",
     },
     "operator_connected": {
-        "uz": "👨‍💼 <b>{operator}</b> chatga ulandi va sizga yordam berishga tayyor. Savolingizni yozing!",
+        "uz": "👨‍💼 <b>{operator}</b> chatga ulandi!\n\nSavolingizni yozing — batafsil javob beraman. 😊",
     },
     "chat_closed": {
-        "uz": "✅ <b>Suhbat yakunlandi</b>\n\nMurojaatingiz uchun rahmat! Sizga <b>{operator}</b> yordam berdi.\nYana savollaringiz bo'lsa, shu yerga yozing yoki «👨‍💼 Operator bilan bog'lanish» tugmasini bosing — biz doim yordamga tayyormiz.\n\n🇰🇷 <i>ATKO Koreys Tili O'quv Markazi</i>",
+        "uz": "✅ <b>Suhbat yakunlandi</b>\n\nMurojaatingiz uchun rahmat! Sizga <b>{operator}</b> yordam berdi.\n\n💬 Yana savol tug'ilsa, shu yerga yozing yoki «👨‍💼 Operator bilan bog'lanish» tugmasini bosing — biz doim yordamga tayyormiz.\n\n🇰🇷 <i>ATKO Koreys Tili O'quv Markazi</i>",
     },
     "rating_ask": {
-        "uz": "Xizmatimiz sizga yoqdimi? Iltimos, baholang:",
+        "uz": "⭐ <b>Xizmatimizni baholang</b>\n\nFikringiz biz uchun muhim — iltimos, 1 dan 5 gacha baho bering:",
     },
     "rating_comment_ask": {
-        "uz": "Rahmat! 🙏 Xohlasangiz, fikringizni yozib qoldiring (yoki «O'tkazib yuborish» tugmasini bosing):",
+        "uz": "Rahmat! 🙏\n\n✍️ Nima yoqdi yoki nimani yaxshilashimiz kerak? Fikringizni yozib qoldiring (yoki «O'tkazib yuborish» tugmasini bosing).",
     },
     "rating_thanks": {
-        "uz": "Fikringiz uchun katta rahmat! 💙 Bu bizga xizmatimizni yaxshilashga yordam beradi.",
+        "uz": "💙 <b>Fikringiz uchun katta rahmat!</b>\n\nBu bizga xizmatimizni yanada yaxshilashga yordam beradi. Yana savollaringiz bo'lsa — bemalol yozing!",
     },
     "sla_apology": {
-        "uz": "⏳ Kechirasiz, hozir barcha operatorlarimiz band. Tez orada albatta ulanamiz! Ungacha savolingizni yozib qoldiring.",
+        "uz": "⏳ Kechirasiz, hozir barcha menejerlarimiz band. Tez orada albatta ulanamiz!\n\n✍️ Ungacha savolingizni batafsil yozib qoldiring — ulanishimiz bilan darhol javob beramiz.",
     },
     "price_by_manager": {"uz": "menejerimiz aniqlab beradi"},
     "price_note": {
-        "uz": "ℹ️ Narxlar o'zgarishi mumkin.",
+        "uz": "ℹ️ <i>Narxlar o'zgarishi mumkin. Savollaringiz bo'lsa, shu yerga yozing yoki «👨‍💼 Operator bilan bog'lanish» tugmasini bosing.</i>",
     },
     "enroll_request_ok": {
-        "uz": "✅ So'rovingiz qabul qilindi! Menejerimiz tez orada siz bilan bog'lanib, to'lov va dars jadvali bo'yicha batafsil ma'lumot beradi.",
+        "uz": "✅ <b>So'rovingiz qabul qilindi!</b>\n\n👨‍💼 Menejerimiz tez orada siz bilan bog'lanib, to'lov, guruh va dars jadvali bo'yicha batafsil ma'lumot beradi.\n\n💬 Qo'shimcha savollaringiz bo'lsa, shu yerga yozing — tez javob beramiz!",
     },
     "ai_unavailable": {
-        "uz": "🤖 AI-yordamchi hozir vaqtincha mavjud emas. Menyudan kerakli bo'limni tanlang yoki «👨‍💼 Operator bilan bog'lanish» tugmasini bosing.",
+        "uz": "🤖 AI-yordamchi hozir vaqtincha ishlamayapti.\n\nKerakli bo'limni menyudan tanlang yoki «👨‍💼 Operator bilan bog'lanish» tugmasini bosing — menejerimiz yordam beradi.",
     },
     "tutor_intro": {
-        "uz": "🎓 <b>AI mentor</b> — koreys tili bo'yicha shaxsiy yordamchingiz!\n\n• grammatika va lug'at savollari\n• uyga vazifani tekshirish (matn, rasm yoki ovozli xabar yuboring)\n• talaffuz va gap tuzish\n\n{limit_info}\n\nSavolingizni yozing! 한국어 공부 화이팅! 💪\n\n<i>📝 Mini-test — bosh sahifada. Qaytish uchun pastdagi «🏠 Bosh sahifa» tugmasini bosing.</i>",
+        "uz": "🎓 <b>AI mentor</b> — koreys tili bo'yicha shaxsiy yordamchingiz!\n\nMen nimalarda yordam beraman:\n📖 grammatika va lug'at savollari\n✅ uyga vazifani tekshirish — matn, rasm yoki ovozli xabar yuboring\n🗣 talaffuz va gap tuzish\n📚 TOPIK va EPS-TOPIK ga tayyorgarlik\n\n{limit_info}\n\n✍️ Savolingizni yozing! Masalan: <i>«-아요/어요 qachon ishlatiladi?»</i>\n한국어 공부 화이팅! 💪\n\n<i>📝 Mini-test — bosh sahifada. Qaytish uchun pastdagi «🏠 Bosh sahifa» tugmasini bosing.</i>",
     },
     "tutor_limit": {
-        "uz": "📚 Bugungi bepul savollaringiz limiti ({limit} ta) tugadi.\n\n💎 <b>Premium obunachilar</b> AI mentordan cheksiz foydalanadi! Obunani pastdagi «💳 Obuna sotib olish» tugmasi orqali rasmiylashtiring.",
+        "uz": "📚 <b>Bugungi bepul savollar tugadi</b> (kuniga {limit} ta).\n\nErtaga yana davom ettirishingiz mumkin 😊\n\n💎 <b>Premium obunachilar</b> AI mentordan <b>cheksiz</b> foydalanadi va yopiq guruhdagi barcha video darslarga ega bo'ladi. Obunani pastdagi tugma orqali rasmiylashtiring 👇",
     },
     # ================================================================ tizim matnlari
     "phone_saved": {"uz": "✅ Raqamingiz tasdiqlandi: {phone}"},
@@ -99,12 +99,14 @@ TEXTS: dict[str, dict[str, str]] = {
     "per_lesson": {"uz": "≈ {amount} / dars"},
     "best_value": {"uz": "💰 tejamkor"},
     "best_value_pct": {"uz": "💰 tejamkor, −{pct}%"},
-    "choose_package": {"uz": "👇 Paketni tanlang — menejerimiz siz bilan bog'lanib, to'lov va dars jadvalini kelishib oladi."},
+    "choose_package": {
+        "uz": "👇 <b>O'zingizga mos paketni tanlang</b> — menejerimiz siz bilan bog'lanib, to'lov va dars jadvalini kelishib oladi.",
+    },
     "som": {"uz": "so'm"},
     "center_default": {"uz": "ℹ️ ATKO — koreys tili, TOPIK va EPS-TOPIK imtihonlariga tayyorlovchi o'quv markazi."},
     # ---------------- obuna va to'lov
     "buy_title": {
-        "uz": "💎 <b>{tariff}</b>\n\n<b>Bu obuna nima?</b>\nATKO'ning yopiq Telegram guruhiga kirish huquqi. Guruhda koreys tilini noldan EPS-TOPIK va TOPIK darajasigacha mustaqil o'rganish uchun barcha video darslar va materiallar bo'limlarga ajratilgan holda joylangan:\n\n📚 <b>Guruh ichida:</b>\n• 한글 Hangul alifbosi — noldan boshlash\n• 🎬 EPS-TOPIK 960, 600, 60 va 50 — to'liq video kurslar\n• 📖 Kitoblar va qo'llanmalar\n• 🎵 Audio materiallar (tinglab tushunish)\n• ⁉️ Testlar\n• 🎞 Koreys kinolari\n• 🏆 Shogirdlarimiz natijalari\n\n<b>🎁 Obunaga qo'shimcha:</b>\n• 🎓 AI mentor — koreys tili bo'yicha savollarga 24/7 <b>cheksiz</b> javob, uyga vazifani tekshirish va mini-testlar\n• 🆕 Guruhga qo'shiladigan yangi darslar ham obuna davomida siz uchun ochiq\n\n<b>⚙️ Qanday ishlaydi?</b>\n1️⃣ Pastdan obuna muddatini tanlang\n2️⃣ <b>Payme</b> orqali xavfsiz to'lang (Uzcard / Humo)\n3️⃣ To'lovdan so'ng bot guruh havolasini darhol yuboradi\n4️⃣ «Qo'shilish so'rovi»ni yuboring — bot uni avtomatik tasdiqlaydi\n\n⏰ Obuna tugashidan 3 va 1 kun oldin eslatma keladi. Muddat tugaganda guruhga kirish yopiladi, uzaytirsangiz — darhol qayta ochiladi.\n📅 Holatini istalgan vaqtda «👤 Mening obunam» bo'limida ko'rasiz.",
+        "uz": "💎 <b>{tariff}</b>\n\n<b>Bu obuna nima?</b>\nATKO'ning yopiq Telegram guruhiga kirish huquqi. Guruhda koreys tilini noldan EPS-TOPIK va TOPIK darajasigacha mustaqil o'rganish uchun barcha video darslar va materiallar tartib bilan joylangan.\n\n📚 <b>Guruh ichida:</b>\n• 한글 Hangul alifbosi — noldan boshlash\n• 🎬 EPS-TOPIK 960, 600, 60 va 50 — to'liq video kurslar\n• 📖 Kitoblar va qo'llanmalar\n• 🎵 Audio materiallar (tinglab tushunish)\n• ⁉️ Testlar\n• 🎞 Koreys kinolari\n• 🏆 Shogirdlarimiz natijalari\n\n🎁 <b>Obunaga qo'shimcha:</b>\n• 🎓 AI mentor — savollarga 24/7 <b>cheksiz</b> javob, uyga vazifani tekshirish va mini-testlar\n• 🆕 Obuna davomida qo'shiladigan yangi darslar ham siz uchun ochiq\n\n⚙️ <b>Qanday ishlaydi?</b>\n1️⃣ Pastdan obuna muddatini tanlang\n2️⃣ <b>Payme</b> orqali xavfsiz to'lang (Uzcard / Humo)\n3️⃣ Bot guruh havolasini darhol yuboradi\n4️⃣ «Qo'shilish so'rovi»ni yuboring — bot uni avtomatik tasdiqlaydi\n\n⏰ Obuna tugashidan 3 va 1 kun oldin eslatma keladi. Holatini istalgan vaqtda «👤 Mening obunam» bo'limida ko'rasiz.",
     },
     "buy_unavailable": {
         "uz": "⏳ Onlayn to'lov hozircha ishlamayapti. Birozdan so'ng qayta urinib ko'ring yoki «👨‍💼 Operator bilan bog'lanish» tugmasini bosing.",
@@ -114,21 +116,21 @@ TEXTS: dict[str, dict[str, str]] = {
     },
     "pay_btn": {"uz": "💳 Payme orqali to'lash"},
     "paid_ok": {
-        "uz": "🎉 <b>To'lov qabul qilindi!</b>\n\n💎 Obunangiz faollashtirildi.\n📅 Amal qilish muddati: <b>{until}</b> gacha\n\n👇 Guruhga qo'shilish uchun pastdagi tugmani bosing va «Qo'shilish so'rovi»ni yuboring — bot uni avtomatik tasdiqlaydi.",
+        "uz": "🎉 <b>To'lov qabul qilindi!</b>\n\n💎 Premium obunangiz faollashtirildi.\n📅 Amal qilish muddati: <b>{until}</b> gacha\n\n👇 Pastdagi tugma orqali guruhga o'ting va «Qo'shilish so'rovi»ni yuboring — bot uni avtomatik tasdiqlaydi.\n\nO'qishingizga omad! 한국어 화이팅! 💪",
     },
     "access_granted": {
-        "uz": "💎 <b>Sizga ATKO Premium guruhiga kirish huquqi berildi!</b>\n📅 Amal qilish muddati: <b>{until}</b> gacha\n\n👇 Guruhga qo'shilish uchun pastdagi tugmani bosing va «Qo'shilish so'rovi»ni yuboring — bot uni avtomatik tasdiqlaydi.",
+        "uz": "💎 <b>Sizga ATKO Premium guruhiga kirish huquqi berildi!</b>\n📅 Amal qilish muddati: <b>{until}</b> gacha\n\n👇 Pastdagi tugma orqali guruhga o'ting va «Qo'shilish so'rovi»ni yuboring — bot uni avtomatik tasdiqlaydi.",
     },
     "join_btn": {"uz": "🔗 Guruhga qo'shilish"},
     "join_approved": {"uz": "✅ Guruhga qo'shildingiz! Darslarda omad! 한국어 화이팅! 💪"},
     "join_denied": {
-        "uz": "⛔️ Guruhga kirish uchun faol Premium obuna kerak. Obunani pastdagi tugma orqali rasmiylashtiring.",
+        "uz": "⛔️ <b>Guruhga kirish uchun faol Premium obuna kerak.</b>\n\nObunani pastdagi tugma orqali rasmiylashtiring — to'lovdan so'ng bot sizni guruhga avtomatik qo'shadi 👇",
     },
     "sub_remind": {
-        "uz": "⏰ <b>Obunangiz {days} kundan keyin tugaydi</b> ({until}).\n\nDarslardan uzilib qolmaslik uchun obunani oldindan uzaytiring 👇",
+        "uz": "⏰ <b>Obunangiz {days} kundan keyin tugaydi</b> ({until}).\n\nDarslardan uzilib qolmaslik uchun obunani hozir uzaytiring — muddat oxirgi kunga qo'shiladi, hech narsa yo'qolmaydi 👇",
     },
     "sub_expired": {
-        "uz": "⌛️ <b>Obunangiz muddati tugadi</b> va siz ATKO Premium guruhidan chiqarildingiz.\n\nObunani uzaytirsangiz, guruhga darhol qaytasiz 👇",
+        "uz": "⌛️ <b>Obunangiz muddati tugadi</b> va siz ATKO Premium guruhidan chiqarildingiz.\n\nObunani uzaytirsangiz, guruhga darhol qaytasiz va darslarni to'xtagan joyingizdan davom ettirasiz 👇",
     },
     "sub_refunded": {
         "uz": "↩️ To'lovingiz bekor qilindi (pul qaytarildi). Obuna muddati shunga mos ravishda qisqartirildi.",
@@ -151,9 +153,10 @@ TEXTS: dict[str, dict[str, str]] = {
     # ---------------- namuna video, to'lov eslatmasi
     "sample_btn": {"uz": "🎬 Namuna darsni ko'rish"},
     "pay_reminder": {
-        "uz": "⏳ <b>To'lov yakunlanmadi</b>\n\nSiz <b>{title}</b> uchun buyurtma yaratgan edingiz ({amount}), lekin to'lov amalga oshmadi.\n\nTo'lovni davom ettirish uchun pastdagi tugmani bosing. Muammo bo'lsa, operatorimiz yordam beradi 👇",
+        "uz": "⏳ <b>To'lov yakunlanmadi</b>\n\nSiz <b>{title}</b> uchun buyurtma yaratgan edingiz ({amount}), lekin to'lov amalga oshmadi.\n\n👇 Davom ettirish uchun pastdagi tugmani bosing. Qiyinchilik bo'lsa, operatorimiz yordam beradi.",
     },
     # ================================================================ menyu tugmalari
+    "reminder_manager_btn": {"uz": "👨‍💼 Menejer bilan bog'lanish"},
     "btn_courses": {"uz": "📚 Tariflar va narxlar"},
     "btn_buy": {"uz": "💳 Obuna sotib olish"},
     "btn_mysub": {"uz": "👤 Mening obunam"},

@@ -7,14 +7,36 @@ from .config import config
 from .db import session_scope
 from .models import ReminderStep, Source, Staff, SubscriptionPlan, Tariff
 
-# (kategoriya, obunami, nom, tavsif)
+# (kategoriya, obunami, nom, tavsif) — tavsif botda oddiy matn sifatida ko'rsatiladi
 TARIFFS = [
-    ("subscription", True, "1-tarif: Premium video darslar (yopiq Telegram guruh)",
-     "📹 Yopiq Telegram guruhda to'liq video darslar to'plami:\n• 한글 Hangul alifbosi\n• EPS-TOPIK 960, 600, 60, 50 — to'liq kurslar\n• 📚 Kitoblar va qo'llanmalar\n• 🎵 Audio materiallar\n• ⁉️ Testlar\n• 🎬 Koreys kinolari\n• 🏆 Shogirdlarimiz natijalari\n\n💎 Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.\n📅 Obuna: 1 oy, 3 oy yoki 12 oy. To'lov Payme orqali, guruhga avtomatik qo'shilasiz."),
+    ("subscription", True, "Premium video darslar (yopiq Telegram guruh)",
+     "🎬 Koreys tilini o'zingizga qulay vaqtda, telefoningizdan o'rganing!\n\n"
+     "Yopiq Telegram guruhda — noldan natijagacha to'liq video darslar:\n"
+     "• 한글 Hangul alifbosi — noldan boshlash\n"
+     "• 🎯 EPS-TOPIK 960, 600, 60 va 50 — to'liq kurslar\n"
+     "• 📚 Kitoblar va qo'llanmalar\n"
+     "• 🎧 Audio darslar (tinglab tushunish)\n"
+     "• ⁉️ Testlar va 🎞 koreys kinolari\n"
+     "• 🏆 Shogirdlarimiz natijalari\n\n"
+     "🎁 Bonus: 🎓 AI mentor — 24/7 cheksiz savol-javob, uyga vazifani tekshirish va mini-testlar.\n\n"
+     "✅ Payme orqali bir necha daqiqada to'lov — guruh havolasi darhol keladi.\n"
+     "📅 Obuna muddati: 1 oy, 3 oy yoki 12 oy — pastdan tanlang 👇"),
     ("group", False, "Zoom — ustoz bilan guruh darslari",
-     "🎥 Zoom orqali ustoz bilan jonli online guruh darslari\n📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — davomiyligi 1 oy\n⏱ Har bir dars 120 daqiqa\n👥 Guruhlar darajaga qarab ajratiladi\n💳 To'lov oldindan, menejer orqali"),
+     "🎥 Ustoz bilan jonli online darslar — uydan chiqmasdan!\n\n"
+     "✅ Zoom orqali jonli guruh darslari: savol berasiz — ustoz darhol tushuntiradi\n"
+     "📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — 1 oy\n"
+     "⏱ Har bir dars 120 daqiqa\n"
+     "👥 Guruhlar darajangizga qarab tuziladi — noldan boshlovchilar uchun ham\n"
+     "🎯 TOPIK, EPS-TOPIK yoki so'zlashuv — maqsadingizga mos dastur\n\n"
+     "💳 To'lov oldindan, menejer orqali. Paketni tanlang — menejerimiz guruh va dars jadvalini siz bilan kelishib oladi 👇"),
     ("individual", False, "Individual — ustoz bilan yakkama-yakka (Zoom)",
-     "👤 Zoom orqali ustoz bilan yakkama-yakka shaxsiy darslar\n📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — davomiyligi 1 oy\n⏱ Har bir dars 120 daqiqa\n🗓 Moslashuvchan grafik va shaxsiy dastur\n💳 To'lov oldindan, menejer orqali"),
+     "👤 Ustoz bilan yakkama-yakka — tezroq natija uchun!\n\n"
+     "✅ Darslar faqat siz uchun: darajangiz, tempingiz va maqsadingizga moslashtirilgan shaxsiy dastur\n"
+     "📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — 1 oy\n"
+     "⏱ Har bir dars 120 daqiqa, Zoom orqali\n"
+     "🗓 Dars vaqtini o'zingizga qulay qilib tanlaysiz\n"
+     "🎯 Imtihonga qisqa muddatda tayyorlanmoqchi bo'lganlar uchun ayni muddao\n\n"
+     "💳 To'lov oldindan, menejer orqali. Paketni tanlang — menejerimiz qulay vaqtni siz bilan kelishib oladi 👇"),
 ]
 
 PLANS = [("1 oy", 30), ("3 oy", 90), ("12 oy", 365)]
@@ -26,9 +48,20 @@ OPTIONS = {
 }
 
 REMINDERS = [
-    (1, "📚 Salom! ATKO tariflari bilan tanishdingizmi?\n\n💎 <b>Premium video darslar</b> — yopiq Telegram guruhda Hangul, EPS-TOPIK 960/600, kitoblar, audio va testlar. Obuna 1 oydan boshlanadi.\n\n«📚 Tariflar va narxlar» bo'limini oching 👇"),
-    (3, "🎓 Koreys tilidagi savollaringizga <b>AI mentor</b> javob beradi: grammatika, uyga vazifani tekshirish, mini-testlar.\nPremium obunachilar uchun — cheksiz!\n\nMenyudagi «🎓 AI mentor» tugmasini bosing."),
-    (7, "🇰🇷 Koreys tilini o'rganishni kechiktirmang! Menejerlarimiz sizga mos tarifni tanlashda yordam beradi.\n\n«👨‍💼 Operator bilan bog'lanish» tugmasini bosing — batafsil ma'lumot beramiz."),
+    (1, "👋 Salom! Koreys tilini o'rganishni boshlashga tayyormisiz? 🇰🇷\n\n"
+        "Sizga mos yo'nalishni tanlang:\n"
+        "💎 <b>Premium video darslar</b> — o'zingizga qulay vaqtda, yopiq Telegram guruhda\n"
+        "🎥 <b>Zoom guruh darslari</b> — ustoz bilan jonli\n"
+        "👤 <b>Individual darslar</b> — yakkama-yakka, shaxsiy dastur\n\n"
+        "🤔 Qaysi biri sizga mosligini bilmayapsizmi? Maqsadingizni shu yerga yozing — tavsiya beramiz!\n"
+        "👇 Yoki narxlarni hoziroq ko'ring."),
+    (3, "🎓 Bilasizmi? Botimizda <b>AI mentor</b> bor — koreys tili bo'yicha savolingizga soniyalar ichida javob beradi va uyga vazifangizni tekshiradi.\n\n"
+        "📝 Darajangizni bilmoqchimisiz? Bosh sahifadagi <b>«📝 Mini-test»</b>ni sinab ko'ring!\n\n"
+        "💎 Premium obunachilar uchun AI mentor — <b>cheksiz</b>. Batafsil ma'lumot uchun pastdagi tugmani bosing 👇"),
+    (7, "🇰🇷 Koreys tilini o'rganish rejangiz hali ham kuchdami?\n\n"
+        "Har kuni atigi 30 daqiqa ham natija beradi — eng muhimi, bugun boshlash. 💪\n\n"
+        "👨‍💼 Menejerimiz maqsadingiz va vaqtingizga qarab mos kurs va jadvalni tanlab beradi.\n"
+        "👇 Pastdagi tugmani bosing yoki shu yerga <b>«Qo'ng'iroq qiling»</b> deb yozing — o'zimiz bog'lanamiz! 📞"),
 ]
 
 SOURCES = [("instagram", "Instagram"), ("telegram", "Telegram kanal"), ("facebook", "Facebook")]
@@ -117,6 +150,47 @@ async def migrate_v4() -> None:
     import logging
 
     logging.getLogger("atko").info("v4 migratsiya: eski bo'limlar jadvallari va ma'lumotlari tozalandi")
+
+
+# v4.4: tarif tavsiflari va eslatmalar qayta yozildi — faqat admin o'zgartirmagan (eski standart) matnlar almashtiriladi
+OLD_TARIFF_DESCS = [
+    "📹 Yopiq Telegram guruhda to'liq video darslar to'plami:\n• 한글 Hangul alifbosi\n• EPS-TOPIK 960, 600, 60, 50 — to'liq kurslar\n• 📚 Kitoblar va qo'llanmalar\n• 🎵 Audio materiallar\n• ⁉️ Testlar\n• 🎬 Koreys kinolari\n• 🏆 Shogirdlarimiz natijalari\n\n💎 Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.\n📅 Obuna: 1 oy, 3 oy yoki 12 oy. To'lov Payme orqali, guruhga avtomatik qo'shilasiz.",
+    "🎥 Zoom orqali ustoz bilan jonli online guruh darslari\n📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — davomiyligi 1 oy\n⏱ Har bir dars 120 daqiqa\n👥 Guruhlar darajaga qarab ajratiladi\n💳 To'lov oldindan, menejer orqali",
+    "👤 Zoom orqali ustoz bilan yakkama-yakka shaxsiy darslar\n📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — davomiyligi 1 oy\n⏱ Har bir dars 120 daqiqa\n🗓 Moslashuvchan grafik va shaxsiy dastur\n💳 To'lov oldindan, menejer orqali"
+]
+OLD_REMINDERS = [
+    "📚 Salom! ATKO tariflari bilan tanishdingizmi?\n\n💎 <b>Premium video darslar</b> — yopiq Telegram guruhda Hangul, EPS-TOPIK 960/600, kitoblar, audio va testlar. Obuna 1 oydan boshlanadi.\n\n«📚 Tariflar va narxlar» bo'limini oching 👇",
+    "🎓 Koreys tilidagi savollaringizga <b>AI mentor</b> javob beradi: grammatika, uyga vazifani tekshirish, mini-testlar.\nPremium obunachilar uchun — cheksiz!\n\nMenyudagi «🎓 AI mentor» tugmasini bosing.",
+    "🇰🇷 Koreys tilini o'rganishni kechiktirmang! Menejerlarimiz sizga mos tarifni tanlashda yordam beradi.\n\n«👨‍💼 Operator bilan bog'lanish» tugmasini bosing — batafsil ma'lumot beramiz."
+]
+
+
+async def migrate_content_v5() -> None:
+    from .services import settings as st
+
+    if await st.get("content_v5_done"):
+        return
+    new_desc = {cat: desc for cat, _, _, desc in TARIFFS}
+    new_rem = dict(REMINDERS)
+    async with session_scope() as s:
+        for x in (await s.execute(select(Tariff))).scalars().all():
+            if (x.desc_uz or "").strip() in [d.strip() for d in OLD_TARIFF_DESCS] and x.category in new_desc:
+                x.desc_uz = new_desc[x.category]
+            if x.name_uz == "1-tarif: Premium video darslar (yopiq Telegram guruh)":
+                x.name_uz = "Premium video darslar (yopiq Telegram guruh)"
+        for r in (await s.execute(select(ReminderStep))).scalars().all():
+            if (r.text_uz or "").strip() in [t.strip() for t in OLD_REMINDERS] and r.day_offset in new_rem:
+                r.text_uz = new_rem[r.day_offset]
+    await st.set_value("content_v5_done", True)
+
+
+async def migrate_texts_v5() -> None:
+    """Bot matnlari to'liq qayta yozildi — paneldagi eski tahrirlar bir marta tozalanadi (yangi matnlar ko'rinishi uchun)."""
+    from .services import settings as st
+
+    if await st.get("texts_v5_done"):
+        return
+    await st.set_many({"texts": {}, "texts_v5_done": True})
 
 
 async def migrate_v3b() -> None:

@@ -43,6 +43,16 @@ async def courses(msg: TgMessage) -> None:
     await msg.answer(t("courses_title", lead.lang), reply_markup=await _courses_kb(lead.lang))
 
 
+@router.callback_query(F.data == "courses:new")
+async def courses_new_cb(cb: CallbackQuery) -> None:
+    """Eslatma xabaridagi tugma — tariflar yangi xabarda (eslatmaning o'zi o'chmaydi)."""
+    lead = await _lead(cb)
+    await cb.answer()
+    if not await require_phone(lead):
+        return
+    await cb.message.answer(t("courses_title", lead.lang), reply_markup=await _courses_kb(lead.lang))
+
+
 @router.callback_query(F.data == "courses")
 async def courses_cb(cb: CallbackQuery) -> None:
     lead = await _lead(cb)

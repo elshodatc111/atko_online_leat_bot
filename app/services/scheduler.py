@@ -121,6 +121,19 @@ async def check_chats() -> None:
 # ------------------------------------------------------------------ eslatmalar
 
 
+def _reminder_kb():
+    """Eslatma ostidagi tugmalar — lead darhol tariflarni ko'radi yoki menejer bilan bog'lanadi."""
+    from aiogram.types import InlineKeyboardMarkup
+
+    from ..bot.keyboards import ib
+    from ..bot.texts import t
+
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [ib(t("btn_courses"), "courses:new")],
+        [ib(t("reminder_manager_btn"), "cta:operator")],
+    ])
+
+
 async def send_reminders() -> None:
     from . import sender
 
@@ -158,7 +171,7 @@ async def send_reminders() -> None:
             text = step.text_uz
             ok = True
             try:
-                ok = (await sender.send_text(lead.tg_id, text)) is not None
+                ok = (await sender.send_text(lead.tg_id, text, reply_markup=_reminder_kb())) is not None
             except TelegramForbiddenError:
                 ok = False
                 async with session_scope() as s:
