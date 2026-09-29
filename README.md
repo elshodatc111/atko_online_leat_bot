@@ -164,22 +164,35 @@ Model nomi **Sozlamalar → Asosiy model** maydonida o'zgartiriladi (masalan, `g
 ---
 
 ## 6. alwaysdata.com serveriga joylash
-1. **Environment → Python** versiyasini **3.14** qiling. Loyihani `~/atko` ga yuklang.
-2. SSH orqali:
-   ```bash
-   cd ~/atko && python -m venv .venv && source .venv/bin/activate
-   pip install -r requirements.txt && cp .env.example .env && nano .env
-   ```
-3. `.env` ga quyidagilarni yozing: `BOT_MODE=webhook`, `WEBHOOK_BASE_URL=https://SAYT.alwaysdata.net`, `WEBHOOK_SECRET=uzun-matn`, `PANEL_URL=https://SAYT.alwaysdata.net`. `HOST` va `PORT` bo'sh qolsin.
-4. **Web → Sites → Add a site:**
-   - Type: **User program**
-   - Command: `/home/LOGIN/atko/.venv/bin/python run.py`
-   - Working directory: `/home/LOGIN/atko`
-5. `https://SAYT.alwaysdata.net/health` → `{"ok": true}`. So'ng Payme kabinetida Endpoint URL ni `https://SAYT.alwaysdata.net/payme` ga o'zgartiring.
+> ⚠️ Bepul tarifda RAM 256 MB — ilova ~235 MB ishlatadi, yuklama oshganda qayta ishga tushishi mumkin. Barqaror ishlash uchun pullik tarif tavsiya etiladi.
 
-**Muhim:**
-- Dastur bitta jarayonda ishlashi kerak, bir nechta worker yoqmang.
-- Serverga o'tgach, kompyuterdagi botni to'xtating: bitta token bir vaqtda ikki joyda ishlamaydi.
+**Kod GitHub'dan olinadi:** `https://github.com/elshodatc111/atko_online_leat_bot` (`.env` va `data/` repozitoriyga yuklanmaydi).
+
+**Kompyuterda:** `start.bat` ni to'xtating (Ctrl+C). Serverga o'tgach kompyuterda botni **ishga tushirmang** (u webhook'ni o'chirib qo'yadi).
+
+**Serverda (SSH):**
+```bash
+rm -rf ~/atko_bot ~/.cache/pip
+git clone https://github.com/elshodatc111/atko_online_leat_bot.git ~/atko_bot
+mkdir -p ~/atko_bot/data
+```
+**Kompyuterda (cmd, `C:\KoreysTlilOnline\atko_lead_platform`):**
+```
+scp .env LOGIN@ssh-LOGIN.alwaysdata.net:~/atko_bot/.env
+scp data\atko.db LOGIN@ssh-LOGIN.alwaysdata.net:~/atko_bot/data/atko.db
+```
+(Ikkinchi qator ixtiyoriy — sozlamalar, tariflar, leadlar va to'lovlar ko'chadi.)
+
+**Serverda:** `bash ~/atko_bot/deploy/alwaysdata/setup.sh`
+
+Skript Python 3.14 muhitini yaratadi, kutubxonalarni o'rnatadi, `.env` ni server rejimiga o'tkazadi (webhook, manzillar, maxfiy kalitlar) va admin panelda nima qilishni aniq ko'rsatadi:
+- **Web → Sites:** Type **User program**, Command `/home/LOGIN/atko_bot/.venv/bin/python run.py`, Working directory `/home/LOGIN/atko_bot`, Environment `MALLOC_ARENA_MAX=2`, SSL → **Force HTTPS**.
+- **Advanced → Scheduled tasks:** har 10 daqiqada `https://LOGIN.alwaysdata.net/health` (sayt uxlab qolmasligi uchun).
+- Payme kabinetida Endpoint: `https://LOGIN.alwaysdata.net/payme`.
+
+**Yangilash:** kompyuterda `git push` → serverda `cd ~/atko_bot && git pull && bash deploy/alwaysdata/setup.sh` → Web → Sites → Restart.
+
+**Muhim:** dastur bitta jarayonda ishlaydi (bir nechta worker yoqmang). `~/admin` papkasiga tegmang — u alwaysdata'ning tizim papkasi (loglar, sozlamalar).
 
 ---
 
@@ -192,6 +205,7 @@ Model nomi **Sozlamalar → Asosiy model** maydonida o'zgartiriladi (masalan, `g
 | AI javob bermayapti | 🩺 Tizim holati → «AI ni sinash». Kalit, model nomi va kunlik limitni tekshiring |
 
 ## 8. O'zgarishlar tarixi
+- **v3.2:** alwaysdata uchun avtomatik o'rnatish skripti (`deploy/alwaysdata/setup.sh`), GitHub orqali o'rnatish va yangilash.
 - **v3.1:** Individual darslar ham Zoom orqali (120 daqiqa); AI g'oyasidan tayyorlangan postni tasdiqlab, kanalga belgilangan vaqtda avtomatik joylash.
 - **v3.0:**
   - tariflar: Zoom (12 dars — 599 000, 20 dars — 949 000) va Individual (12 dars — 1 490 000, 20 dars — 2 390 000) paketlari; eski 2–4-tariflar almashtirildi; Payme va promokod faqat Premium obunaga;
