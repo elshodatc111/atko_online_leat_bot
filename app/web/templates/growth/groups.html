@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}O'quv guruhlari{% endblock %}
+{% block heading %}👥 O'quv guruhlari{% endblock %}
+{% block head %}<script src="/static/vendor/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+<div class="flash flash-info">
+  Botni o'quv guruhiga <b>admin</b> qilib qo'shing — guruh shu ro'yxatda avtomatik paydo bo'ladi. Bu yerda faqat
+  <b>post yuborish</b> (<a href="/groups/posts">📨 Guruhlarga post</a>) va <b>o'quvchilar soni</b> yuritiladi.
+  O'quvchilar = guruh a'zolari − adminlar (bot ham). Son har soatda va har bir qo'shilish/chiqishda yangilanadi.
+</div>
+<div class="kpis">
+  <div class="kpi accent"><div class="label">O'quv guruhlari</div><div class="value">{{ study|length }}</div></div>
+  <div class="kpi"><div class="label">Jami o'quvchilar</div><div class="value">{{ students_total }}</div></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>👥 Guruhlar</h2>
+    <form method="post" action="/groups/refresh"><button class="btn btn-sm btn-ghost">🔄 Hammasini yangilash</button></form></div>
+  <div class="table-wrap"><table>
+    <tr><th>Guruh</th><th class="num">O'quvchilar</th><th class="num">7 kunda</th><th>Bot huquqlari</th><th>Qo'shilgan</th><th></th></tr>
+    {% for c in study %}{% set ch = changes.get(c.chat_id) %}
+    <tr>
+      <td><b>{{ c.title }}</b>{% if c.username %} <small class="muted">@{{ c.username }}</small>{% endif %}<br><small class="muted"><code>{{ c.chat_id }}</code></small></td>
+      <td class="num"><b style="font-size:17px">{{ c.students }}</b><br><small class="muted">a'zolar {{ c.members }} · admin {{ c.admins }}</small></td>
+      <td class="num">{% if ch is none %}—{% elif ch > 0 %}<span style="color:#17915a">+{{ ch }}</span>{% elif ch < 0 %}<span style="color:#c93a3a">{{ ch }}</span>{% else %}0{% endif %}</td>
+      <td>{% if c.bot_status == 'administrator' %}<span class="pill pill-accepted">admin</span>{% else %}<span class="pill pill-waiting">{{ c.bot_status }}</span>{% endif %}
+        {% if c.can_pin %}<small>📌</small>{% endif %}{% if c.can_delete %}<small>🗑</small>{% endif %}</td>
+      <td><small>{{ c.added_at|dt('%d.%m.%Y') }}</small></td>
+      <td><div class="btns">
+        <form method="post" action="/groups/{{ c.chat_id }}/refresh"><button class="btn btn-sm btn-ghost" title="Yangilash">🔄</button></form>
+        <form method="post" action="/groups/{{ c.chat_id }}/role"><select name="role" onchange="this.form.submit()" title="Vazifasi">
+          {% for k, v in roles.items() %}<option value="{{ k }}" {{ 'selected' if k == c.role }}>{{ v }}</option>{% endfor %}</select></form>
+        <form method="post" action="/groups/{{ c.chat_id }}/remove" onsubmit="return confirm('Guruhni o\'chirasizmi? Bot guruhdan chiqadi.')"><button class="btn btn-sm btn-ghost" title="O'chirish">🗑</button></form>
+      </div></td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="empty">O'quv guruhlari yo'q. Botni guruhga admin qilib qo'shing.</td></tr>{% endfor %}
+  </table></div>
+</div>
+<div class="card"><h2>📈 Jami o'quvchilar (30 kun)</h2><div class="chart-box"><canvas id="total"></canvas></div></div>
+
+<div class="card">
+  <h2>🗂 Boshqa chatlar</h2>
+  <p class="hint">Bot qo'shilgan, lekin o'quv guruhi bo'lmagan chatlar: 📢 asosiy kanal (faqat tahlil — <a href="/channel">Kanal rivoji</a>), 💎 Premium guruh (obuna nazorati) va belgilanmaganlar. Vazifasini o'zgartirish mumkin.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Chat</th><th>Turi</th><th class="num">A'zolar</th><th>Vazifasi</th><th></th></tr>
+    {% for c in others %}<tr>
+      <td><b>{{ c.title }}</b>{% if c.username %} <small class="muted">@{{ c.username }}</small>{% endif %}<br><small class="muted"><code>{{ c.chat_id }}</code> · bot: {{ c.bot_status }}</small></td>
+      <td>{{ 'Kanal' if c.is_channel else 'Guruh' }}</td><td class="num">{{ c.members }}</td>
+      <td><form method="post" action="/groups/{{ c.chat_id }}/role"><select name="role" onchange="this.form.submit()">
+        {% for k, v in roles.items() %}{% if not (k == 'study' and c.is_channel) and not (k == 'channel' and not c.is_channel) %}<option value="{{ k }}" {{ 'selected' if k == c.role }}>{{ v }}</option>{% endif %}{% endfor %}</select></form></td>
+      <td>{% if c.role != 'premium' %}<form method="post" action="/groups/{{ c.chat_id }}/remove" onsubmit="return confirm('O\'chirasizmi? Bot chatdan chiqadi.')"><button class="btn btn-sm btn-ghost">🗑</button></form>{% endif %}</td>
+    </tr>{% else %}<tr><td colspan="5" class="empty">Yo'q</td></tr>{% endfor %}
+  </table></div>
+  <details class="edit" style="margin-top:10px"><summary class="btn btn-sm btn-light">➕ Ro'yxatda yo'q chatni qo'shish</summary>
+    <form method="post" action="/groups/register" class="form-row" style="align-items:end;margin-top:8px">
+      <div><label>Guruh ID (-100…) yoki @username</label><input type="text" name="ref" required></div>
+      <div><button class="btn btn-sm">Qo'shish</button></div>
+    </form>
+    <p class="hint">Bot guruhga ilgari qo'shilgan bo'lsa-yu, ro'yxatda ko'rinmasa. Guruh ID sini bilish uchun botni vaqtincha olib, qayta admin qiling.</p>
+  </details>
+</div>
+{% if removed %}
+<div class="card"><h2>🗃 O'chirilgan / bot chiqarilgan</h2>
+  <div class="table-wrap"><table>
+    <tr><th>Chat</th><th>Vazifasi</th><th>Sana</th></tr>
+    {% for c in removed %}<tr style="opacity:.6"><td>{{ c.title }} <small class="muted"><code>{{ c.chat_id }}</code></small></td><td>{{ roles.get(c.role, c.role) }}</td>
+      <td><small>{{ (c.removed_at or c.left_at)|dt }}</small></td></tr>{% endfor %}
+  </table></div>
+  <p class="hint">Qayta qo'shish uchun botni guruhga yana admin qiling.</p>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+const c = {{ chart|tojson }};
+new Chart(document.getElementById("total"), { type: "line", data: { labels: c.labels, datasets: [
+  { label: "O'quvchilar", data: c.total, borderColor: "#17915a", backgroundColor: "#17915a22", fill: true, tension: .3 }] },
+  options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+</script>
+{% endblock %}

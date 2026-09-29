@@ -12,18 +12,21 @@ TARIFFS = [
     ("subscription", True, "1-tarif: Premium video darslar (yopiq Telegram guruh)", "Тариф 1: Premium видеоуроки (закрытая Telegram-группа)",
      "📹 Yopiq Telegram guruhda to'liq video darslar to'plami:\n• 한글 Hangul alifbosi\n• EPS-TOPIK 960, 600, 60, 50 — to'liq kurslar\n• 📚 Kitoblar va qo'llanmalar\n• 🎵 Audio materiallar\n• ⁉️ Testlar\n• 🎬 Koreys kinolari\n• 🏆 Shogirdlarimiz natijalari\n\n💎 Premium obunachilar 🎓 AI mentordan cheksiz foydalanadi.\n📅 Obuna: 1 oy, 3 oy yoki 12 oy. To'lov Payme orqali, guruhga avtomatik qo'shilasiz.",
      "📹 Полный набор видеоуроков в закрытой Telegram-группе:\n• 한글 Алфавит хангыль\n• EPS-TOPIK 960, 600, 60, 50 — полные курсы\n• 📚 Книги и пособия\n• 🎵 Аудиоматериалы\n• ⁉️ Тесты\n• 🎬 Корейские фильмы\n• 🏆 Результаты наших учеников\n\n💎 Premium-подписчики пользуются 🎓 AI-ментором без ограничений.\n📅 Подписка: 1, 3 или 12 месяцев. Оплата через Payme, вступление в группу автоматически."),
-    ("group", False, "2-tarif: Zoom guruh (haftada 3 kun)", "Тариф 2: Группа в Zoom (3 раза в неделю)",
-     "🎥 Zoom orqali jonli online guruh darslari\n📅 Haftada 3 kun, har biri 2 soatdan\n👥 Guruhlar darajaga qarab ajratiladi\n💳 To'lov oldindan, admin orqali",
-     "🎥 Живые онлайн-занятия в группе через Zoom\n📅 3 раза в неделю по 2 часа\n👥 Группы формируются по уровню\n💳 Предоплата, через администратора"),
-    ("group", False, "3-tarif: Zoom intensiv (haftada 5 kun)", "Тариф 3: Интенсив в Zoom (5 раз в неделю)",
-     "🔥 Zoom orqali jonli intensiv online darslar\n📅 Haftada 5 kun, har biri 2 soatdan\n🎯 Imtihonga tez tayyorlanish uchun\n💳 To'lov oldindan, admin orqali",
-     "🔥 Живые интенсивные онлайн-занятия через Zoom\n📅 5 раз в неделю по 2 часа\n🎯 Для быстрой подготовки к экзамену\n💳 Предоплата, через администратора"),
-    ("individual", False, "4-tarif: Individual (haftada 3 kun)", "Тариф 4: Индивидуально (3 раза в неделю)",
-     "👤 O'qituvchi bilan 1-ga-1 shaxsiy darslar\n📅 Haftada 3 kun, har biri 2 soatdan\n🗓 Moslashuvchan grafik va shaxsiy dastur\n💳 To'lov oldindan, admin orqali",
-     "👤 Личные занятия 1-на-1 с преподавателем\n📅 3 раза в неделю по 2 часа\n🗓 Гибкий график и индивидуальная программа\n💳 Предоплата, через администратора"),
+    ("group", False, "Zoom — ustoz bilan guruh darslari", "Zoom — групповые занятия с преподавателем",
+     "🎥 Zoom orqali ustoz bilan jonli online guruh darslari\n📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — davomiyligi 1 oy\n⏱ Har bir dars 120 daqiqa\n👥 Guruhlar darajaga qarab ajratiladi\n💳 To'lov oldindan, admin orqali",
+     "🎥 Живые онлайн-занятия в группе с преподавателем через Zoom\n📦 12 уроков (3 раза в неделю) или 20 уроков (5 раз в неделю) — 1 месяц\n⏱ Каждый урок 120 минут\n👥 Группы формируются по уровню\n💳 Предоплата, через администратора"),
+    ("individual", False, "Individual — ustoz bilan yakkama-yakka (Zoom)", "Индивидуально — один на один с преподавателем (Zoom)",
+     "👤 Zoom orqali ustoz bilan yakkama-yakka shaxsiy darslar\n📦 12 dars (haftasiga 3 ta) yoki 20 dars (haftasiga 5 ta) — davomiyligi 1 oy\n⏱ Har bir dars 120 daqiqa\n🗓 Moslashuvchan grafik va shaxsiy dastur\n💳 To'lov oldindan, admin orqali",
+     "👤 Личные занятия один на один с преподавателем через Zoom\n📦 12 уроков (3 раза в неделю) или 20 уроков (5 раз в неделю) — 1 месяц\n⏱ Каждый урок 120 минут\n🗓 Гибкий график и индивидуальная программа\n💳 Предоплата, через администратора"),
 ]
 
 PLANS = [("1 oy", "1 месяц", 30), ("3 oy", "3 месяца", 90), ("12 oy", "12 месяцев", 365)]
+
+# kurs paketlari: kategoriya → [(darslar, haftasiga, oy, narx)]
+OPTIONS = {
+    "group": [(12, 3, 1, 599_000), (20, 5, 1, 949_000)],
+    "individual": [(12, 3, 1, 1_490_000), (20, 5, 1, 2_390_000)],
+}
 
 INFO_PAGES = [
     ("about", "ATKO haqida va aloqa", "Об ATKO и контакты",
@@ -46,10 +49,18 @@ REMINDERS = [
         "🇰🇷 Не откладывайте изучение корейского! Наши менеджеры помогут выбрать подходящий тариф.\n\nНажмите «👨‍💼 Связаться с оператором» — расскажем подробнее."),
 ]
 
+TPL_TARIFFS_UZ = ("Bizda 3 yo'nalish bor: 💎 Premium video darslar (yopiq Telegram guruh, 1/3/12 oy), 🎥 Zoom — ustoz bilan guruh darslari "
+                  "(12 dars — 599 000 so'm, 20 dars — 949 000 so'm) va 👤 Individual darslar (12 dars — 1 490 000 so'm, 20 dars — 2 390 000 so'm). "
+                  "Qaysi biri sizni qiziqtiradi?")
+TPL_TARIFFS_RU = ("У нас 3 направления: 💎 Premium видеоуроки (закрытая Telegram-группа, 1/3/12 мес.), 🎥 Zoom — групповые занятия с преподавателем "
+                  "(12 уроков — 599 000 сум, 20 уроков — 949 000 сум) и 👤 индивидуальные занятия (12 уроков — 1 490 000 сум, 20 уроков — 2 390 000 сум). "
+                  "Какой вас интересует?")
+OLD_TPL_PREFIX = "Bizda 4 ta tarif bor"
+
 TEMPLATES = [
     ("Tariflar haqida",
-     "Bizda 4 ta tarif bor: Premium video darslar (yopiq Telegram guruh), Zoom guruh (haftada 3 kun), Zoom intensiv (haftada 5 kun) va Individual darslar. Qaysi biri sizni qiziqtiradi?",
-     "У нас 4 тарифа: Premium видеоуроки (закрытая Telegram-группа), группа в Zoom (3 раза в неделю), интенсив в Zoom (5 раз в неделю) и индивидуальные занятия. Какой вас интересует?"),
+     TPL_TARIFFS_UZ,
+     TPL_TARIFFS_RU),
     ("Narx haqida",
      "Narxlar botdagi «📚 Tariflar va narxlar» bo'limida ko'rsatilgan. Aniq narx va amaldagi chegirmalarni sizga hozir aytib beraman — qaysi tarif sizni qiziqtiryapti?",
      "Цены указаны в разделе «📚 Тарифы и цены». Точную стоимость и действующие скидки подскажу прямо сейчас — какой тариф вас интересует?"),
@@ -64,15 +75,66 @@ TEMPLATES = [
 SOURCES = [("instagram", "Instagram"), ("telegram", "Telegram kanal"), ("facebook", "Facebook")]
 
 
-async def _insert_tariffs(s) -> None:
+async def _insert_tariffs(s, only_courses: bool = False) -> None:
+    from .models import TariffOption
+
     for i, (cat, is_sub, nu, nr, du, dr) in enumerate(TARIFFS):
+        if only_courses and is_sub:
+            continue
         tr = Tariff(category=cat, is_subscription=is_sub, name_uz=nu, name_ru=nr, desc_uz=du, desc_ru=dr, sort=i,
-                    price=0, price_period="" if is_sub else "oyiga")
+                    price=0, price_period="")
         s.add(tr)
         await s.flush()
         if is_sub:
             for j, (tu, tr_ru, days) in enumerate(PLANS):
                 s.add(SubscriptionPlan(tariff_id=tr.id, title_uz=tu, title_ru=tr_ru, days=days, price=0, sort=j))
+        for j, (lessons, per_week, months, price) in enumerate(OPTIONS.get(cat, []) if not is_sub else []):
+            s.add(TariffOption(tariff_id=tr.id, lessons=lessons, per_week=per_week, months=months, price=price, sort=j))
+
+
+async def migrate_v3b() -> None:
+    """v3.1: Individual darslar ham Zoom orqali (120 daqiqa) — tavsif va nom (admin o'zgartirmagan bo'lsa)."""
+    from .services import settings as st
+
+    if await st.get("schema_v3b_done"):
+        return
+    pairs = [("👤 Ustoz bilan yakkama-yakka shaxsiy darslar", "👤 Zoom orqali ustoz bilan yakkama-yakka shaxsiy darslar"),
+             ("👤 Личные занятия один на один с преподавателем\n", "👤 Личные занятия один на один с преподавателем через Zoom\n")]
+    async with session_scope() as s:
+        for x in (await s.execute(select(Tariff).where(Tariff.category == "individual"))).scalars().all():
+            for a, b in pairs:
+                if x.desc_uz.startswith(a):
+                    x.desc_uz = x.desc_uz.replace(a, b, 1)
+                if x.desc_ru.startswith(a):
+                    x.desc_ru = x.desc_ru.replace(a, b, 1)
+            if x.name_uz == "Individual — ustoz bilan yakkama-yakka":
+                x.name_uz = "Individual — ustoz bilan yakkama-yakka (Zoom)"
+            if x.name_ru == "Индивидуально — один на один с преподавателем":
+                x.name_ru = "Индивидуально — один на один с преподавателем (Zoom)"
+    await st.set_value("schema_v3b_done", True)
+
+
+async def migrate_v3() -> None:
+    """v2 → v3: Zoom (12/20 dars) va Individual (12/20 dars) paketli tariflar; eski 2–4-tariflar o'rniga."""
+    from .services import settings as st
+
+    if await st.get("schema_v3_done"):
+        return
+    from .models import TariffOption
+
+    async with session_scope() as s:
+        if (await s.execute(select(func.count(TariffOption.id)))).scalar_one():
+            await st.set_value("schema_v3_done", True)  # yangi baza — paketlar allaqachon yozilgan
+            return
+    async with session_scope() as s:
+        for x in (await s.execute(select(Tariff).where(Tariff.is_subscription.is_(False)))).scalars().all():
+            await s.delete(x)
+        await s.flush()
+        await _insert_tariffs(s, only_courses=True)
+        for tpl in (await s.execute(select(Template))).scalars().all():
+            if (tpl.text_uz or "").startswith(OLD_TPL_PREFIX):
+                tpl.text_uz, tpl.text_ru = TPL_TARIFFS_UZ, TPL_TARIFFS_RU
+    await st.set_value("schema_v3_done", True)
 
 
 async def migrate_v2() -> None:

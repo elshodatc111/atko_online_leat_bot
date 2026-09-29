@@ -547,3 +547,181 @@ class PromoUse(Base):
     amount: Mapped[int] = mapped_column(Integer, default=0)
     discount: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+# ================================================================ v3: kurs paketlari, kanal, o'quv guruhlari
+
+
+class TariffOption(Base):
+    """Kurs tariflarining paket variantlari (12 dars / 20 dars). To'lov admin orqali (Payme emas)."""
+
+    __tablename__ = "tariff_options"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tariff_id: Mapped[int] = mapped_column(ForeignKey("tariffs.id", ondelete="CASCADE"), index=True)
+    lessons: Mapped[int] = mapped_column(Integer, default=12)
+    per_week: Mapped[int] = mapped_column(Integer, default=3)
+    months: Mapped[int] = mapped_column(Integer, default=1)
+    price: Mapped[int] = mapped_column(Integer, default=0)  # so'm
+    sort: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    tariff: Mapped[Tariff] = relationship(lazy="joined")
+
+
+CHAT_ROLES: dict[str, str] = {
+    "study": "👥 O'quv guruhi",
+    "channel": "📢 Asosiy kanal",
+    "premium": "💎 Premium guruh",
+    "unassigned": "❔ Belgilanmagan",
+}
+
+
+class TgChat(Base):
+    """Bot qo'shilgan Telegram guruh va kanallar."""
+
+    __tablename__ = "tg_chats"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    type: Mapped[str] = mapped_column(String(16))  # group / supergroup / channel
+    title: Mapped[str] = mapped_column(String(255), default="")
+    username: Mapped[str | None] = mapped_column(String(64))
+    role: Mapped[str] = mapped_column(String(16), default="unassigned", index=True)
+    bot_status: Mapped[str] = mapped_column(String(20), default="member")
+    can_post: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_invite: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_pin: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_delete: Mapped[bool] = mapped_column(Boolean, default=False)
+    members: Mapped[int] = mapped_column(Integer, default=0)  # jami a'zolar (Telegram hisobi)
+    admins: Mapped[int] = mapped_column(Integer, default=0)  # adminlar (bot ham)
+    members_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)  # bot hali chatda
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    left_at: Mapped[datetime | None] = mapped_column(DateTime)
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime)  # admin paneldan o'chirgan
+
+    @property
+    def students(self) -> int:
+        """O'quvchilar = a'zolar − adminlar (bot ham admin sifatida ayriladi)."""
+        return max(0, (self.members or 0) - (self.admins or 0))
+
+    @property
+    def is_channel(self) -> bool:
+        return self.type == "channel"
+
+
+class ChatStat(Base):
+    """Kunlik a'zolar soni va qo'shilgan/chiqib ketganlar."""
+
+    __tablename__ = "chat_stats"
+    __table_args__ = (UniqueConstraint("chat_id", "day"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    members: Mapped[int] = mapped_column(Integer, default=0)
+    joined: Mapped[int] = mapped_column(Integer, default=0)
+    left: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ChannelPost(Base):
+    """Kanal postlari (jonli yoki Telegram Desktop eksportidan) va reaksiyalar."""
+
+    __tablename__ = "channel_posts"
+    __table_args__ = (UniqueConstraint("chat_id", "message_id"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    message_id: Mapped[int] = mapped_column(Integer)
+    posted_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    kind: Mapped[str] = mapped_column(String(16), default="text")
+    text: Mapped[str] = mapped_column(Text, default="")
+    duration: Mapped[int | None] = mapped_column(Integer)  # video/audio soniyalarda
+    reactions: Mapped[int] = mapped_column(Integer, default=0)
+    reactions_detail: Mapped[dict | None] = mapped_column(JSON)
+    views: Mapped[int | None] = mapped_column(Integer)  # Bot API bermaydi; eksportda bo'lsa
+    subscribers_at_post: Mapped[int | None] = mapped_column(Integer)
+    source: Mapped[str] = mapped_column(String(8), default="live")  # live / import
+    edited: Mapped[bool] = mapped_column(Boolean, default=False)
+    media_group_id: Mapped[str | None] = mapped_column(String(64))
+
+
+class ChannelInvite(Base):
+    """Kanal uchun nomlangan taklif havolalari — qaysi manbadan nechta obunachi kelganini o'lchash."""
+
+    __tablename__ = "channel_invites"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    name: Mapped[str] = mapped_column(String(32))
+    link: Mapped[str] = mapped_column(String(255), unique=True)
+    joins: Mapped[int] = mapped_column(Integer, default=0)
+    leaves: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class ChannelInsight(Base):
+    """AI kontent tahlili va g'oyalari (kunlik)."""
+
+    __tablename__ = "channel_insights"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    trigger: Mapped[str] = mapped_column(String(8), default="auto")  # auto / manual
+    data: Mapped[dict | None] = mapped_column(JSON)
+    error: Mapped[str | None] = mapped_column(Text)
+    model: Mapped[str | None] = mapped_column(String(64))
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+POST_STATUSES: dict[str, str] = {
+    "draft": "📝 Qoralama (sinovdan o'tkazildi)",
+    "scheduled": "🕒 Rejalashtirilgan",
+    "sending": "⏳ Yuborilmoqda",
+    "sent": "✅ Yuborildi",
+    "partial": "⚠️ Qisman yuborildi",
+    "failed": "❌ Yuborilmadi",
+    "cancelled": "✖️ Bekor qilindi",
+    "deleted": "🗑 Guruhlardan o'chirildi",
+}
+
+
+class GroupPost(Base):
+    """O'quv guruhlariga yoki asosiy kanalga yuboriladigan post (matn / matn+rasm / matn+video), rejalashtirish bilan."""
+
+    __tablename__ = "group_posts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(8), default="text")  # text / photo / video
+    dest: Mapped[str] = mapped_column(String(8), default="groups", index=True)  # groups — o'quv guruhlari / channel — asosiy kanal
+    note: Mapped[str | None] = mapped_column(String(255))  # masalan: «AI g'oyasi: ...»
+    text: Mapped[str] = mapped_column(Text, default="")
+    file_id: Mapped[str | None] = mapped_column(String(255))
+    file_path: Mapped[str | None] = mapped_column(String(512))
+    file_name: Mapped[str | None] = mapped_column(String(255))
+    targets: Mapped[list] = mapped_column(JSON, default=list)  # chat_id lar
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    pin: Mapped[bool] = mapped_column(Boolean, default=False)
+    silent: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(16), default="scheduled", index=True)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    deliveries: Mapped[list["GroupPostDelivery"]] = relationship(lazy="selectin", cascade="all, delete-orphan")
+
+    @property
+    def status_label(self) -> str:
+        return POST_STATUSES.get(self.status, self.status)
+
+
+class GroupPostDelivery(Base):
+    __tablename__ = "group_post_deliveries"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(ForeignKey("group_posts.id", ondelete="CASCADE"), index=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger)
+    title: Mapped[str] = mapped_column(String(255), default="")
+    message_id: Mapped[int | None] = mapped_column(Integer)
+    ok: Mapped[bool] = mapped_column(Boolean, default=False)
+    error: Mapped[str | None] = mapped_column(String(500))
+    deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    sent_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

@@ -97,7 +97,8 @@ def _fallback_label(data: str) -> str:
         return "⭐" * int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else data
     labels = {"tariff": "📚 Tarif", "info": "ℹ️ Ma'lumot", "quiz": "📝 Mini-test", "rate_skip": "⏭ Bahoga izohsiz",
               "courses": "⬅️ Tariflar ro'yxati", "buy": "💳 Obuna sotib olish", "plan": "💳 Obuna varianti",
-              "enroll": "👨‍💼 Admin bilan bog'lanish (tarif)", "sublink": "🔗 Guruh havolasi"}
+              "enroll": "👨‍💼 Admin bilan bog'lanish (tarif)", "sublink": "🔗 Guruh havolasi",
+              "opt": "📝 Kurs paketi tanlandi"}
     return f"{labels.get(key, key)} {val}".strip()
 
 

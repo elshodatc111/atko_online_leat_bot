@@ -12,7 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import config
 from .db import init_db
-from .seed import migrate_v2, seed
+from .seed import migrate_v2, migrate_v3, migrate_v3b, seed
 from .services import scheduler, settings, worktime
 from .web.deps import WEB_DIR, LoginRequired, render
 
@@ -36,6 +36,8 @@ async def lifespan(app: FastAPI):
     await seed()
     await settings.load()
     await migrate_v2()
+    await migrate_v3()
+    await migrate_v3b()
     await worktime.reload_holidays()
     await start_bot()
     scheduler.start_all()
@@ -106,7 +108,7 @@ async def health():
     return {"ok": True}
 
 
-from .web.routes import admin, auth, billing, chats, content, dashboard, leads  # noqa: E402
+from .web.routes import admin, auth, billing, chats, content, dashboard, growth, leads  # noqa: E402
 
 app.include_router(auth.router)
 app.include_router(dashboard.router)
@@ -115,3 +117,4 @@ app.include_router(leads.router)
 app.include_router(admin.router)
 app.include_router(content.router)
 app.include_router(billing.router)
+app.include_router(growth.router)

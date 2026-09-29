@@ -32,6 +32,10 @@
       <a href="/payments" class="{{ 'active' if path.startswith('/payments') }}">💳 <span>To'lovlar</span></a>
       <a href="/promos" class="{{ 'active' if path.startswith('/promos') }}">🎟 <span>Promokodlar</span></a>
       <a href="/faq" class="{{ 'active' if path.startswith('/faq') }}">💡 <span>Savollar tahlili</span></a>
+      <div class="nav-title">Telegram</div>
+      <a href="/channel" class="{{ 'active' if path.startswith('/channel') }}">📈 <span>Kanal rivoji</span></a>
+      <a href="/groups" class="{{ 'active' if path == '/groups' or path.startswith('/groups/') and not path.startswith('/groups/posts') }}">👥 <span>O'quv guruhlari</span></a>
+      <a href="/groups/posts" class="{{ 'active' if path.startswith('/groups/posts') }}">📨 <span>Guruhlarga post</span></a>
       <div class="nav-title">Kontent</div>
       <a href="/content/tariffs" class="{{ 'active' if path.startswith('/content/tariffs') }}">📚 <span>Tariflar va narxlar</span></a>
       <a href="/content/info" class="{{ 'active' if path.startswith('/content/info') }}">ℹ️ <span>Markaz ma'lumotlari</span></a>

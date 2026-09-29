@@ -20,6 +20,7 @@ from ..keyboards import cta_kb, ib, lang_kb, quiz_level_kb, skip_comment_kb
 from ..texts import all_button_texts, money, t
 
 router = Router(name="menu")
+router.message.filter(F.chat.type == "private")  # guruh/kanallarda menyu ishlamaydi
 
 CAT_RU = {"group": "Групповые тарифы", "individual": "Индивидуальные тарифы (1-на-1)", "hybrid": "Гибридное обучение",
           "subscription": "Подписка"}
@@ -66,6 +67,22 @@ async def tariff_price_text(tr: Tariff, lang: str) -> str:
             title = p.title_ru if lang == "ru" else p.title_uz
             lines.append(f"• {esc(title)} — <b>{money(p.price, lang)}</b>" if p.price > 0 else f"• {esc(title)} — {t('price_ask_admin', lang)}")
         return "\n".join(lines)
+    from ...services import tariffs as tariff_svc
+
+    options = await tariff_svc.options_for(tr.id)
+    if options:
+        best_id, pct = tariff_svc.best_value(options)
+        lines = [f"<b>{t('packages_label', lang)}:</b>"]
+        for o in options:
+            head = f"• <b>{tariff_svc.option_title(o, lang)}</b> ({tariff_svc.option_details(o, lang)})"
+            if o.price <= 0:
+                lines.append(f"{head} — {t('price_ask_admin', lang)}")
+                continue
+            badge = ""
+            if o.id == best_id:
+                badge = "  " + (t("best_value_pct", lang, pct=pct) if pct >= 2 else t("best_value", lang))
+            lines.append(f"{head} — <b>{money(o.price, lang)}</b>{badge}\n   <i>{t('per_lesson', lang, amount=money(tariff_svc.per_lesson(o), lang))}</i>")
+        return "\n".join(lines)
     if tr.price > 0:
         period = f" / {esc(tr.price_period)}" if tr.price_period else ""
         return f"{t('price_label', lang)}: <b>{money(tr.price, lang)}</b>{period}"
@@ -90,12 +107,30 @@ async def tariff_detail(cb: CallbackQuery) -> None:
 
         if await _st.get("sample_video_file_id"):
             rows.append([ib(t("sample_btn", lead.lang), "sample")])
+    extra = ""
+    if not x.is_subscription:
+        from ...services import tariffs as tariff_svc
+
+        options = await tariff_svc.options_for(x.id)
+        for o in options:
+            label = f"{tariff_svc.option_title(o, lead.lang)} — {money(o.price, lead.lang)}" if o.price > 0 else tariff_svc.option_title(o, lead.lang)
+            rows.append([ib("📝 " + label, f"opt:{o.id}")])
+        if options:
+            extra = "\n\n" + t("choose_package", lead.lang)
     rows.append([ib(t("admin_btn_inline", lead.lang), f"enroll:{x.id}")])
     rows.append([ib(t("back", lead.lang), "courses")])
     text = (f"<b>{esc(name)}</b>\n\n{esc(strip_placeholders(desc))}\n\n{await tariff_price_text(x, lead.lang)}\n\n"
-            f"{t('price_note', lead.lang)}")
+            f"{t('price_note', lead.lang)}{extra}")
     await cb.message.edit_text(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
     await cb.answer()
+
+
+@router.callback_query(F.data.startswith("opt:"))
+async def enroll_option(cb: CallbackQuery) -> None:
+    """Zoom / Individual paketini tanlash → admin navbatiga so'rov (to'lov admin orqali)."""
+    lead = await _lead(cb)
+    await cb.answer()
+    await enroll_request(lead, None, option_id=int(cb.data.split(":")[1]))
 
 
 @router.callback_query(F.data.startswith("enroll:"))

@@ -37,6 +37,9 @@ ACTIONS: dict[str, str] = {
     "subscription_edit": "Obuna muddatini o'zgartirdi",
     "subscription_revoke": "Obunani bekor qildi",
     "system_fix": "Tizimni tuzatish amali",
+    "tg_chat": "Guruh/kanal sozlamasini o'zgartirdi",
+    "channel": "Kanal tahlili bo'yicha amal",
+    "group_post": "Guruhlarga post",
 }
 
 

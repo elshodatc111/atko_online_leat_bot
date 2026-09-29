@@ -66,6 +66,13 @@ DEFAULTS: dict[str, Any] = {
     "group_kick_unpaid": True,  # to'lovsiz qo'shilganlarni chiqarish
     "group_reminder_days": [3, 1],
     "known_chats": {},
+    # v3: asosiy kanal va o'quv guruhlari
+    "channel_username": "atko_teams",
+    "channel_chat_id": None,
+    "channel_ai_enabled": True,
+    "channel_ai_hour": 8,
+    "channel_ai_last_day": "",
+    "tgchats_bootstrapped": False,
     # Namuna video (Telegram bulutida saqlanadi — file_id)
     "sample_video_file_id": "",
     "sample_video_caption_uz": "🎬 Premium guruhimizdan namuna dars",

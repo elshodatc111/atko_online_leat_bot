@@ -304,7 +304,19 @@ async def settings_save(request: Request, staff: Staff = Depends(admin_required)
         values["openai_api_key"] = new_key
     if form.get("clear_api_key"):
         values["openai_api_key"] = ""
+    old_gid = await settings.get("group_chat_id")
     await settings.set_many(values)
+    new_gid = values.get("group_chat_id")
+    if new_gid and str(new_gid) != str(old_gid or ""):
+        # Premium guruh o'zgardi — chatlar ro'yxatida ham belgilaymiz
+        from ...models import TgChat
+        from ...services import tgchats
+
+        async with session_scope() as s:
+            for x in (await s.execute(select(TgChat).where(TgChat.role == "premium"))).scalars().all():
+                x.role = "unassigned"
+        if await tgchats.get(int(new_gid)):
+            await tgchats.set_role(int(new_gid), "premium")
     await audit.log(staff.id, "settings_edit", "settings", None, ", ".join(sorted(values.keys()))[:500])
     flash(request, "Sozlamalar saqlandi")
     return RedirectResponse("/settings", 303)

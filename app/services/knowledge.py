@@ -33,6 +33,9 @@ async def course_knowledge(lang: str = "uz") -> str:
     async with session_scope() as s2:
         plans = (await s2.execute(select(SubscriptionPlan).where(SubscriptionPlan.is_active.is_(True))
                                   .order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
+    from . import tariffs as tariff_svc
+
+    options = await tariff_svc.all_options()
     parts.append("## TARIFLAR VA NARXLAR (so'mda)")
     for i, x in enumerate(tariffs, start=1):
         name = x.name_ru if lang == "ru" else x.name_uz
@@ -41,10 +44,19 @@ async def course_knowledge(lang: str = "uz") -> str:
             pl = [p for p in plans if p.tariff_id == x.id]
             price = "; ".join(f"{p.title_uz} ({p.days} kun) — {p.price:,} so'm".replace(",", " ") if p.price else f"{p.title_uz} — narx belgilanmagan"
                               for p in pl) or "narx belgilanmagan"
-            how = "Botda «📚 Tariflar va narxlar» → shu tarif → «💳 Sotib olish» orqali Payme bilan onlayn to'lanadi."
+            how = ("Botda «📚 Tariflar va narxlar» → shu tarif → «💳 Sotib olish» orqali Payme bilan onlayn to'lanadi. "
+                   "Promokodlar faqat shu obunaga amal qiladi.")
         else:
-            price = (f"{x.price:,} so'm".replace(",", " ") + (f" / {x.price_period}" if x.price_period else "")) if x.price else "narx belgilanmagan — admin bilan aniqlashtiriladi"
-            how = "Oldindan to'lov, admin bilan bog'lanib amalga oshiriladi."
+            opts = [o for o in options if o.tariff_id == x.id]
+            if opts:
+                price = "; ".join(
+                    f"{tariff_svc.option_title(o)} ({tariff_svc.option_details(o)}) — "
+                    + (f"{tariff_svc.fmt_money(o.price)} so'm (bir dars ≈ {tariff_svc.fmt_money(tariff_svc.per_lesson(o))} so'm)" if o.price else "narx admin bilan aniqlashtiriladi")
+                    for o in opts)
+            else:
+                price = (f"{x.price:,} so'm".replace(",", " ") + (f" / {x.price_period}" if x.price_period else "")) if x.price else "narx belgilanmagan — admin bilan aniqlashtiriladi"
+            how = ("Oldindan to'lov, faqat admin orqali (Payme orqali emas). Botda tarif oynasida paketni tanlasa, admin bog'lanib "
+                   "to'lov va dars jadvalini kelishadi. Promokodlar bu tariflarga amal qilmaydi.")
         parts.append(f"### {name}\n{desc}\nNarx: {price}\nTo'lov: {how}")
     for p in pages:
         title = p.title_ru if lang == "ru" else p.title_uz

@@ -20,6 +20,7 @@ from ..keyboards import contact_kb, format_kb, goal_kb, ib, lang_kb
 from ..texts import t
 
 router = Router(name="start")
+router.message.filter(F.chat.type == "private")  # o'quv guruhlarida /start va boshqalar ishlamaydi
 
 
 # ------------------------------------------------------------------ xodimlar

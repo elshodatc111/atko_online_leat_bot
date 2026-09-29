@@ -28,6 +28,9 @@ LOOP_TITLES = {
     "cleanup": "Tozalash",
     "payments": "To'lov eslatmalari",
     "promos": "Promokod muddati va limiti nazorati",
+    "tgchats": "Guruh va kanal a'zolari hisobi",
+    "channel_ai": "Kanal uchun kunlik AI g'oyalar",
+    "group_posts": "Guruhlarga rejalashtirilgan postlar",
     "monitor": "Tizim monitoringi",
 }
 _named: dict[str, asyncio.Task] = {}
@@ -279,6 +282,25 @@ async def promo_check() -> None:
     await promo_svc.sweep()
 
 
+async def tgchats_job() -> None:
+    from . import tgchats
+
+    await tgchats.bootstrap()
+    await tgchats.snapshot_all()
+
+
+async def channel_ai_job() -> None:
+    from . import channel
+
+    await channel.daily_job()
+
+
+async def group_posts_job() -> None:
+    from . import group_posts
+
+    await group_posts.due_job()
+
+
 async def cleanup() -> None:
     from ..models import LoginCode
 
@@ -295,6 +317,9 @@ SPECS = {
     "cleanup": (3600, cleanup),
     "payments": (300, pay_reminders),
     "promos": (60, promo_check),
+    "tgchats": (3600, tgchats_job),
+    "channel_ai": (600, channel_ai_job),
+    "group_posts": (30, group_posts_job),
     "monitor": (300, monitor_check),
 }
 

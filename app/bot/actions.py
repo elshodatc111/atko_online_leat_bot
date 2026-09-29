@@ -58,15 +58,29 @@ async def operator_request(lead: Lead, reason: str = "user", note: str | None = 
     await bot.send_message(lead.tg_id, text)
 
 
-async def enroll_request(lead: Lead, tariff_id: int) -> None:
-    """2–4-tariflar: to'lov admin orqali — operator navbatiga so'rov."""
+async def enroll_request(lead: Lead, tariff_id: int | None, option_id: int | None = None) -> None:
+    """Zoom / Individual (va boshqa kurs) tariflari: to'lov admin orqali — operator navbatiga so'rov."""
+    from ..models import TariffOption
+    from ..services import tariffs as tariff_svc
+
+    label = None
     async with session_scope() as s:
-        tr = await s.get(Tariff, tariff_id)
+        if option_id:
+            o = await s.get(TariffOption, option_id)
+            if not o or not o.is_active:
+                return
+            tr = o.tariff
+            label = (f"{tr.name_uz} — {tariff_svc.option_title(o)} ({tariff_svc.option_details(o)})"
+                     + (f", {tariff_svc.fmt_money(o.price)} so'm" if o.price else ""))
+        else:
+            tr = await s.get(Tariff, tariff_id)
     if not tr:
         return
-    lead = await update_lead(lead.id, interested_tariff=tr.name_uz, status="trial" if lead.status in ("new", "contacted", "thinking") else lead.status)
+    interested = label or tr.name_uz
+    lead = await update_lead(lead.id, interested_tariff=interested[:128],
+                             status="trial" if lead.status in ("new", "contacted", "thinking") else lead.status)
     await get_bot().send_message(lead.tg_id, t("enroll_request_ok", lead.lang))
-    await operator_request(lead, reason="enroll", note=f"Tarifga yozilmoqchi: {tr.name_uz}", silent_ok=True)
+    await operator_request(lead, reason="enroll", note=f"Tarifga yozilmoqchi: {interested}", silent_ok=True)
 
 
 async def _sub_tariff():
@@ -167,6 +181,10 @@ async def start_payment(lead: Lead, plan_id: int) -> None:
         plan = await s.get(SubscriptionPlan, plan_id)
     if not plan or not plan.is_active:
         await show_buy(lead)
+        return
+    if not plan.tariff or not plan.tariff.is_subscription:
+        # Payme faqat Premium obuna uchun; kurs tariflari — admin orqali
+        await enroll_request(lead, plan.tariff_id)
         return
     admin_kb = InlineKeyboardMarkup(inline_keyboard=[[ib(t("admin_btn_inline", lead.lang), f"enroll:{plan.tariff_id}")]])
     if plan.price <= 0:

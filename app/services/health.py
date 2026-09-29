@@ -151,6 +151,24 @@ async def check_group() -> dict:
                   "Guruh ID to'g'riligini va bot guruhda ekanini tekshiring")
 
 
+async def check_channel() -> dict:
+    """Asosiy kanal va o'quv guruhlari (DB bo'yicha, tez)."""
+    from . import channel, tgchats
+
+    ch = await tgchats.main_channel()
+    study = await tgchats.list_chats("study")
+    g = f" · o'quv guruhlari: {len(study)} ({sum(c.students for c in study)} o'quvchi)"
+    if not ch:
+        return _c("channel", "📢 Asosiy kanal va o'quv guruhlari", "warn", "Asosiy kanal ulanmagan" + g,
+                  hint="Botni kanalga admin qilib qo'shing va «Kanal rivoji» bo'limida ulang")
+    if not ch.is_active or ch.bot_status != "administrator":
+        return _c("channel", "📢 Asosiy kanal va o'quv guruhlari", "fail", f"«{ch.title}»: bot admin emas ({ch.bot_status})" + g,
+                  hint="Kanal sozlamalarida botni admin qiling")
+    last = await channel.latest(ch.chat_id)
+    ai = f" · oxirgi AI tahlil: {last.created_at:%d.%m %H:%M}" if last else " · AI tahlil hali yo'q"
+    return _c("channel", "📢 Asosiy kanal va o'quv guruhlari", "ok", f"«{ch.title}» · obunachilar: {ch.members}{ai}{g}")
+
+
 async def check_ai(deep: bool = False) -> list[dict]:
     from . import ai
 
@@ -271,6 +289,7 @@ async def all_checks(deep: bool = False) -> list[dict]:
     items += await check_bot()
     items.append(await check_group())
     items += await check_ai(deep)
+    items.append(await check_channel())
     items.append(await check_payme())
     items.append(await check_db())
     items.append(check_disk())

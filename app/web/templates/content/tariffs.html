@@ -3,10 +3,11 @@
 {% block heading %}📚 Tariflar va narxlar{% endblock %}
 {% block content %}
 <div class="flash flash-info">
-  Tariflar va narxlar botning «📚 Tariflar va narxlar» bo'limida ko'rinadi, AI-konsultant ham shu ma'lumotga tayanadi.
-  <b>Obuna</b> turidagi tarif (1-tarif) botda Payme orqali sotib olinadi — uning 1/3/12 oylik variantlari va narxlari pastda.
-  Qolgan tariflar uchun to'lov admin orqali: botda «👨‍💼 Admin bilan bog'lanish» tugmasi chiqadi.
-  Narx <b>0</b> bo'lsa, botda «Narxni admin bilan aniqlashtiring» deb ko'rsatiladi.
+  Tariflar va narxlar botning «📚 Tariflar va narxlar» bo'limida ko'rinadi, AI-konsultant ham shu ma'lumotga tayanadi.<br>
+  💎 <b>Obuna</b> (yopiq Telegram guruh) — botda <b>Payme</b> orqali sotib olinadi, promokodlar faqat shunga amal qiladi.<br>
+  🎥 <b>Zoom</b> va 👤 <b>Individual</b> — <b>paketlar</b> (12 dars / 20 dars). Mijoz paketni tanlaydi → so'rov admin navbatiga tushadi, to'lov admin orqali.
+  Botda har paket yonida bir dars narxi va eng tejamkor paketga «💰 tejamkor» belgisi chiqadi.
+  Narx <b>0</b> bo'lsa, «Narxni admin bilan aniqlashtiring» deb ko'rsatiladi.
   {% if not payme_ok %}<br>⚠️ Payme hali sozlanmagan — <a href="/settings#payme">Sozlamalar → Payme</a>.{% endif %}
 </div>
 {% macro tariff_form(x=None) %}
@@ -14,7 +15,7 @@
   <input type="hidden" name="id" value="{{ x.id if x else '' }}">
   <div class="form-row">
     <div><label>Turi</label><select name="category">{% for k, v in cats.items() %}<option value="{{ k }}" {{ 'selected' if x and x.category == k }}>{{ v }}</option>{% endfor %}</select></div>
-    {% if not x or not x.is_subscription %}
+    {% if (not x or not x.is_subscription) and not (x and options|selectattr('tariff_id', 'equalto', x.id)|list) %}
     <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ x.price if x else 0 }}"><div class="hint">0 — «admin bilan aniqlashtiring»</div></div>
     <div><label>Davr</label><input type="text" name="price_period" value="{{ x.price_period if x else 'oyiga' }}" placeholder="oyiga / kursga"></div>
     {% endif %}
@@ -39,6 +40,18 @@
   <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ p.price if p else 0 }}"></div>
   <div><label>Tartib</label><input type="number" name="sort" value="{{ p.sort if p else 0 }}"></div>
   <div><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not p or p.is_active }}> Faol</label>
+    <button class="btn btn-sm">💾</button></div>
+</form>
+{% endmacro %}
+{% macro option_form(tid, o=None) %}
+<form method="post" action="/content/options/save" class="form-row" style="align-items:end">
+  <input type="hidden" name="id" value="{{ o.id if o else '' }}"><input type="hidden" name="tariff_id" value="{{ tid }}">
+  <div><label>Darslar soni</label><input type="number" name="lessons" min="1" value="{{ o.lessons if o else 12 }}"></div>
+  <div><label>Haftasiga</label><input type="number" name="per_week" min="0" value="{{ o.per_week if o else 3 }}"></div>
+  <div><label>Davomiyligi (oy)</label><input type="number" name="months" min="1" value="{{ o.months if o else 1 }}"></div>
+  <div><label>Narxi (so'm)</label><input type="text" name="price" inputmode="numeric" value="{{ o.price if o else 0 }}"></div>
+  <div><label>Tartib</label><input type="number" name="sort" value="{{ o.sort if o else 0 }}"></div>
+  <div><label class="check"><input type="checkbox" name="is_active" {{ 'checked' if not o or o.is_active }}> Faol</label>
     <button class="btn btn-sm">💾</button></div>
 </form>
 {% endmacro %}
@@ -78,6 +91,16 @@
   </div>
   {% endfor %}
   <details class="edit"><summary class="btn btn-sm btn-light">➕ Variant qo'shish</summary>{{ plan_form(x.id) }}</details>
+  {% else %}
+  <h3>📦 Paketlar <small class="muted">(to'lov admin orqali)</small></h3>
+  {% for o in options if o.tariff_id == x.id %}
+  <div style="display:flex;gap:8px;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px">
+    <div style="flex:1">{{ option_form(x.id, o) }}
+      {% if o.price %}<small class="muted">Bir dars ≈ {{ '{:,}'.format(per_lesson(o)).replace(',', ' ') }} so'm{% if o.id in best %} · <b>💰 tejamkor{% if best[o.id] >= 2 %} (−{{ best[o.id] }}%){% endif %}</b>{% endif %}</small>{% endif %}</div>
+    <form method="post" action="/content/options/{{ o.id }}/delete" onsubmit="return confirm('Paketni o\'chirasizmi?')" style="margin-bottom:12px"><button class="btn btn-sm btn-ghost">🗑</button></form>
+  </div>
+  {% else %}<p class="muted">Paketlar yo'q — botda tarif narxi (yoki «admin bilan aniqlashtiring») ko'rsatiladi.</p>{% endfor %}
+  <details class="edit"><summary class="btn btn-sm btn-light">➕ Paket qo'shish</summary>{{ option_form(x.id) }}</details>
   {% endif %}
   <details class="edit"><summary class="btn btn-sm btn-ghost" style="margin-top:8px">✏️ Tarifni tahrirlash</summary>{{ tariff_form(x) }}</details>
 </div>

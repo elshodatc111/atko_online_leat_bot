@@ -33,8 +33,17 @@ async def tariffs_page(request: Request, staff: Staff = Depends(admin_required))
     async with session_scope() as s:
         rows = (await s.execute(select(Tariff).order_by(Tariff.sort, Tariff.id))).scalars().all()
         plans = (await s.execute(select(SubscriptionPlan).order_by(SubscriptionPlan.sort, SubscriptionPlan.days))).scalars().all()
+    from ...services import tariffs as tariff_svc
+
+    options = await tariff_svc.all_options(active_only=False)
+    best = {}
+    for tr in rows:
+        bid, pct = tariff_svc.best_value([o for o in options if o.tariff_id == tr.id and o.is_active])
+        if bid:
+            best[bid] = pct
     cats = {k: v for k, v in knowledge.CATEGORY_LABELS.items() if k != "hybrid"}
-    return render(request, "content/tariffs.html", staff, rows=rows, cats=cats, plans=plans,
+    return render(request, "content/tariffs.html", staff, rows=rows, cats=cats, plans=plans, options=options, best=best,
+                  per_lesson=tariff_svc.per_lesson,
                   payme_ok=await payme.is_configured(), sample_fid=await settings.get("sample_video_file_id"),
                   sample_cap_uz=await settings.get("sample_video_caption_uz"), sample_cap_ru=await settings.get("sample_video_caption_ru"))
 
@@ -141,6 +150,44 @@ async def plan_save(request: Request, id: str = Form(""), tariff_id: int = Form(
         p.title_uz, p.title_ru, p.days, p.price, p.sort, p.is_active = title_uz.strip(), title_ru.strip(), days, _money(price), sort, is_active
         await audit.log(staff.id, "content_edit", "plan", p.id, f"{title_uz}: {p.price} so'm / {days} kun", session=s)
     flash(request, "Obuna varianti saqlandi")
+    return back("/content/tariffs")
+
+
+@router.post("/content/options/save")
+async def option_save(request: Request, id: str = Form(""), tariff_id: int = Form(...), lessons: int = Form(12),
+                      per_week: int = Form(3), months: int = Form(1), price: str = Form("0"), sort: int = Form(0),
+                      is_active: bool = Form(False), staff: Staff = Depends(admin_required)):
+    """Zoom / Individual paketlari (12 dars / 20 dars) — to'lov admin orqali."""
+    from ...models import TariffOption
+
+    if lessons <= 0 or per_week < 0 or months <= 0:
+        flash(request, "Darslar soni va davomiylik 0 dan katta bo'lishi kerak", "danger")
+        return back("/content/tariffs")
+    async with session_scope() as s:
+        tr = await s.get(Tariff, tariff_id)
+        if not tr or tr.is_subscription:
+            flash(request, "Paketlar faqat Zoom / Individual (obuna bo'lmagan) tariflar uchun", "danger")
+            return back("/content/tariffs")
+        o = await s.get(TariffOption, int(id)) if id.isdigit() else None
+        if o is None:
+            o = TariffOption(tariff_id=tariff_id)
+            s.add(o)
+        o.lessons, o.per_week, o.months, o.price, o.sort, o.is_active = lessons, per_week, months, _money(price), sort, is_active
+        await audit.log(staff.id, "content_edit", "tariff_option", o.id, f"{tr.name_uz}: {lessons} dars — {o.price} so'm", session=s)
+    flash(request, "Paket saqlandi")
+    return back("/content/tariffs")
+
+
+@router.post("/content/options/{oid}/delete")
+async def option_delete(oid: int, request: Request, staff: Staff = Depends(admin_required)):
+    from ...models import TariffOption
+
+    async with session_scope() as s:
+        o = await s.get(TariffOption, oid)
+        if o:
+            await s.delete(o)
+            await audit.log(staff.id, "content_edit", "tariff_option", oid, "Paket o'chirildi", session=s)
+    flash(request, "Paket o'chirildi")
     return back("/content/tariffs")
 
 

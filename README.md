@@ -22,7 +22,7 @@ ATKO Koreys Tili O'quv Markazi uchun **Telegram bot** va operatorlar ishlaydigan
 | Bo'lim | Tavsif |
 |---|---|
 | Ro'yxatdan o'tish | Til → ism → **«📱 Raqamni yuborish»** (majburiy) → maqsad → format. Raqam tasdiqlanmaguncha botning boshqa bo'limlari yopiq. Raqam faqat shu tugma orqali qabul qilinadi |
-| 📚 Tariflar va narxlar | 4 ta tarif. Narxlar paneldan kiritiladi. Har bir narx ostida «aniq narxni admin bilan aniqlashtiring» eslatmasi turadi |
+| 📚 Tariflar va narxlar | 💎 Premium obuna (Payme) + 🎥 Zoom va 👤 Individual **paketlar** (12 dars — haftasiga 3 ta, 20 dars — haftasiga 5 ta, 1 oy, dars 120 daqiqa). Har paketda bir dars narxi va «💰 tejamkor» belgisi; paketni tanlasa — so'rov admin navbatiga (to'lov admin orqali) |
 | 💳 Obuna sotib olish | 1-tarif (yopiq Telegram guruh, 1/3/12 oy) — **Payme** orqali. Asosiy menyuda tugma yo'q; «Tariflar», «Mening obunam» va AI mentor limiti xabarlaridan ochiladi. Oynada: batafsil ma'lumot, 🎟 promokod, 🎬 namuna dars. To'lovdan keyin guruh havolasi avtomatik keladi |
 | 🎟 Promokod | Foizli chegirma (1–100%). «Birinchi N ta foydalanuvchi», muddat va obuna varianti bo'yicha cheklash mumkin. **100%** bo'lsa — Payme'siz darhol bepul faollashadi |
 | ⏳ To'lov eslatmasi | To'lov oynasini ochib, to'lamay qolganlarga 60 daqiqadan keyin (sozlanadi) **bir marta** «To'lash» tugmali eslatma |
@@ -45,6 +45,18 @@ Assalomu alaykum! ...
 - Muddati tugaganlar guruhdan **avtomatik chiqariladi**. Qayta to'lov qilsa, yana qo'shila oladi.
 - Guruhga obunasiz qo'shilganlar ham avtomatik chiqariladi. Xodimlar va «muddatsiz» ruxsat berilganlar bundan mustasno.
 - **Payme'da to'lov bekor qilinsa (pul qaytarilsa)**, obuna shu to'lov kunlariga qisqaradi va kerak bo'lsa foydalanuvchi guruhdan chiqariladi.
+
+### Telegram kanal va o'quv guruhlari (faqat admin)
+- **📈 Kanal rivoji** (@atko_teams): obunachilar grafigi, qo'shilgan/chiqib ketganlar, postlar va reaksiyalar, post turlari va soatlar bo'yicha faollik,
+  nomlangan **taklif havolalari** (qaysi manbadan nechta obunachi), kanal → bot → kurs zanjiri, Telegram Desktop **JSON eksportini import** qilish
+  va **har kuni AI tahlil**: 5 ta post g'oyasi (tayyor matn bilan), 3 ta video g'oyasi (ilmoq + ssenariy), eng yaxshi vaqtlar, haftalik reja.
+  Natijalar faqat panelda ko'rinadi. ⚠️ Telegram botlarga ko'rishlar sonini bermaydi — faollik reaksiyalar orqali o'lchanadi.
+- **🗓 Kanal uchun postlar**: AI g'oyasini (yoki o'z postingizni) tahrirlab, rasm/video qo'shib, avval o'zingizga sinab ko'rasiz →
+  «✅ Tasdiqlash» → post **belgilangan vaqtda kanalga avtomatik joylanadi** (botga «Xabarlar joylash» huquqi kerak). Joylangan postlar tahlilga ham qo'shiladi.
+- **👥 O'quv guruhlari**: bot admin qilingan guruhlar ro'yxati, o'quvchilar soni (a'zolar − adminlar), 7 kunlik o'zgarish, 30 kunlik grafik,
+  guruhni o'chirish (bot guruhdan chiqadi), chat vazifasini o'zgartirish.
+- **📨 Guruhlarga post**: matn / matn+rasm / matn+video, bir nechta guruhga birdan, avval o'zingizga sinov, rejalashtirish, qadash (pin),
+  ovozsiz yuborish, yuborilganni guruhlardan o'chirish.
 
 ### Veb-panel
 - **Kirish:** Telegram ID kiritiladi, bot shu akkauntga **6 xonali kod** yuboradi. Kod 5 daqiqa amal qiladi va 5 marta urinish mumkin.
@@ -81,6 +93,13 @@ Assalomu alaykum! ...
 > **Yangilash (v1 → v2):** dasturni to'xtating va yangi fayllarni eskisining ustidan ko'chiring. Ma'lumotlar bazasi o'zi yangilanadi: yangi ustunlar, 4 ta tarif va yangi eslatmalar qo'shiladi, eski leadlar va chatlar saqlanadi. `pip install -r requirements.txt` ni qayta ishga tushiring.
 
 ---
+
+## 3a. Kanal va o'quv guruhlarini ulash
+1. **Kanal:** Telegram'da @atko_teams → Boshqaruv → Administratorlar → botni qo'shing (huquqlar: «Xabarlar joylash», «Xabarlarni o'chirish», «Taklif havolalari orqali qo'shish»).
+   Panel → «📈 Kanal rivoji» — kanal avtomatik ulanadi (yoki «Ulash» tugmasi).
+2. **O'quv guruhlari:** har bir guruhga botni **admin** qiling (post yuborish uchun; qadash uchun «Xabarlarni qadash» huquqi).
+   Guruh «👥 O'quv guruhlari» ro'yxatida o'zi paydo bo'ladi.
+3. **Eski kanal postlari:** Telegram Desktop → kanal → ⋮ → Export chat history → media belgilarisiz, format «JSON» → `result.json` ni «Kanal rivoji»da import qiling.
 
 ## 3. Yopiq Premium guruhni sozlash
 
@@ -173,6 +192,12 @@ Model nomi **Sozlamalar → Asosiy model** maydonida o'zgartiriladi (masalan, `g
 | AI javob bermayapti | 🩺 Tizim holati → «AI ni sinash». Kalit, model nomi va kunlik limitni tekshiring |
 
 ## 8. O'zgarishlar tarixi
+- **v3.1:** Individual darslar ham Zoom orqali (120 daqiqa); AI g'oyasidan tayyorlangan postni tasdiqlab, kanalga belgilangan vaqtda avtomatik joylash.
+- **v3.0:**
+  - tariflar: Zoom (12 dars — 599 000, 20 dars — 949 000) va Individual (12 dars — 1 490 000, 20 dars — 2 390 000) paketlari; eski 2–4-tariflar almashtirildi; Payme va promokod faqat Premium obunaga;
+  - asosiy kanal tahlili va kunlik AI kontent g'oyalari, taklif havolalari, JSON eksport importi;
+  - o'quv guruhlari: o'quvchilar soni va tarixi, o'chirish; guruhlarga post (rejalashtirish, pin, sinov);
+  - bot guruh/kanallarda menyu va /start ga javob bermaydi (faqat shaxsiy chatda).
 - **v2.2:**
   - 🎬 namuna video: paneldan (50 MB gacha) yoki admin botga to'g'ridan-to'g'ri yuboradi (hajm cheklovi yo'q) → «Namuna video sifatida saqlash»; almashtirish — yangi videoni yuklash;
   - 🎟 promokodlar: 1–100%, «birinchi N ta», muddat, variant; har bir foydalanuvchi bir marta; to'lov jarayonidagi buyurtmalar 30 daqiqa joy band qiladi; 100% — bepul faollashtirish;
