@@ -3,7 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#141b2d">
+  <meta name="theme-color" content="#0047a0">
+  <script>
+    /* tungi/kunduzgi rejim — sahifa chizilishidan oldin qo'llanadi (miltillamasligi uchun) */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("atko_theme"); } catch (e) {}
+      if (t !== "dark" && t !== "light") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="ATKO">
@@ -11,7 +20,7 @@
   <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <link rel="manifest" href="/static/manifest.webmanifest">
-  <link rel="stylesheet" href="/static/css/app.css?v=4">
+  <link rel="stylesheet" href="/static/css/app.css?v=5">
   <script src="/static/vendor/htmx.min.js"></script>
   {% block head %}{% endblock %}
 </head>
@@ -49,7 +58,7 @@
       {% endif %}
       <div class="nav-title only-mobile-block">Hisob</div>
       <div class="nav-me only-mobile-block"><b>{{ me.full_name }}</b><small>{{ 'Admin' if me.is_admin else 'Operator' }} · {{ me.display_name }}</small></div>
-      <a href="/logout" class="only-mobile-flex">⎋ <span>Chiqish</span></a>
+      <a href="/logout" class="only-mobile-flex" data-logout>⎋ <span>Chiqish</span></a>
     </nav>
   </aside>
   <div class="backdrop" id="backdrop" hidden></div>
@@ -58,6 +67,7 @@
       <button class="icon-btn only-mobile" id="menu-btn" aria-label="Menyu">☰</button>
       <h1>{% block heading %}{% endblock %}</h1>
       <div class="topbar-right">
+        <button type="button" class="theme-btn" data-theme-toggle title="Tungi / kunduzgi rejim" aria-label="Tungi yoki kunduzgi rejim"><span class="sun">🌙</span><span class="moon">☀️</span></button>
         <button id="notif-btn" class="btn btn-sm btn-ghost" hidden title="Brauzer bildirishnomalarini yoqish">🔔 <span class="hide-mobile">Bildirishnomalarni yoqish</span></button>
         <label class="switch" title="Onlayn bo'lsangiz yangi murojaatlar haqida Telegramga ham xabar keladi">
           <input type="checkbox" id="online-toggle" {{ 'checked' if me.is_online }}>
@@ -67,7 +77,7 @@
           <b>{{ me.full_name }}</b>
           <small>{{ 'Admin' if me.is_admin else 'Operator' }} · {{ me.display_name }}</small>
         </div>
-        <a href="/logout" class="btn btn-sm btn-ghost hide-mobile" title="Chiqish">⎋</a>
+        <a href="/logout" class="btn btn-sm btn-ghost hide-mobile" title="Chiqish" data-logout>⎋</a>
       </div>
     </header>
     <div class="content {% block content_class %}{% endblock %}">
@@ -85,10 +95,62 @@
   <button type="button" id="menu-btn2"><i>☰</i><span>Menyu</span></button>
 </nav>
 <div id="toasts"></div>
-<script src="/static/js/app.js?v=4"></script>
+<div class="modal-back" id="logout-modal" hidden role="dialog" aria-modal="true" aria-labelledby="logout-title">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon">⎋</div>
+    <h3 id="logout-title">Paneldan chiqasizmi?</h3>
+    <p>Qayta kirish uchun Telegramga yangi kod yuboriladi.</p>
+    <div class="btns">
+      <button type="button" class="btn btn-ghost" id="logout-cancel">Bekor qilish</button>
+      <a href="/logout" class="btn btn-danger" id="logout-ok">Ha, chiqish</a>
+    </div>
+  </div>
+</div>
+<script src="/static/js/app.js?v=5"></script>
 {% else %}
 {% block public %}{% endblock %}
 {% endif %}
+<script>
+/* mavzu (tungi/kunduzgi), grafik ranglari va chiqishni tasdiqlash — barcha sahifalar uchun */
+(function () {
+  const root = document.documentElement;
+  function cssVar(n) { return getComputedStyle(root).getPropertyValue(n).trim(); }
+  function chartTheme() {
+    if (!window.Chart) return;
+    Chart.defaults.color = cssVar("--muted");
+    Chart.defaults.borderColor = cssVar("--line");
+    Object.values(Chart.instances || {}).forEach((c) => {
+      Object.values(c.options.scales || {}).forEach((sc) => { if (sc.grid) sc.grid.color = cssVar("--line"); if (sc.ticks) sc.ticks.color = cssVar("--muted"); });
+      if (c.options.plugins && c.options.plugins.legend && c.options.plugins.legend.labels) c.options.plugins.legend.labels.color = cssVar("--text");
+      c.update("none");
+    });
+  }
+  window.ATKOTheme = { apply: chartTheme };
+  chartTheme();
+  document.querySelectorAll("[data-theme-toggle]").forEach((b) => b.addEventListener("click", () => {
+    const t = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", t);
+    try { localStorage.setItem("atko_theme", t); } catch (e) {}
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "dark" ? "#0b1220" : "#0047a0";
+    chartTheme();
+  }));
+  const modal = document.getElementById("logout-modal");
+  if (modal) {
+    const close = () => { modal.hidden = true; };
+    document.querySelectorAll("[data-logout]").forEach((a) => a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const sb = document.getElementById("sidebar"); if (sb) sb.classList.remove("open");
+      const bd = document.getElementById("backdrop"); if (bd) bd.hidden = true;
+      document.body.classList.remove("menu-open");
+      modal.hidden = false; document.getElementById("logout-cancel").focus();
+    }));
+    document.getElementById("logout-cancel").onclick = close;
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) close(); });
+  }
+})();
+</script>
 {% block scripts %}{% endblock %}
+<script>window.ATKOTheme && window.ATKOTheme.apply();</script>
 </body>
 </html>

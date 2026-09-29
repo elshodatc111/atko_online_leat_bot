@@ -311,6 +311,13 @@ async def consultant_on(msg: TgMessage) -> None:
 @router.message(F.text.in_(all_button_texts("btn_quiz")))
 async def quiz_start(msg: TgMessage) -> None:
     lead = await _lead(msg)
+    if not await settings.get("tutor_enabled"):
+        await msg.answer(t("tutor_disabled", lead.lang))
+        return
+    if not await require_phone(lead):
+        return
+    if lead.mode == "tutor":  # mini-test bosh sahifadan ishlaydi
+        lead = await update_lead(lead.id, mode="consultant")
     await msg.answer(t("quiz_choose_level", lead.lang), reply_markup=quiz_level_kb(lead.lang))
 
 

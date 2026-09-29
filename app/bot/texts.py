@@ -63,7 +63,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "uz": "🤖 AI-yordamchi hozir vaqtincha mavjud emas. Menyudan kerakli bo'limni tanlang yoki «👨‍💼 Operator bilan bog'lanish» tugmasini bosing.",
     },
     "tutor_intro": {
-        "uz": "🎓 <b>AI mentor</b> — koreys tili bo'yicha shaxsiy yordamchingiz!\n\n• grammatika va lug'at savollari\n• uyga vazifani tekshirish (matn, rasm yoki ovozli xabar yuboring)\n• talaffuz va gap tuzish\n• 📝 mini-testlar\n\n{limit_info}\n\nSavolingizni yozing! 한국어 공부 화이팅! 💪",
+        "uz": "🎓 <b>AI mentor</b> — koreys tili bo'yicha shaxsiy yordamchingiz!\n\n• grammatika va lug'at savollari\n• uyga vazifani tekshirish (matn, rasm yoki ovozli xabar yuboring)\n• talaffuz va gap tuzish\n\n{limit_info}\n\nSavolingizni yozing! 한국어 공부 화이팅! 💪\n\n<i>📝 Mini-test — bosh sahifada. Qaytish uchun pastdagi «🏠 Bosh sahifa» tugmasini bosing.</i>",
     },
     "tutor_limit": {
         "uz": "📚 Bugungi bepul savollaringiz limiti ({limit} ta) tugadi.\n\n💎 <b>Premium obunachilar</b> AI mentordan cheksiz foydalanadi! Obunani pastdagi «💳 Obuna sotib olish» tugmasi orqali rasmiylashtiring.",
@@ -79,7 +79,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "already_active": {"uz": "💬 Siz hozir <b>{operator}</b> bilan suhbatdasiz. Savolingizni yozing."},
     "file_too_big": {"uz": "⚠️ Fayl juda katta. Ruxsat etilgan hajm: {mb} MB."},
     "unsupported": {"uz": "Bu turdagi xabarni qabul qila olmayman. Matn, rasm yoki ovozli xabar yuboring."},
-    "consultant_on": {"uz": "🏠 Asosiy menyuga qaytdingiz. Kurslar haqida istalgan savolni bering!"},
+    "consultant_on": {"uz": "🏠 Bosh sahifadasiz. Kerakli bo'limni tanlang yoki kurslar haqida istalgan savolni yozing!"},
     "tutor_disabled": {"uz": "🎓 AI mentor hozircha o'chirilgan."},
     "tutor_unlimited": {"uz": "💎 Sizda Premium obuna bor — AI mentordan <b>cheksiz</b> foydalanasiz."},
     "tutor_daily": {"uz": "🆓 Bugun yana <b>{left} ta</b> savol berishingiz mumkin (kuniga {limit} ta). Premium obunachilar uchun — cheksiz."},
@@ -162,7 +162,7 @@ TEXTS: dict[str, dict[str, str]] = {
     "btn_info": {"uz": "ℹ️ Markaz haqida"},
     "btn_contact": {"uz": "📱 Raqamni yuborish"},
     "btn_quiz": {"uz": "📝 Mini-test"},
-    "btn_consultant": {"uz": "🏠 Asosiy menyu"},
+    "btn_consultant": {"uz": "🏠 Bosh sahifa"},
 }
 
 EDITABLE: dict[str, str] = {
@@ -213,8 +213,12 @@ def t(key: str, lang: str = "uz", **kw: Any) -> str:
     return val
 
 
+# eski versiyalardagi tugma matnlari (foydalanuvchida eski klaviatura qolgan bo'lsa ham ishlaydi)
+LEGACY_BUTTONS: dict[str, set[str]] = {"btn_consultant": {"🏠 Asosiy menyu"}}
+
+
 def all_button_texts(key: str) -> set[str]:
-    return {t(key)}
+    return {t(key)} | LEGACY_BUTTONS.get(key, set())
 
 
 def money(amount: int | None, lang: str = "uz") -> str:

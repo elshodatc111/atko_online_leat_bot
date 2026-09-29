@@ -55,7 +55,7 @@ DROPPED_TABLES = ["group_post_deliveries", "group_posts", "channel_insights", "c
                   "tg_chats", "promo_uses", "promo_codes", "faq_suggestions", "faq", "user_questions", "templates",
                   "info_pages", "material_chunks", "materials"]
 # v4 da mazmuni o'zgargan bot matnlari — eski tahrirlar o'chiriladi
-CHANGED_TEXTS = ("price_note", "enroll_request_ok", "choose_package", "buy_unavailable", "welcome", "ask_name")
+CHANGED_TEXTS = ("price_note", "enroll_request_ok", "choose_package", "buy_unavailable", "welcome", "ask_name", "tutor_intro")
 
 
 async def migrate_v4() -> None:

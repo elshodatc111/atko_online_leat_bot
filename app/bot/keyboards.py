@@ -42,14 +42,14 @@ def main_menu(lead: Lead, tutor_enabled: bool = True) -> ReplyKeyboardMarkup:
     if not lead.phone:
         return contact_kb(lang)
     if lead.mode == "tutor":
-        rows = [[B("btn_quiz"), B("btn_mysub")], [B("btn_consultant"), B("btn_operator")]]
-    else:
-        rows = [
-            [B("btn_courses"), B("btn_mysub")],
-            ([B("btn_tutor")] if tutor_enabled else []) + [B("btn_operator")],
-            [B("btn_info")],
-        ]
-    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, input_field_placeholder="✍️ ...")
+        # AI mentor rejimi: faqat bosh sahifaga qaytish tugmasi — savol yozish uchun joy ko'p qoladi
+        return ReplyKeyboardMarkup(keyboard=[[B("btn_consultant")]], resize_keyboard=True, is_persistent=True,
+                                   input_field_placeholder="🎓 Savolingizni yozing...")
+    rows = [[B("btn_courses"), B("btn_mysub")]]
+    if tutor_enabled:  # mini-test ham AI mentor limitidan foydalanadi
+        rows.append([B("btn_tutor"), B("btn_quiz")])
+    rows.append([B("btn_operator"), B("btn_info")])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True, input_field_placeholder="✍️ Savolingizni yozing...")
 
 
 def cta_kb(lang: str, operator: bool = True, buy: bool = True) -> InlineKeyboardMarkup | None:

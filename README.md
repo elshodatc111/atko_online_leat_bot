@@ -189,6 +189,7 @@ Skript Python 3.14 muhitini yaratadi, kutubxonalarni o'rnatadi, `.env` ni server
 | AI javob bermayapti | 🩺 Tizim holati → «AI ni sinash». Kalit, model nomi va kunlik limitni tekshiring |
 
 ## 8. O'zgarishlar tarixi
+- **v4.1:** bot menyusi — «🎓 AI mentor» rejimida pastda faqat «🏠 Bosh sahifa» tugmasi, «📝 Mini-test» bosh sahifada; panel yangi dizaynda (ko'k–qizil–oq), tungi/kunduzgi rejim tugmasi, chiqishni tasdiqlash oynasi, bo'lim tablari hamma o'lchamda to'liq ko'rinadi.
 - **v4.0 (soddalashtirish, bepul hosting uchun):**
   - olib tashlandi: Kanal rivoji, O'quv guruhlari, Guruhlarga post, Promokodlar, Savollar tahlili (FAQ), Javob shablonlari, Markaz ma'lumotlari sahifalari, PDF materiallar; «Admin bilan bog'lanish» hech qayerda yo'q;
   - bot faqat o'zbek tilida (til tanlash yo'q); ruscha matnlar va maydonlar olib tashlandi;
